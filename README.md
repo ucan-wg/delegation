@@ -37,7 +37,7 @@ Two related models that work exceptionally well in the above context are Simple 
 
 ## 1.2 Intuition
 
-By analogy, ACLs are like a bouncer at an exclusive event. This bouncer has a list attendees allowed in and which of those are VIPs that get extra access. The attendees show their government-issued ID and are accepted or rejected. In addition, they may get a lanyard to identify that they have previously been allowed in. If someone is disruptive, they can simply be crossed off the list and denied further entry.
+By analogy, ACLs are like a bouncer at an exclusive event. This bouncer has a list attendees allowed in and which of those are VIPs that get extra access. The attendees show their government-issued ID and are accepted or rejected.
 
 If there are many such events at many venues, the organizers need to coordinate ahead of time, denials need to be synchronized, and attendees need to show their ID cards to many bouncers. The likelihood of the bouncer letting in the wrong person due to synchronization lag or confusion by someone sharing a name is nonzero.
 
@@ -399,12 +399,12 @@ The payload MUST describe the authorization claims, who is involved, and its val
 
 | Field | Type                         | Description                                 | Required |
 |-------|------------------------------|---------------------------------------------|----------|
-| `ucv` | `String`                     | UCAN Semantic Version (`0.2.0`)             | Yes      |
+| `ucv` | `String`                     | UCAN Semantic Version (`1.0.0-rc.1`)        | Yes      |
 | `iss` | `String`                     | Issuer DID (sender)                         | Yes      |
 | `aud` | `String`                     | Audience DID (receiver)                     | Yes      |
 | `nbf` | `Integer`                    | Not Before UTC Unix Timestamp (valid from)  | No       |
 | `exp` | `Integer \| null`            | Expiration UTC Unix Timestamp (valid until) | Yes      |
-| `nnc` | `String`                     | Nonce                                       | No       |
+| `nnc` | `String`                     | Nonce                                       | Yes      |
 | `fct` | `{String: Any}`              | Facts (asserted, signed data)               | No       |
 | `cap` | `{URI: {Ability: [Object]}}` | Capabilities                                | Yes      |
 | `prf` | `[CID]`                      | Proof of delegation (hash-linked UCANs)     | No       |
