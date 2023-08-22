@@ -13,7 +13,7 @@
 
 # 0. Abstract
 
-User-Controlled Authorization Network (UCAN) is a trustless, secure, local-first, user-originated authorization and revocation scheme. It provides public-key verifiable, delegable, expressive, openly extensible [capabilities] by extending the familiar [JWT] structure. UCANs achieve public verifiability with chained certificates and [decentralized identifiers (DIDs)][DID]. Verifiable chain compression is enabled via [content addressing]. Being encoded with the familiar JWT, UCAN improves the familiarity and adoptability of schemes like [SPKI/SDSI][SPKI] for web and native application contexts. UCAN allows for the creation and discharge of authority by any agent with a DID, including traditional systems and peer-to-peer architectures beyond traditional cloud computing.
+User-Controlled Authorization Network (UCAN) is a trustless, secure, local-first, user-originated authorization and revocation scheme. It provides public-key verifiable, delegable, expressive, openly extensible [capabilities] by extending the familiar [JWT] structure. UCANs achieve public verifiability with chained certificates and [decentralized identifiers (DIDs)][DID]. Verifiable chain compression is enabled via [content addressing]. Being encoded with the familiar JWT, UCAN improves the familiarity and adoptability of schemes like [SPKI/SDSI][SPKI] for web and native application contexts. UCAN allows for the creation, delegation, and invocation of authority by any agent with a DID, including traditional systems and peer-to-peer architectures beyond traditional cloud computing.
 
 ## Language
 
@@ -51,7 +51,7 @@ Each UCAN includes a constructive set of assertions of what it is allowed to do.
 
 This signature chain is the root of trust. Private keys themselves SHOULD NOT move from one context to another: this is what the delegation mechanism provides: "sharing authority without sharing keys."
 
-UCANs (and other forms of PKI) depend on the ambient authority of the owner of each resource. This means that the discharging agent must be able to verify the root ownership at decision time. The rest of the chain in-between is self-certifying.
+UCANs (and other forms of PKI) depend on the ambient authority of the owner of each resource. This means that the invoking agent must be able to verify the root ownership at decision time. The rest of the chain in-between is self-certifying.
 
 While certificate chains go a long way toward improving security, they do not provide [confinement] on their own. The principle of least authority SHOULD be used when delegating a UCAN: minimizing the amount of time that a UCAN is valid for and reducing authority to the bare minimum required for the delegate to complete their task. This delegate should be trusted as little as is practical since they can further sub-delegate their authority to others without alerting their delegator. UCANs do not offer confinement (as that would require all processes to be online), so it is impossible to guarantee knowledge of all of the sub-delegations that exist. The ability to revoke some or all downstream UCANs exists as a last resort.
 
@@ -701,7 +701,7 @@ flowchart RL
 
 In the above diagram, Alice has some storage. This storage may exist in one location with a single source of truth, but to help build intuition this example is location independent: local versions and remote stored copies are eventually consistent, and there is no one "correct" copy. As such, we list the owner (Alice) directly on the resource.
 
-Alice delegates access to Bob. Bob then redelegates to Carol. Carol invokes the UCAN as part of a REST request to a compute service. To do this, she MUST both provide proof that she has access (the UCAN chain), and MUST delegate access to the discharging compute service. The discharging service MUST check that the root issuer (Alice) is in fact the owner (typically the creator) of the resource. This MAY be listed directly on the resource, as it is here. Once the UCAN chain and root ownership are validated, the storage service performs the write.
+Alice delegates access to Bob. Bob then redelegates to Carol. Carol invokes the UCAN as part of a REST request to a compute service. To do this, she MUST both provide proof that she has access (the UCAN chain), and MUST delegate access to the invoking compute service. The invoking service MUST check that the root issuer (Alice) is in fact the owner (typically the creator) of the resource. This MAY be listed directly on the resource, as it is here. Once the UCAN chain and root ownership are validated, the storage service performs the write.
 
 
 
@@ -729,7 +729,7 @@ The following UCAN fragment would be valid to invoke as `did:key:zH3C2AVvLMv6gmM
 }
 ```
 
-A good litmus test for invocation validity by a discharging agent is to check if they would be able to create a valid delegation for that capability.
+A good litmus test for invocation validity by a invoking agent is to check if they would be able to create a valid delegation for that capability.
 
 ### 5.2.2 Token Uniqueness
 
@@ -792,18 +792,6 @@ Replay attack prevention is REQUIRED ([Token Uniqueness]). The exact strategy is
 
 It is RECOMMENDED that the structure have a secondary index referencing the token expiry field. This enables garbage collection and more efficient search. In cases of very large stores, normal cache performance techniques MAY be used, such as Bloom filters, multi-level caches, and so on.
 
-## 7.4 Session Content ID
-
-If many invocations are discharged during a session, the sender and receiver MAY agree to use the triple of CID, nonce, and signature rather than reissuing the complete UCAN chain for every message. This saves bandwidth and avoids needing to use another session token exchange mechanism or bearer token with lower security, such as a shared secret.
-
-```js
-{ 
-  "cid": cid(ucan)
-  "nnc": "ABC", 
-  "sig": sign(ucan.iss.privateKey, cid(ucan) + "ABC") 
-}
-```
-
 # 8 Prior Art
 
 [SPKI/SDSI] is closely related to UCAN. A different format is used, and some details vary (such as a delegation-locking bit), but the core idea and general usage pattern are very close. UCAN can be seen as making these ideas more palatable to a modern audience and adding a few features such as content IDs that were less widespread at the time SPKI/SDSI were written.
@@ -814,7 +802,7 @@ If many invocations are discharged during a session, the sender and receiver MAY
 
 [Local-First Auth] uses CRDT-based ACLs and key lockboxes for role-based signatures. This is a non-certificate-based approach, instead of relying on the CRDT and signed data to build up a list of roles and members. It does have a very friendly invitation certificate mechanism in [Seitan token exchange]. It is also straightforward to see which users have access to what, avoiding the confinement problem seen in many decentralized auth systems.
 
-[Macaroon] is a MAC-based capability and cookie system aimed at distributing authority across services in a trusted network (typically in the context of a Cloud). By not relying on asymmetric signatures, Macaroons achieve excellent space savings and performance, given that the MAC can be checked against the relevant services during discharge. The authority is rooted in an originating server rather than with an end-user.
+[Macaroon] is a MAC-based capability and cookie system aimed at distributing authority across services in a trusted network (typically in the context of a Cloud). By not relying on asymmetric signatures, Macaroons achieve excellent space savings and performance, given that the MAC can be checked against the relevant services during invocation. The authority is rooted in an originating server rather than with an end-user.
 
 [Biscuit] uses Datalog to describe capabilities. It has a specialized format but is otherwise in line with UCAN.
 
