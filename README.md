@@ -655,14 +655,26 @@ A UCAN is valid inclusive from the `nbf` time and until the `exp` field. If the 
 
 ``` js
 // Pseudocode
+
+const ensureTime = async (ucan) => {
+  ensureTimeBounds(ucan)
+  await Promise.all(ucan.prf.forEach(async (cid) => {
+    const proof = await getUcan(cid)
+    ensureProofNbf(ucan, proof)
+    ensureProofExp(ucan, proof)
+  }))
+}
+
+// Helpers
+
 const ensureTimeBounds = (ucan) => {
-  if (!!proof.nbf && ucan.exp !== null && ucan.nbf >= ucan.exp) {
+  if (!!proof.nbf && ucan.exp !== null && ucan.nbf > ucan.exp) {
     throw new Error("Time violation: UCAN starts after expiry")
   }
 }
 
 const ensureProofNbf = (ucan, proof) => {
-  if (!!proof.nbf && ucan.nbf <= proof.nbf) {
+  if (!!proof.nbf && ucan.nbf < proof.nbf) {
     throw new Error("Time escelation: delegation starts before proof starts")
   }
 }
@@ -671,15 +683,6 @@ const ensureProofExp = (ucan, proof) => {
   if (proof.exp !== null && ucan.exp > proof.exp) {
     throw new Error("Time escelation: delegation ends after proof ends")
   }
-}
-
-const ensureTime = async (ucan) => {
-  ensureTimeBounds(ucan)
-  await Promise.all(ucan.proofs.forEach(async (cid) => {
-    const proof = await getUcan(cid)
-    ensureProofNbf(ucan, proof)
-    ensureProofExp(ucan, proof)
-  }))
 }
 ```
 
@@ -720,18 +723,6 @@ flowchart RL
 In the above diagram, Alice has some storage. This storage may exist in one location with a single source of truth, but to help build intuition this example is location independent: local versions and remote stored copies are eventually consistent, and there is no one "correct" copy. As such, we list the owner (Alice) directly on the resource.
 
 Alice delegates access to Bob. Bob then redelegates to Carol. Carol invokes the UCAN as part of a REST request to a compute service. To do this, she MUST both provide proof that she has access (the UCAN chain), and MUST delegate access to the invoking compute service. The invoking service MUST check that the root issuer (Alice) is in fact the owner (typically the creator) of the resource. This MAY be listed directly on the resource, as it is here. Once the UCAN chain and root ownership are validated, the storage service performs the write.
-
-
-
-
-
-
-
-
-FIXME pseudocode
-
-
-
 
 ### 5.2.1 Recipient Validation
 
