@@ -641,11 +641,11 @@ In concept there is a "bottom" ability ("none" or "void"), but it is not possibl
 
 # 5 Validation
 
-Each capability has its own semantics, which needs to be interpretable by the target resource handler. Therefore, a validator SHOULD NOT reject UCANs with resources that it does not know how to interpret.
+Each capability has its own semantics, which needs to be interpretable by the target resource handler. Therefore, a validator MUST NOT reject all capabilities when only one is not understood.
 
-If any of the following criteria are not met, the UCAN MUST be considered invalid.
+If _any_ of the following criteria are not met, the UCAN MUST be considered invalid:
 
-## 5.1 Time
+## 5.1 Time Bounds
 
 A UCAN's time bounds MUST NOT be considered valid if the current system time is before the `nbf` field or after the `exp` field. This is called "ambient time validity."
 
