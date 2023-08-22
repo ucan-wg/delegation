@@ -439,7 +439,7 @@ The `exp` field MUST be set. Following the [principle of least authority][POLA],
 
 Keeping the window of validity as short as possible is RECOMMENDED. Limiting the time range can mitigate the risk of a malicious user abusing a UCAN. However, this is situationally dependent. It may be desirable to limit the frequency of forced reauthorizations for trusted devices. Due to clock drift, time bounds SHOULD NOT be considered exact. A buffer of ±60 seconds is RECOMMENDED.
 
-[^js-num-size]: JavaScript has a single numeric type ([`Number`][JS Number]) for both integers and floats. This representation is defined them as [IEEE-754] double-precision floating point number, which is 52-bits.
+[^js-num-size]: JavaScript has a single numeric type ([`Number`][JS Number]) for both integers and floats. This representation is defined as a [IEEE-754] double-precision floating point number, which has a 53-bit significand.
 
 #### 3.2.3.1 Example
 
@@ -538,7 +538,7 @@ On validation, the caveat array MUST be treated as a logically disjunct (an "OR"
   }
 }
 ```
-
+ 
 The above MUST be interpreted as the set of capabilities below. If _any_ are matched, the check MUST pass validation.
 
 | Resource                   | Ability       | Caveat                                            |
@@ -649,23 +649,39 @@ If any of the following criteria are not met, the UCAN MUST be considered invali
 
 A UCAN's time bounds MUST NOT be considered valid if the current system time is before the `nbf` field or after the `exp` field. This is called "ambient time validity."
 
-All proofs MUST contain time bounds equal to or broader than the UCAN being delegated. If the proof expires before the outer UCAN — or starts after it — the reader MUST treat the UCAN as invalid. Delegation inside of the time bound is called "timely delegation." These conditions MUST hold even if the current wall clock time is inside of incorrectly delegated bounds. 
+All proofs MUST contain time bounds equal to or broader than the UCAN being delegated (i.e. delegation maintains or narrows the time bounds). If the proof expires before the delegated UCAN — or starts after it — the validator MUST treat the entire UCAN as invalid. Delegation inside of the time bound is called "timely delegation." These conditions MUST hold even if the current wall clock time is inside of incorrectly delegated bounds. 
 
 A UCAN is valid inclusive from the `nbf` time and until the `exp` field. If the current time is outside of these bounds, the UCAN MUST be considered invalid. When setting these bounds, a delegator or invoker SHOULD account for expected clock drift. Use of time bounds this way is called "timely invocation."
 
+``` js
+// Pseudocode
+const ensureTimeBounds = (ucan) => {
+  if (!!proof.nbf && ucan.exp !== null && ucan.nbf >= ucan.exp) {
+    throw new Error("Time violation: UCAN starts after expiry")
+  }
+}
 
+const ensureProofNbf = (ucan, proof) => {
+  if (!!proof.nbf && ucan.nbf <= proof.nbf) {
+    throw new Error("Time escelation: delegation starts before proof starts")
+  }
+}
 
+const ensureProofExp = (ucan, proof) => {
+  if (proof.exp !== null && ucan.exp > proof.exp) {
+    throw new Error("Time escelation: delegation ends after proof ends")
+  }
+}
 
-
-
-
-FIXME pseudocode
-
-
-
-
-
-
+const ensureTime = async (ucan) => {
+  checkTimeBounds(ucan)
+  ucan.proofs.forEach((cid) => {
+    const proof = await getUcan(cid)
+    ensureProofNbf(ucan, proof)
+    ensureProofExp(ucan, proof)
+  })
+}
+```
 
 ## 5.2 Principal Alignment
 
