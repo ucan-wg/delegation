@@ -395,13 +395,17 @@ The `ucv` field sets the version of the UCAN specification used in the payload.
 
 ### 3.2.2 Principals
 
-The `iss` and `aud` fields describe the token's principals. These can be conceptualized as the sender and receiver of a postal letter. The token MUST be signed with the private key associated with the DID in the `iss` field. Implementations MUST include the [`did:key`] method, and MAY be augmented with [additional DID methods][DID].
+The `iss` and `aud` fields describe the token's principals. They are distinguished by having DIDs. These can be conceptualized as the sender and receiver of a postal letter. The token MUST be signed with the private key associated with the DID in the `iss` field. Implementations MUST include the [`did:key`] method, and MAY be augmented with [additional DID methods][DID].
 
 The `iss` and `aud` fields MUST contain a single principal each.
 
 If an issuer's DID has more than one key (e.g. [`did:ion`], [`did:3`]), the key used to sign the UCAN MUST be made explicit, using the [DID fragment] (the hash index) in the `iss` field. The `aud` field SHOULD NOT include a hash field, as this defeats the purpose of delegating to an identifier for multiple keys instead of an identity.
 
-It is RECOMMENDED that the underlying key types RSA, ECDSA, and EdDSA be supported.
+It is RECOMMENDED that the following `did:key` types be supported:
+
+- [RSA][did:key RSA]
+- [EdDSA][did:key EdDSA]
+- [P-256 ECDSA][did:key ECDSA]
 
 #### Examples
 
@@ -935,6 +939,9 @@ Were a PITM attack successfully performed on a UCAN delegation, the proof chain 
 [content addressable storage]: https://en.wikipedia.org/wiki/Content-addressable_storage
 [content addressing]: https://en.wikipedia.org/wiki/Content-addressable_storage
 [dag-json multicodec]: https://github.com/multiformats/multicodec/blob/master/table.csv#L104
+[did:key ECDSA]: https://w3c-ccg.github.io/did-method-key/#p-256
+[did:key EdDSA]: https://w3c-ccg.github.io/did-method-key/#ed25519-x25519
+[did:key RSA]: https://w3c-ccg.github.io/did-method-key/#rsa
 [disjunction]: https://en.wikipedia.org/wiki/Logical_disjunction
 [invocation]: https://github.com/ucan-wg/invocation
 [raw data multicodec]: https://github.com/multiformats/multicodec/blob/a03169371c0a4aec0083febc996c38c3846a0914/table.csv?plain=1#L41
