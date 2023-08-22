@@ -674,12 +674,12 @@ const ensureProofExp = (ucan, proof) => {
 }
 
 const ensureTime = async (ucan) => {
-  checkTimeBounds(ucan)
-  ucan.proofs.forEach((cid) => {
+  ensureTimeBounds(ucan)
+  await Promise.all(ucan.proofs.forEach(async (cid) => {
     const proof = await getUcan(cid)
     ensureProofNbf(ucan, proof)
     ensureProofExp(ucan, proof)
-  })
+  }))
 }
 ```
 
