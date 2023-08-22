@@ -19,7 +19,7 @@ User-Controlled Authorization Network (UCAN) is a trustless, secure, local-first
 
 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in [RFC 2119].
 
-# 1. Introduction
+# 1 Introduction
 
 ## 1.1 Motivation
 
@@ -85,7 +85,7 @@ Unlike many authorization systems where a service controls access to resources i
 └─────────────┘   └─────────────┘   └─────────────┘
 ```
 
-# 2. Terminology
+# 2 Terminology
 
 ## 2.1 Roles
 
@@ -346,9 +346,9 @@ The moment at which a delegation was asserted. This MAY be captured via an `iat`
 
 Decision time is the part of the lifecycle when "a decision" about the token is made. This is typically during validation, but also includes resolving external state (e.g. storage quotas).
 
-# 3. JWT Structure
+# 3 JWT Structure
 
-UCANs MUST be formatted as JWTs, with additional keys as described in this document. The overall container of a header, claims, and signature remains. Please refer to [RFC 7519][JWT] for more on this format.
+UCANs MUST be formatted as [JWT]s, with additional keys as described in this document. The overall container of a header, claims, and signature remains. Please refer to [RFC 7519][JWT] for more on this format.
 
 ## 3.1 Header
 
@@ -364,7 +364,7 @@ EdDSA, as applied to JOSE (including JWT), is described in [RFC 8037].
 
 Note that the JWT `"alg": "none"` option MUST NOT be supported. The lack of signature prevents the issuer from being validatable.
 
-### Examples
+### 3.1.1 Examples
 
 ```json
 {
@@ -407,7 +407,7 @@ It is RECOMMENDED that the following `did:key` types be supported:
 - [EdDSA][did:key EdDSA]
 - [P-256 ECDSA][did:key ECDSA]
 
-#### Examples
+#### 3.2.2.1 Examples
 
 ```json
 "aud": "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp",
@@ -453,9 +453,11 @@ Keeping the window of validity as short as possible is RECOMMENDED. Limiting the
 
 The OPTIONAL nonce parameter `nnc` MAY be any value. A randomly generated string is RECOMMENDED to provide a unique UCAN, though it MAY also be a monotonically increasing count of the number of links in the hash chain. This field helps prevent replay attacks and ensures a unique CID per delegation. The `iss`, `aud`, and `exp` fields together will often ensure that UCANs are unique, but adding the nonce ensures this uniqueness.
 
-This field SHOULD NOT be used to sign arbitrary data, such as signature challenges. See the `fct` field for more.
+The recommeneded size of the nonce differs by key type. In many cases, a random 12-byte nonce is sufficient. If uncertain, check the nonce in your DID's cryptosuite.
 
-#### Examples
+This field SHOULD NOT be used to sign arbitrary data, such as signature challenges. See the [`fct`][Facts] field for more.
+
+#### 3.2.4.1 Examples
 
 ``` json
 {
@@ -468,7 +470,7 @@ This field SHOULD NOT be used to sign arbitrary data, such as signature challeng
 
 The OPTIONAL `fct` field contains a map of arbitrary facts and proofs of knowledge. The enclosed data MUST be self-evident and externally verifiable. It MAY include information such as hash preimages, server challenges, a Merkle proof, dictionary data, etc.
 
-#### Examples
+#### 3.2.5.1 Examples
 
 ``` json
 {
@@ -594,7 +596,7 @@ Which in a JSON representation would resolve to the following table:
 
 For more on this representation, please refer to [canonical collections].
 
-# 4. Reserved Capabilities
+# 4 Reserved Namespaces
 
 ## 4.1 `ucan`
 
@@ -635,13 +637,13 @@ flowchart BT
 
 In concept there is a "bottom" ability ("none" or "void"), but it is not possible to represent in an ability. As it is merely the absence of any ability, it is not possible to construct a capability with a bottom ability.
 
-# _. Validation
+# 5 Validation
 
 Each capability has its own semantics, which needs to be interpretable by the target resource handler. Therefore, a validator SHOULD NOT reject UCANs with resources that it does not know how to interpret.
 
 If any of the following criteria are not met, the UCAN MUST be considered invalid.
 
-## _.1 Time
+## 5.1 Time
 
 A UCAN's time bounds MUST NOT be considered valid if the current system time is before the `nbf` field or after the `exp` field. This is called "ambient time validity."
 
@@ -663,7 +665,7 @@ FIXME pseudocode
 
 
 
-## _.2 Principal Alignment
+## 5.2 Principal Alignment
 
 In delegation, the `aud` field of every proof MUST match the `iss` field of the outer UCAN (the one being delegated to). This alignment MUST form a chain back to the originating principal for each resource. 
 
@@ -713,7 +715,7 @@ FIXME pseudocode
 
 
 
-### _.2.1 Recipient Validation
+### 5.2.1 Recipient Validation
 
 An agent executing a capability MUST verify that the outermost `aud` field _matches its own DID._ The associated ability MUST NOT be performed if they do not match. Recipient validation is REQUIRED to prevent the misuse of UCANs in an unintended context.
 
@@ -729,21 +731,21 @@ The following UCAN fragment would be valid to invoke as `did:key:zH3C2AVvLMv6gmM
 
 A good litmus test for invocation validity by a discharging agent is to check if they would be able to create a valid delegation for that capability.
 
-### _.2.2 Token Uniqueness
+### 5.2.2 Token Uniqueness
 
 Each remote invocation MUST be a unique UCAN: for instance using a nonce (`nnc`) or simply a unique expiry. The recipient MUST validate that they have not received the top-level UCAN before. For implementation recommentations, please refer to the [replay attack prevention] section. 
 
-## _.3 Proof Chaining
+## 5.3 Proof Chaining
 
 Each capability MUST either be originated by the issuer (root capability, or "parenthood") or have one-or-more proofs in the `prf` field to attest that this issuer is authorized to use that capability ("introduction"). In the introduction case, this check MUST be recursively applied to its proofs until a root proof is found (i.e. issued by the resource owner).
 
 Except for rights amplification (below), each capability delegation MUST have equal or narrower capabilities from its proofs. The time bounds MUST also be equal to or contained inside the time bounds of the proof's time bounds. This lowering of rights at each delegation is called "attenuation."
 
-## _.4 Rights Amplification
+## 5.4 Rights Amplification
 
 Some capabilities are more than the sum of their parts. The canonical example is a can of soup and a can opener. You need both to access the soup inside the can, but the can opener may come from a completely separate source than the can of soup. Such semantics MAY be implemented in UCAN capabilities. This means that validating particular capabilities MAY require more than one direct proof. The relevant proofs MAY be of a different resource and ability from the amplified capability. The delegated capability MUST have this behavior in its semantics, even if the proofs do not.
 
-## _.5 Content Identifiers
+## 5.5 Content Identifiers
 
 A UCAN token MUST be referenced as a [base32] [CIDv1]. [SHA2-256] is the RECOMMENDED hash algorithm.
 
@@ -751,7 +753,7 @@ The [`0x55` raw data][raw data multicodec] codec MUST be supported. If other cod
 
 The resolution of these addresses is left to the implementation and end-user, and MAY (non-exclusively) include the following: local store, a distributed hash table (DHT), gossip network, or RESTful service. Please refer to [token resolution] for more.
 
-## _.5.1 CID Canonicalization
+## 5.5.1 CID Canonicalization
 
 A canonical CID can be important for some use cases, such as caching and [revocation]. A canonical CID MUST conform to the following:
 
@@ -760,7 +762,7 @@ A canonical CID can be important for some use cases, such as caching and [revoca
 * [SHA2-256]
 * [Raw data multicodec] (`0x55`)
 
-# _. Token Resolution
+# 6 Token Resolution
 
 Token resolution is transport specific. The exact format is left to the relevant UCAN transport specification. At minimum, such a specification MUST define at least the following:
 
@@ -770,27 +772,27 @@ Token resolution is transport specific. The exact format is left to the relevant
 
 Note that if an instance cannot dereference a CID at runtime, the UCAN MUST fail validation. This is consistent with the [constructive semantics] of UCAN.
 
-# _. Implementation Recommendations
+# 7 Implementation Recommendations
 
-## _.1 UCAN Store
+## 7.1 UCAN Store
 
 A validator MAY keep a local store of UCANs that it has received. UCANs are immutable but also time-bound so that this store MAY evict expired or revoked UCANs.
 
 This store MAY be indexed by CID (content addressing). Multiple indices built on top of this store MAY be used to improve capability search or selection performance.
 
-## _.2 Memoized Validation
+## 7.2 Memoized Validation
 
 Aside from revocation, capability validation is idempotent. Marking a CID (or capability index inside that CID) as valid acts as memoization, obviating the need to check the entire structure on every validation. This extends to distinct UCANs that share a proof: if the proof was previously reviewed and is not revoked, it is RECOMMENDED to consider it valid immediately.
 
 Revocation is irreversible. Suppose the validator learns of revocation by UCAN CID or issuer DID. In that case, the UCAN and all of its derivatives in such a cache MUST be marked as invalid, and all validations immediately fail without needing to walk the entire structure.
 
-## _.3 Replay Attack Prevention
+## 7.3 Replay Attack Prevention
 
 Replay attack prevention is REQUIRED ([Token Uniqueness]). The exact strategy is left to the implementer. One simple strategy is maintaining a set of previously seen CIDs. This MAY be the same structure as a validated UCAN memoization table (if one exists in the implementation).
 
 It is RECOMMENDED that the structure have a secondary index referencing the token expiry field. This enables garbage collection and more efficient search. In cases of very large stores, normal cache performance techniques MAY be used, such as Bloom filters, multi-level caches, and so on.
 
-## _.4 Session Content ID
+## 7.4 Session Content ID
 
 If many invocations are discharged during a session, the sender and receiver MAY agree to use the triple of CID, nonce, and signature rather than reissuing the complete UCAN chain for every message. This saves bandwidth and avoids needing to use another session token exchange mechanism or bearer token with lower security, such as a shared secret.
 
@@ -802,7 +804,7 @@ If many invocations are discharged during a session, the sender and receiver MAY
 }
 ```
 
-# _. Prior Art
+# 8 Prior Art
 
 [SPKI/SDSI] is closely related to UCAN. A different format is used, and some details vary (such as a delegation-locking bit), but the core idea and general usage pattern are very close. UCAN can be seen as making these ideas more palatable to a modern audience and adding a few features such as content IDs that were less widespread at the time SPKI/SDSI were written.
 
@@ -818,7 +820,7 @@ If many invocations are discharged during a session, the sender and receiver MAY
 
 [Verifiable credentials] are a solution for data about people or organizations. However, they are aimed at a slightly different problem: asserting attributes about the holder of a DID, including things like work history, age, and membership.
 
-# _. Acknowledgments
+# 9. Acknowledgments
 
 Thank you to [Brendan O'Brien] for real-world feedback, technical collaboration, and implementing the first Golang UCAN library.
 
@@ -844,19 +846,19 @@ Many thanks to [Alan Karp] for sharing his vast experience with capability-based
 
 We want to especially recognize [Mark Miller] for his numerous contributions to the field of distributed auth, programming languages, and computer security writ large.
 
-# _. FAQ
+# 10. FAQ
 
-## _.1 What prevents an unauthorized party from using an intercepted UCAN?
+## 10.1 What prevents an unauthorized party from using an intercepted UCAN?
 
 UCANs always contain information about the sender and receiver. A UCAN is signed by the sender (the `iss` field DID) and can only be created by an agent in possession of the relevant private key. The recipient (the `aud` field DID) is required to check that the field matches their DID. These two checks together secure the certificate against use by an unauthorized party.
 
-## _.2 What prevents replay attacks on the invocation use case?
+## 10.2 What prevents replay attacks on the invocation use case?
 
 A UCAN delegated for purposes of immediate invocation MUST be unique. If many requests are to be made in quick succession, a nonce can be used. The receiving agent (the one to perform the invocation) checks the hash of the UCAN against a local store of unexpired UCAN hashes.
 
 This is not a concern when simply delegating since presumably the recipient agent already has that UCAN.
 
-## _.3 Is UCAN secure against person-in-the-middle attacks?
+## 10.3 Is UCAN secure against person-in-the-middle attacks?
 
 _UCAN does not have any special protection against person-in-the-middle (PITM) attacks._
 
