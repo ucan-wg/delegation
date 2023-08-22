@@ -396,18 +396,17 @@ Note that the JWT `"alg": "none"` option MUST NOT be supported. The lack of sign
 
 The payload MUST describe the authorization claims, who is involved, and its validity period.
 
-| Field | Type                         | Description                                 | Required |
-|-------|------------------------------|---------------------------------------------|----------|
-| `ucv` | `String`                     | UCAN Semantic Version (`1.0.0-rc.1`)        | Yes      |
-| `iss` | `String`                     | Issuer DID (sender)                         | Yes      |
-| `aud` | `String`                     | Audience DID (receiver)                     | Yes      |
-| `nbf` | `Integer`                    | Not Before UTC Unix Timestamp (valid from)  | No       |
-| `exp` | `Integer \| null`            | Expiration UTC Unix Timestamp (valid until) | Yes      |
-| `nnc` | `String`                     | Nonce                                       | Yes      |
-| `fct` | `{String: Any}`              | Facts (asserted, signed data)               | No       |
-| `cap` | `{URI: {Ability: [Object]}}` | Capabilities                                | Yes      |
-| `prf` | `[CID]`                      | Proof of delegation (hash-linked UCANs)     | No       |
-
+| Field | Type                         | Description                                            | Required |
+|-------|------------------------------|--------------------------------------------------------|----------|
+| `ucv` | `String`                     | UCAN Semantic Version (`1.0.0-rc.1`)                   | Yes      |
+| `iss` | `String`                     | Issuer DID (sender)                                    | Yes      |
+| `aud` | `String`                     | Audience DID (receiver)                                | Yes      |
+| `nbf` | `Integer`                    | Not Before UTC Unix Timestamp in seconds (valid from)  | No       |
+| `exp` | `Integer \| null`            | Expiration UTC Unix Timestamp in seconds (valid until) | Yes      |
+| `nnc` | `String`                     | Nonce                                                  | Yes      |
+| `fct` | `{String: Any}`              | Facts (asserted, signed data)                          | No       |
+| `cap` | `{URI: {Ability: [Object]}}` | Capabilities                                           | Yes      |
+| `prf` | `[CID]`                      | Proof of delegation (hash-linked UCANs)                | No       |
 
 ### 3.2.1 Version
 
@@ -447,7 +446,7 @@ It is RECOMMENDED that the underlying key types RSA, ECDSA, and EdDSA be support
 
 ### 3.2.3 Time Bounds
 
-`nbf` and `exp` stand for "not before" and "expires at," respectively. These are standard fields from [RFC 7519][JWT] (JWT) (which in turn uses [RFC 3339]), and represent seconds in UTC without time zone or other offset. Taken together, they represent the time bounds for a token. These timestamps MUST be represented as the number of integer seconds since the Unix epoch.
+`nbf` and `exp` stand for "not before" and "expires at," respectively. These are standard fields from [RFC 7519][JWT] (JWT) (which in turn uses [RFC 3339]), and represent seconds in UTC without time zone or other offset. Taken together, they represent the time bounds for a token. These timestamps MUST be represented as the number of integer seconds since the Unix epoch. Due to limitations[^js-num-size] in numerics for certain common languages, timestamps outside of the range $-(2^{53} – 1)$ and $2^{53} – 1$ MUST be rejected as invalid.
 
 The `nbf` field is OPTIONAL. When omitted, the token MUST be treated as valid beginning from the Unix epoch. Setting the `nbf` field to a time in the future MUST delay using a UCAN. For example, pre-provisioning access to conference materials ahead of time but not allowing access until the day it starts is achievable with judicious use of `nbf`.
 
@@ -455,11 +454,14 @@ The `exp` field MUST be set. Following the [principle of least authority][POLA],
 
 Keeping the window of validity as short as possible is RECOMMENDED. Limiting the time range can mitigate the risk of a malicious user abusing a UCAN. However, this is situationally dependent. It may be desirable to limit the frequency of forced reauthorizations for trusted devices. Due to clock drift, time bounds SHOULD NOT be considered exact. A buffer of ±60 seconds is RECOMMENDED.
 
-#### Examples
+#### 3.2.3.1 Example
 
-```json
-"nbf": 1529496683,
-"exp": 1575606941,
+```js
+{
+  "nbf": 1529496683,
+  "exp": 1575606941,
+  // ...
+}
 ```
 
 ### 3.2.4 Nonce
@@ -471,7 +473,10 @@ This field SHOULD NOT be used to sign arbitrary data, such as signature challeng
 #### Examples
 
 ``` json
-"nnc": "1701-D"
+{
+  // ...
+  "nnc": "1701-D"
+}
 ```
 
 ### 3.2.5 Facts
@@ -604,73 +609,13 @@ Which in a JSON representation would resolve to the following table:
 
 For more on this representation, please refer to [canonical collections].
 
-# 4. Reserved Resources
-
-The following resources are REQUIRED to be implemented.
+# 4. Reserved Capabilities
 
 ## 4.1 `ucan`
 
-The `ucan` URI scheme defines URI selectors for UCANs.
+The `ucan` resource and abilty namespace MUST be reserved. Implementation of the [`ucan-uri`] spec is RECOMMENDED.
 
-``` abnf
-ucan = "ucan:" ["//" resource-owner-did "/"] ucan-selector
-ucan-selector = "*" / uri-scheme / ucan-cid
-```
-
-| Syntax                  | Meaning                                       |
-|-------------------------|-----------------------------------------------|
-| `ucan:<cid>`            | A specific UCAN by [CID][content identifiers] |
-| `ucan:*`                | All possible provable UCANs                   |
-| `ucan:./*`              | All in this UCAN's proofs                     |
-| `ucan://<did>/*`        | All of any scheme "owned" by a DID            |
-| `ucan://<did>/<scheme>` | All of scheme "owned" by a DID                |
-
-`ucan:./*` represents all of the UCANs in the current proofs array. If selecting a particular proof (i.e. not the wildcard), then its CID MUST be used (`ucan:<cid>`). In the case of selecting a particular proof, the validator MUST check that the delegated content address is listed in the proofs (`prf`) field.
-
-`ucan:*` is very powerful and deserves special mention. It selects _any_ UCAN that the issuer has access to (including transitively), even if it is not in the proofs of the current UCAN. This is useful when delegating permissions to another agent, including all unknown future delegations to the issuer.
-
-### 4.1.1 `ucan:*` Example
-
-As an example, Alice is a user that would like to sign in to multiple devices, and has a `did:key` (she doesn't want to do complex key management). Her root key (`did:key:aliceRoot`) lives on her desktop. She creates a `ucan:*` delegation to her phone's DID (`did:key:alicePhone`).
-
-Bob would like to share access to write into a shared directory with Alice. Normally, either Bob would have to be aware of all of Alice's public keys, or the device that Bob delegates to would have to manually redelegate to Alice's other devices. With `ucan:*`, Bob can delegate to `did:key:aliceRoot`, and `did:key:alicePhone` can use the `ucan:*` resource to access Bob's shared directory.
-
-``` mermaid
-sequenceDiagram
-    autonumber
-    participant AliceRoot
-    participant AlicePhone
-    participant Bob
-
-    AliceRoot ->> AlicePhone: ucan:*
-    Bob ->> AliceRoot: bobSharedDirectory
-    
-    Note over AliceRoot, Bob: Alice's Phone accesses Bob's Directory
-    Bob -->> AliceRoot: bobSharedDirectory
-    AliceRoot -->> AlicePhone: ucan:*
-    AlicePhone ->> Bob: Write into BobSharedDirectory
-```
-
-In the diagram above, solid lines are delegations. The dotted lines are proofs in a proof chain. `did:key:alicePhone` would includes both the proofs to connecting Bob to `did:key:aliceRoot`, and from `did:key:alicePhone` to `did:key:alicePhone`. Step 5 is `did:key:alicePhone` invoking that proof chain to access Bob's shared directory.
-
-# 5. Reserved Abilities
-
-The following abilities are REQUIRED to be implemented.
-
-## 5.1 UCAN Delegation
-
-The `ucan` scheme MUST accept the following ability: `ucan/*`. This ability redelegates all of the capabilities in the selected proof(s). Other resources MAY accept this ability as part of this semantics. In logical terms, the delegation ability is like stating "any ability for this resource".
-
-If an attenuated resource or capability is desired, it MUST be explicitly listed without the `ucan` URI scheme.
-
-``` js
-{ 
-  "ucan:bafkreihogico5an3e2xy3fykalfwxxry7itbhfcgq6f47sif6d7w6uk2ze": {"ucan/*": [{}]}, 
-  "ucan:*": {"ucan/*": [{}]}
-}
-```
-
-## 5.2 Top
+## 4.2 "Top" Ability
 
 The "top" (or "super user") ability MUST be denoted `*`. The top ability grants access to all other capabilities for the specified resource, across all possible namespaces. Top corresponds to an "all" matcher, whereas [delegation] corresponds to "any" in the UCAN chain. The top ability is useful when "linking" agents by delegating all access to resource(s). This is the most powerful ability, and as such it SHOULD be handled with care.
 
@@ -701,18 +646,17 @@ flowchart BT
   ... --> *
 ```
 
-
-### 5.2.1 Bottom
+### 4.2.1 Bottom
 
 In concept there is a "bottom" ability ("none" or "void"), but it is not possible to represent in an ability. As it is merely the absence of any ability, it is not possible to construct a capability with a bottom ability.
 
-# 6. Validation
+# _. Validation
 
 Each capability has its own semantics, which needs to be interpretable by the target resource handler. Therefore, a validator SHOULD NOT reject UCANs with resources that it does not know how to interpret.
 
 If any of the following criteria are not met, the UCAN MUST be considered invalid.
 
-## 6.1 Time
+## _.1 Time
 
 A UCAN's time bounds MUST NOT be considered valid if the current system time is before the `nbf` field or after the `exp` field. This is called "ambient time validity."
 
@@ -720,7 +664,21 @@ All proofs MUST contain time bounds equal to or broader than the UCAN being dele
 
 A UCAN is valid inclusive from the `nbf` time and until the `exp` field. If the current time is outside of these bounds, the UCAN MUST be considered invalid. When setting these bounds, a delegator or invoker SHOULD account for expected clock drift. Use of time bounds this way is called "timely invocation."
 
-## 6.2 Principal Alignment
+
+
+
+
+
+
+FIXME pseudocode
+
+
+
+
+
+
+
+## _.2 Principal Alignment
 
 In delegation, the `aud` field of every proof MUST match the `iss` field of the outer UCAN (the one being delegated to). This alignment MUST form a chain back to the originating principal for each resource. 
 
@@ -758,7 +716,19 @@ In the above diagram, Alice has some storage. This storage may exist in one loca
 
 Alice delegates access to Bob. Bob then redelegates to Carol. Carol invokes the UCAN as part of a REST request to a compute service. To do this, she MUST both provide proof that she has access (the UCAN chain), and MUST delegate access to the discharging compute service. The discharging service MUST check that the root issuer (Alice) is in fact the owner (typically the creator) of the resource. This MAY be listed directly on the resource, as it is here. Once the UCAN chain and root ownership are validated, the storage service performs the write.
 
-### 6.2.1 Recipient Validation
+
+
+
+
+
+
+
+FIXME pseudocode
+
+
+
+
+### _.2.1 Recipient Validation
 
 An agent executing a capability MUST verify that the outermost `aud` field _matches its own DID._ The associated ability MUST NOT be performed if they do not match. Recipient validation is REQUIRED to prevent the misuse of UCANs in an unintended context.
 
@@ -774,21 +744,21 @@ The following UCAN fragment would be valid to invoke as `did:key:zH3C2AVvLMv6gmM
 
 A good litmus test for invocation validity by a discharging agent is to check if they would be able to create a valid delegation for that capability.
 
-### 6.2.2 Token Uniqueness
+### _.2.2 Token Uniqueness
 
 Each remote invocation MUST be a unique UCAN: for instance using a nonce (`nnc`) or simply a unique expiry. The recipient MUST validate that they have not received the top-level UCAN before. For implementation recommentations, please refer to the [replay attack prevention] section. 
 
-## 6.3 Proof Chaining
+## _.3 Proof Chaining
 
 Each capability MUST either be originated by the issuer (root capability, or "parenthood") or have one-or-more proofs in the `prf` field to attest that this issuer is authorized to use that capability ("introduction"). In the introduction case, this check MUST be recursively applied to its proofs until a root proof is found (i.e. issued by the resource owner).
 
 Except for rights amplification (below), each capability delegation MUST have equal or narrower capabilities from its proofs. The time bounds MUST also be equal to or contained inside the time bounds of the proof's time bounds. This lowering of rights at each delegation is called "attenuation."
 
-## 6.4 Rights Amplification
+## _.4 Rights Amplification
 
 Some capabilities are more than the sum of their parts. The canonical example is a can of soup and a can opener. You need both to access the soup inside the can, but the can opener may come from a completely separate source than the can of soup. Such semantics MAY be implemented in UCAN capabilities. This means that validating particular capabilities MAY require more than one direct proof. The relevant proofs MAY be of a different resource and ability from the amplified capability. The delegated capability MUST have this behavior in its semantics, even if the proofs do not.
 
-## 6.5 Content Identifiers
+## _.5 Content Identifiers
 
 A UCAN token MUST be referenced as a [base32] [CIDv1]. [SHA2-256] is the RECOMMENDED hash algorithm.
 
@@ -796,7 +766,7 @@ The [`0x55` raw data][raw data multicodec] codec MUST be supported. If other cod
 
 The resolution of these addresses is left to the implementation and end-user, and MAY (non-exclusively) include the following: local store, a distributed hash table (DHT), gossip network, or RESTful service. Please refer to [token resolution] for more.
 
-## 6.5.1 CID Canonicalization
+## _.5.1 CID Canonicalization
 
 A canonical CID can be important for some use cases, such as caching and [revocation]. A canonical CID MUST conform to the following:
 
@@ -990,4 +960,5 @@ Were a PITM attack successfully performed on a UCAN delegation, the proof chain 
 [secure hardware enclave]: https://support.apple.com/en-ca/guide/security/sec59b0b31ff
 [spki rfc]: https://www.rfc-editor.org/rfc/rfc2693.html
 [time definition]: https://en.wikipedia.org/wiki/Temporal_database
+[ucan-uri]: https://github.com/ucan-wg/ucan-uri
 [ucan.xyz]: https://ucan.xyz
