@@ -431,13 +431,15 @@ It is RECOMMENDED that the following `did:key` types be supported:
 
 ### 3.2.3 Time Bounds
 
-`nbf` and `exp` stand for "not before" and "expires at," respectively. These are standard fields from [RFC 7519][JWT] (JWT) (which in turn uses [RFC 3339]), and represent seconds in UTC without time zone or other offset. Taken together, they represent the time bounds for a token. These timestamps MUST be represented as the number of integer seconds since the Unix epoch. Due to limitations[^js-num-size] in numerics for certain common languages, timestamps outside of the range from $-2^{53} – 1$ to $2^{53} – 1$ MUST be rejected as invalid.
+`nbf` and `exp` stand for "not before" and "expires at," respectively. These are standard fields from [RFC 7519][JWT] (JWT) (which in turn uses [RFC 3339]), and MUST represent seconds since the Unix epoch in UTC, without time zone or other offset. Taken together, they represent the time bounds for a token. These timestamps MUST be represented as the number of integer seconds since the Unix epoch. Due to limitations[^js-num-size] in numerics for certain common languages, timestamps outside of the range from $-2^{53} – 1$ to $2^{53} – 1$ MUST be rejected as invalid.
 
 The `nbf` field is OPTIONAL. When omitted, the token MUST be treated as valid beginning from the Unix epoch. Setting the `nbf` field to a time in the future MUST delay using a UCAN. For example, pre-provisioning access to conference materials ahead of time but not allowing access until the day it starts is achievable with judicious use of `nbf`.
 
 The `exp` field MUST be set. Following the [principle of least authority][POLA], it is RECOMMENDED to give a timestamp expiry for UCANs. If the token explicitly never expires, the `exp` field MUST be set to `null`. If the time is in the past at validation time, the token MUST be treated as expired and invalid.
 
 Keeping the window of validity as short as possible is RECOMMENDED. Limiting the time range can mitigate the risk of a malicious user abusing a UCAN. However, this is situationally dependent. It may be desirable to limit the frequency of forced reauthorizations for trusted devices. Due to clock drift, time bounds SHOULD NOT be considered exact. A buffer of ±60 seconds is RECOMMENDED.
+
+[^js-num-size]: JavaScript has a single numeric type ([`Number`][JS Number]) for both integers and floats. This representation is defined them as [IEEE-754] double-precision floating point number, which is 52-bits.
 
 #### 3.2.3.1 Example
 
@@ -834,24 +836,6 @@ Many thanks to [Alan Karp] for sharing his vast experience with capability-based
 
 We want to especially recognize [Mark Miller] for his numerous contributions to the field of distributed auth, programming languages, and computer security writ large.
 
-# 10. FAQ
-
-## 10.1 What prevents an unauthorized party from using an intercepted UCAN?
-
-UCANs always contain information about the sender and receiver. A UCAN is signed by the sender (the `iss` field DID) and can only be created by an agent in possession of the relevant private key. The recipient (the `aud` field DID) is required to check that the field matches their DID. These two checks together secure the certificate against use by an unauthorized party.
-
-## 10.2 What prevents replay attacks on the invocation use case?
-
-A UCAN delegated for purposes of immediate invocation MUST be unique. If many requests are to be made in quick succession, a nonce can be used. The receiving agent (the one to perform the invocation) checks the hash of the UCAN against a local store of unexpired UCAN hashes.
-
-This is not a concern when simply delegating since presumably the recipient agent already has that UCAN.
-
-## 10.3 Is UCAN secure against person-in-the-middle attacks?
-
-_UCAN does not have any special protection against person-in-the-middle (PITM) attacks._
-
-Were a PITM attack successfully performed on a UCAN delegation, the proof chain would contain the attacker's DID(s). It is possible to detect this scenario and revoke the relevant UCAN but does require special inspection of the topmost `iss` field to check if it is the expected DID. Therefore, it is strongly RECOMMENDED to only delegate UCANs to agents that are both trusted and authenticated and over secure channels.
-
 <!-- Internal Links -->
 
 [Token Uniqueness]: #622-token-uniqueness
@@ -891,7 +875,9 @@ Were a PITM attack successfully performed on a UCAN delegation, the proof chain 
 [FIDO]: https://fidoalliance.org/fido-authentication/
 [Fission]: https://fission.codes
 [Hugo Dias]: https://github.com/hugomrdias
+[IEEE 754]: https://ieeexplore.ieee.org/document/8766229
 [Irakli Gozalishvili]: https://github.com/Gozala
+[JS Number]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number
 [JWT]: https://datatracker.ietf.org/doc/html/rfc7519
 [Juan Caballero]: https://github.com/bumblefudge
 [Local-First Auth]: https://github.com/local-first-web/auth
