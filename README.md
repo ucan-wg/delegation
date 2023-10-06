@@ -547,35 +547,95 @@ Resources in the capabilities map MAY overlap. For example, the following MAY co
 
 Abilities MUST be presented as a string. By convention, abilities SHOULD be namespaced with a slash, such as `msg/send`. One or more abilities MUST be given for each resource.
 
-#### 3.2.6.3 Caveat Array
+#### 3.2.6.3 Caveats
+
+
+FIXME add _so much_ clarification
+- Semantics defined by resource & OG issuer
+- 
+
+
+
 
 Caveats MAY be open ended. Caveats MUST be understood by the executor of the eventual [invocation]. Caveats MUST prevent invocation otherwise. Caveats MUST be formatted as objects.
 
 On validation, the caveat array MUST be treated as a logically disjunct (an "OR", NOT an "and"). In other words: passing validation against _any_ caveat in the array MUST pass the check. For example, consider the following capabilities:
 
-```json
+
+
+
+``` json
 {
-  "dns:example.com?TYPE=TXT": {
-    "crud/create": [{}]
+  "dns:example.com": {
+    "crud/create": {}
   },
   "https://example.com/blog": {
-    "crud/read": [{}],
+    "crud/read": {"status": "published"},
+    "crud/create": [
+      {"status": "draft"}, 
+      {"status": "published", "day-of-week": "monday"}
+    ],
     "crud/update": [
-      {"status": "draft"},
-      {"status": "published", "day-of-week": "Monday"} // only publish on Mondays
+      [
+        {"status": "published"}
+        {"tag": "breaking"},
+        {"tag": "news"},
+      ],
+      {"status": "draft"}
     ]
   }
 }
 ```
- 
+
 The above MUST be interpreted as the set of capabilities below. If _any_ are matched, the check MUST pass validation.
 
-| Resource                   | Ability       | Caveat                                            |
-|----------------------------|---------------|---------------------------------------------------|
-| `dns:example.com?TYPE=TXT` | `crud/create` | Always                                            |
-| `https://example.com/blog` | `crud/read`   | Always                                            |
-| `https://example.com/blog` | `crud/update` | `{status: "draft"}`                               |
-| `https://example.com/blog` | `crud/update` | `{status: "published", "day-of-week": "monday"}` |
+| Resource                   | Ability       | Caveat                                                          |
+|----------------------------|---------------|-----------------------------------------------------------------|
+| `dns:example.com`          | `crud/create` | Always                                                          |
+| `https://example.com/blog` | `crud/read`   | Published posts                                                 |
+| `https://example.com/blog` | `crud/create` | Draft posts                                                     |
+| `https://example.com/blog` | `crud/create` | Published posts on Mondays                                      |
+| `https://example.com/blog` | `crud/update` | Draft posts                                                     |
+| `https://example.com/blog` | `crud/update` | Published posts that are tagged with both `breaking` and `news` |
+
+### XXXX.XXXXX Normal Form
+
+Note that all caveats need to be understable to th eexecitor
+
+All of the above can be validly expressed in [DNF].
+
+``` json
+{
+  "dns:example.com": {
+    "crud/create": [[{}]]
+  },
+  "https://example.com/blog": {
+    "crud/read": [[{"status": "published"}]],
+    "crud/create": [
+      [{"status": "draft"}], 
+      [{"status": "published", "day-of-week": "monday"}]
+    ],
+    "crud/update": [
+      [
+        {"status": "published"}
+        {"tag": "breaking"},
+        {"tag": "news"},
+      ],
+      [{"status": "draft"}]
+    ]
+  }
+}
+```
+
+
+
+
+
+
+
+
+
+
 
 The caveat array SHOULD NOT be empty, as an empty array means "in no case" (which is equivalent to not listing the ability). This follows from the rule that delegations MUST be of equal or lesser scope. When an array is given, an attenuated caveat MUST (syntactically) include all of the fields of the relevant proof caveat, plus the newly introduced caveats.
 
@@ -592,10 +652,10 @@ The caveat array SHOULD NOT be empty, as an empty array means "in no case" (whic
 
 Note that for consistency in this syntax, the empty array MUST be equivalent to disallowing the capability. Conversely, an empty object MUST be treated as "no caveats".
 
-| Proof Caveats | Comment                                                       |
-|---------------|---------------------------------------------------------------|
-| `[]`          | No capabilities                                               |
-| `[{}]`        | Full capabilities for this resource/ability pair (no caveats) |
+| Proof Caveats          | Comment                                                       |
+|------------------------|---------------------------------------------------------------|
+| `[]`                   | No capabilities                                               |
+| `{}`, `[{}]`, `[[{}]]` | Full capabilities for this resource/ability pair (no caveats) |
 
 ### 3.2.7 Proof of Delegation
 
@@ -785,42 +845,6 @@ Token resolution is transport specific. The exact format is left to the relevant
 3. Collections format
 
 Note that if an instance cannot dereference a CID at runtime, the UCAN MUST fail validation. This is consistent with the [constructive semantics] of UCAN.
-
-# 7 Implementation Recommendations
-
-## 7.1 UCAN Store
-
-A validator MAY keep a local store of UCANs that it has received. UCANs are immutable but also time-bound so that this store MAY evict expired or revoked UCANs.
-
-This store MAY be indexed by CID (content addressing). Multiple indices built on top of this store MAY be used to improve capability search or selection performance.
-
-## 7.2 Memoized Validation
-
-Aside from revocation, capability validation is idempotent. Marking a CID (or capability index inside that CID) as valid acts as memoization, obviating the need to check the entire structure on every validation. This extends to distinct UCANs that share a proof: if the proof was previously reviewed and is not revoked, it is RECOMMENDED to consider it valid immediately.
-
-Revocation is irreversible. Suppose the validator learns of revocation by UCAN CID or issuer DID. In that case, the UCAN and all of its derivatives in such a cache MUST be marked as invalid, and all validations immediately fail without needing to walk the entire structure.
-
-## 7.3 Replay Attack Prevention
-
-Replay attack prevention is REQUIRED ([Token Uniqueness]). The exact strategy is left to the implementer. One simple strategy is maintaining a set of previously seen CIDs. This MAY be the same structure as a validated UCAN memoization table (if one exists in the implementation).
-
-It is RECOMMENDED that the structure have a secondary index referencing the token expiry field. This enables garbage collection and more efficient search. In cases of very large stores, normal cache performance techniques MAY be used, such as Bloom filters, multi-level caches, and so on.
-
-# 8 Prior Art
-
-[SPKI/SDSI] is closely related to UCAN. A different format is used, and some details vary (such as a delegation-locking bit), but the core idea and general usage pattern are very close. UCAN can be seen as making these ideas more palatable to a modern audience and adding a few features such as content IDs that were less widespread at the time SPKI/SDSI were written.
-
-[ZCAP-LD] is closely related to UCAN. The primary differences are in formatting, addressing by URL instead of CID, the mechanism of separating invocation from authorization, and single versus multiple proofs.
-
-[CACAO] is a translation of many of these ideas to a cross-blockchain invocation model. It contains the same basic concepts but is aimed at small messages and identities that are rooted in mutable documents rooted on a blockchain and lacks the ability to subdelegate capabilities.
-
-[Local-First Auth] uses CRDT-based ACLs and key lockboxes for role-based signatures. This is a non-certificate-based approach, instead of relying on the CRDT and signed data to build up a list of roles and members. It does have a very friendly invitation certificate mechanism in [Seitan token exchange]. It is also straightforward to see which users have access to what, avoiding the confinement problem seen in many decentralized auth systems.
-
-[Macaroon] is a MAC-based capability and cookie system aimed at distributing authority across services in a trusted network (typically in the context of a Cloud). By not relying on asymmetric signatures, Macaroons achieve excellent space savings and performance, given that the MAC can be checked against the relevant services during invocation. The authority is rooted in an originating server rather than with an end-user.
-
-[Biscuit] uses Datalog to describe capabilities. It has a specialized format but is otherwise in line with UCAN.
-
-[Verifiable credentials] are a solution for data about people or organizations. However, they are aimed at a slightly different problem: asserting attributes about the holder of a DID, including things like work history, age, and membership.
 
 # 9. Acknowledgments
 
