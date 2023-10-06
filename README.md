@@ -1,4 +1,21 @@
-# User Controlled Authorization Network (UCAN) Specification v1.0.0-rc.1
+# UCAN Delegation Specification v1.0.0-rc.1
+
+
+
+TODO
+- Remove general motivation section, narrow to delegation
+
+
+
+
+
+
+
+
+
+
+
+
 
 ## Editors
 
@@ -11,13 +28,19 @@
 * [Irakli Gozalishvili], [Protocol Labs]
 * [Philipp Krüger], [Fission]
 
-# 0. Abstract
+## Dependencies
 
-User-Controlled Authorization Network (UCAN) is a trustless, secure, local-first, user-originated authorization and revocation scheme. It provides public-key verifiable, delegable, expressive, openly extensible [capabilities] by extending the familiar [JWT] structure. UCANs achieve public verifiability with chained certificates and [decentralized identifiers (DIDs)][DID]. Verifiable chain compression is enabled via [content addressing]. Being encoded with the familiar JWT, UCAN improves the familiarity and adoptability of schemes like [SPKI/SDSI][SPKI] for web and native application contexts. UCAN allows for the creation, delegation, and invocation of authority by any agent with a DID, including traditional systems and peer-to-peer architectures beyond traditional cloud computing.
+* [UCAN]
+* [DID]
+* [JWT]
 
 ## Language
 
 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in [RFC 2119].
+
+# 0 Abstract
+
+UCAN Delegation is a component of the [UCAN] specification. This specification describes the semantics and serialization format for [UCAN] delegation between principals. It provides public-key verifiable, delegable, expressive, openly extensible [capabilities] by extending the familiar [JWT] structure. UCANs achieve public verifiability with chained certificates and [decentralized identifiers (DIDs)][DID]. Verifiable chain compression is enabled via [content addressing]. Being encoded with the familiar JWT, UCAN improves the familiarity and adoptability of schemes like [SPKI/SDSI][SPKI] for web and native application contexts.
 
 # 1 Introduction
 
@@ -55,35 +78,6 @@ UCANs (and other forms of PKI) depend on the ambient authority of the owner of e
 
 While certificate chains go a long way toward improving security, they do not provide [confinement] on their own. The principle of least authority SHOULD be used when delegating a UCAN: minimizing the amount of time that a UCAN is valid for and reducing authority to the bare minimum required for the delegate to complete their task. This delegate should be trusted as little as is practical since they can further sub-delegate their authority to others without alerting their delegator. UCANs do not offer confinement (as that would require all processes to be online), so it is impossible to guarantee knowledge of all of the sub-delegations that exist. The ability to revoke some or all downstream UCANs exists as a last resort.
 
-## 1.4 Inversion of Control
-
-Unlike many authorization systems where a service controls access to resources in their care, location-independent, offline, and leaderless resources require control to live with the user. Therefore, the same data MAY be used across many applications, data stores, and users.
-
-```
-┌─────────────┐   ┌─────────────┐   ┌─────────────┐
-│             │   │             │   │             │
-│             │   │ ┌─────────┐ │   │             │
-│             │   │ │  Bob's  │ │   │             │
-│             │   │ │  Photo  │ │   │             │
-│             │   │ │ Gallery │ │   │             │
-│             │   │ └─────────┘ │   │             │
-│             │   │             │   │             │
-│   Alice's   │   │    Bob's    │   │   Carol's   │
-│    Stuff    │   │    Stuff    │   │    Stuff    │
-│             │   │             │   │             │
-│     ┌───────┼───┼─────────────┼───┼──┐          │
-│     │       │   │             │   │  │          │
-│     │       │   │         ┌───┼───┼──┼────────┐ │
-│     │       │   │ Alice's │   │   │  │        │ │
-│     │       │   │  Music  │   │   │  │Carol's │ │
-│     │       │   │ Player  │   │   │  │  Game  │ │
-│     │       │   │         │   │   │  │        │ │
-│     │       │   │         └───┼───┼──┼────────┘ │
-│     │       │   │             │   │  │          │
-│     └───────┼───┼─────────────┼───┼──┘          │
-│             │   │             │   │             │
-└─────────────┘   └─────────────┘   └─────────────┘
-```
 
 # 2 Terminology
 
@@ -131,6 +125,7 @@ The same resource MAY be addressed with several URI formats. For instance, a dat
 
 ## 2.3 Ability
 
+
 Abilities describe the verb portion of the capability: an ability that can be performed on a resource. For instance, the standard HTTP methods such as `GET`, `PUT`, and `POST` would be possible `can` values for an `http` resource. While arbitrary semantics MAY be described, they MUST apply to the target resource. For instance, it does not make sense to apply `msg/send` to a typical file system. 
 
 Abilities MAY be organized in a hierarchy with enums. A typical example is a superuser capability ("anything") on a file system. Another is read vs write access, such that in an HTTP context, `WRITE` implies `PUT`, `PATCH`, `DELETE`, and so on. Organizing potencies this way allows for adding more options over time in a backward-compatible manner, avoiding the need to reissue UCANs with new resource semantics.
@@ -141,18 +136,20 @@ There MUST be at least one path segment as a namespace. For example, `http/put` 
 
 The only reserved ability MUST be the un-namespaced [`"*"` (top)][top ability], which MUST be allowed on any resource.
 
+##### FIXME operation
+
 ## 2.4 Caveats
 
 Capabilities MAY define additional optional or required fields specific to their use case in the caveat fields. This field is OPTIONAL in the general case, but MAY be REQUIRED by particular capability types that require this information to validate. Caveats MAY function as an "escape hatch" for when a use case is not fully captured by the resource and ability fields. Caveats can be read as "on the condition that `<some caveat>` holds".
 
 ## 2.5 Capability
 
-A capability is the association of an "ability" to a "resource": `resource x ability x caveats`.
+A capability is the association of an "ability" to a "resource": `resource × ability × caveats`.
 
 The resource and ability fields are REQUIRED. Any non-normative extensions are OPTIONAL.
 
 ```
-{ $RESOURCE: { $ABILITY: [ $CAVEATS ] } }
+{ $RESOURCE: { $ABILITY: $CAVEATS } }
 ```
 
 ### 2.5.1 Examples
@@ -160,7 +157,7 @@ The resource and ability fields are REQUIRED. Any non-normative extensions are O
 ``` json
 {
   "example://example.com/public/photos/": {
-    "crud/read": [{}],
+    "crud/read": [[{}]],
     "crud/delete": [
       {
         "matching": "/(?i)(\\W|^)(baloney|darn|drat|fooey|gosh\\sdarnit|heck)(\\W|$)/"
@@ -168,22 +165,28 @@ The resource and ability fields are REQUIRED. Any non-normative extensions are O
     ]
   },
   "example://example.com/private/84MZ7aqwKn7sNiMGsSbaxsEa6EPnQLoKYbXByxNBrCEr": {
-    "wnfs/append": [{}]
+    "wnfs/append": [[{}]]
   },
   "mailto:username@example.com": {
-    "msg/send": [{}],
+    "msg/send": [[{}]],
     "msg/receive": [
-      {
-        "max_count": 5,
-        "templates": [
-          "newsletter",
-          "marketing"
-        ]
-      }
+      [
+        {
+          "max_count": 5,
+          "templates": [
+            "newsletter",
+            "marketing"
+          ]
+        }
+      ]
     ]
   }
 }
 ```
+
+### FIXME
+
+MOve sections about RES, ABY, CAV here?
 
 ## 2.6 Authority
 
@@ -197,11 +200,11 @@ Merging capability authorities MUST follow set semantics, where the result inclu
                  │                   │   │
 ┌────────────────┼───┐               │   │
 │                │   │ Resource B    │   │
-│                │   │               │   │       BxZ
-│                │   │     X         │   ├─── Capability
+│                │   │               │   │       B×Z
+│                │   │     ×         │   ├─── Capability
 │     Resource A │   │               │   │
 │                │   │ Ability Z     │   │
-│         X      │   │               │   │
+│         ×      │   │               │   │
 │                │   │               │   │
 │     Ability Y  │   │               │   │
 │                └───┼───────────────┘  ─┘
@@ -212,11 +215,11 @@ Merging capability authorities MUST follow set semantics, where the result inclu
 └──────────────────┬─────────────────┘
                    │
 
-               AxY U BxZ
-                 authority
+               A×Y U B×Z
+               Authority
 ```
 
-The capability authority is the total rights of the authorization space down to the relevant volume of authorizations. Individual capabilities MAY overlap; the authority is the union. Except for [rights amplification], every unique delegation MUST have equal or narrower capabilities from their delegator. Inside this content space, you can draw a boundary around some resource(s) (their type, identifiers, and paths or children) and their capabilities.
+Authority is a set of rights space down to the relevant volume of authorizations. Individual capabilities MAY overlap; the authority is the union. Except for [rights amplification], every unique delegation MUST have equal or narrower capabilities from their delegator. Inside this content space, you can draw a boundary around some resource(s) (their type, identifiers, and paths or children) and their capabilities.
 
 For example, given the following authorities against a WebNative filesystem, they can be merged as follows:
 
@@ -226,25 +229,25 @@ For example, given the following authorities against a WebNative filesystem, the
 
 AuthorityA = {
   "wnfs://alice.example.com/pictures/": {
-    "wnfs/append": [{}]
+    "wnfs/append": [[{}]]
   }
 }
 
 AuthorityB = {
   "wnfs://alice.example.com/pictures/vacation/": {
-    "wnfs/append": [{}]
+    "wnfs/append": [[{}]]
   },
   "wnfs://alice.example.com/pictures/vacation/hawaii/": {
-    "wnfs/overwrite": [{}]
+    "wnfs/overwrite": [[{}]]
   }
 }
 
 merge(AuthorityA, AuthorityB) == {
   "wnfs://alice.example.com/pictures/": {
-    "wnfs/append": [{}],
+    "wnfs/append": [[{}]],
   },
   "wnfs://alice.example.com/pictures/vacation/hawaii": {
-    "wnfs/overwrite": [{}]
+    "wnfs/overwrite": [[{}]]
   }
   // Note that ("/pictures/vacation/" x append) has become redundant, being contained in ("/pictures/" x append)
 }
@@ -269,7 +272,7 @@ Attenuation is the process of constraining the capabilities in a delegation chai
 
 {
   "example://example.com/public/photos/": {
-    "crud/read": [{}],
+    "crud/read": [[{}]],
     "crud/delete": [
       {
         "matching": "/(?i)(\\W|^)(baloney|darn|drat|fooey|gosh\\sdarnit|heck)(\\W|$)/"
@@ -277,7 +280,7 @@ Attenuation is the process of constraining the capabilities in a delegation chai
     ]
   },
   "mailto:username@example.com": {
-    "msg/send": [{}],
+    "msg/send": [[{}]],
     "msg/receive": [
       {
         "max_count": 5,
@@ -289,46 +292,73 @@ Attenuation is the process of constraining the capabilities in a delegation chai
     ]
   }
 }
-
 
 // Example proof capabilities
 
 {
   "example://example.com/public/photos/": {
-    "crud/read": [{}],
-    "crud/delete": [{}], // Proof is (correctly) broader than claimed
+    "crud/read": [[{}]],
+    "crud/delete": [[{}]], // Proof is (correctly) broader than claimed
   },
   "mailto:username@example.com": {
-    "msg/send": [{}], // Proof is (correctly) broader than claimed
+    "msg/send": [[{}]], // Proof is (correctly) broader than claimed
     "msg/receive": [
-      {
-        "max_count": 5,
-        "templates": [
-          "newsletter",
-          "marketing"
-        ]
-      }
+      [
+        {
+          "max_count": 5,
+          "templates": [
+            "newsletter",
+            "marketing"
+          ]
+        }
+      ]
     ]
   },
   "dns:example.com": { // Not delegated, so no problem
     "crud/create": [
-      {"type": "A"},
-      {"type": "CNAME"},
-      {"type": "TXT"}
+      [{"type": "A"}],
+      [{"type": "CNAME"}],
+      [{"type": "TXT"}]
     ]
   }
 }
 ```
 
-## 2.9 Revocation
+FIXME
+alteranate caveat mechanism could omit `[{}]`, and use `[{a}, {b}]` when there's no `or`.
 
-Revocation is the act of invalidating a UCAN after the fact, outside of the limitations placed on it by the UCAN's fields (such as its expiry). 
+e.g. 
 
-In the case of UCAN, this MUST be done by a proof's issuer DID. For more on the exact mechanism, see the [UCAN Revocation] spec.
+``` json
+{
+  "https://example.com/blog": {
+    "crud/create": {},
+    "crud/destroy": {"a": 0}
+    "crud/read": [
+      {"a": 1},
+      {"b": 2}
+    ],
+    "crud/update": [
+      [
+        {"a": 3},
+        {"a": 4}
+      ],
+      {"a": 5}
+    ]
+  }
+}
+```
 
-## 2.10 Invocation
 
-UCANs are used to delegate capabilities between DID-holding agents, eventually terminating in an "invocation" of those capabilities. Invocation is when the capability is exercised to perform some task on a resource. Invocation has its [own specification][UCAN Invocation].
+
+
+
+
+
+
+
+
+
 
 ## 2.11 Time
 
@@ -377,17 +407,16 @@ Note that the JWT `"alg": "none"` option MUST NOT be supported. The lack of sign
 
 The payload MUST describe the authorization claims, who is involved, and its validity period.
 
-| Field | Type                         | Description                                            | Required |
-|-------|------------------------------|--------------------------------------------------------|----------|
-| `ucv` | `String`                     | UCAN Semantic Version (`1.0.0-rc.1`)                   | Yes      |
-| `iss` | `String`                     | Issuer DID (sender)                                    | Yes      |
-| `aud` | `String`                     | Audience DID (receiver)                                | Yes      |
-| `nbf` | `Integer`                    | Not Before UTC Unix Timestamp in seconds (valid from)  | No       |
-| `exp` | `Integer \| null`            | Expiration UTC Unix Timestamp in seconds (valid until) | Yes      |
-| `nnc` | `String`                     | Nonce                                                  | Yes      |
-| `fct` | `{String: Any}`              | Facts (asserted, signed data)                          | No       |
-| `cap` | `{URI: {Ability: [Object]}}` | Capabilities                                           | Yes      |
-| `prf` | `[CID]`                      | Proof of delegation (hash-linked UCANs)                | No       |
+| Field | Type                                      | Description                                            | Required |
+|-------|-------------------------------------------|--------------------------------------------------------|----------|
+| `ucv` | `String`                                  | UCAN Semantic Version (`1.0.0-rc.1`)                   | Yes      |
+| `iss` | `String`                                  | Issuer DID (sender)                                    | Yes      |
+| `aud` | `String`                                  | Audience DID (receiver)                                | Yes      |
+| `nbf` | `Integer` (53-bits[^js-num-size])         | Not Before UTC Unix Timestamp in seconds (valid from)  | No       |
+| `exp` | `Integer \| null` (53-bits[^js-num-size]) | Expiration UTC Unix Timestamp in seconds (valid until) | Yes      |
+| `nnc` | `String`                                  | Nonce                                                  | Yes      |
+| `fct` | `{String: Any}`                           | Facts (asserted, signed data)                          | No       |
+| `cap` | `{URI: {Ability: Caveat}}`                | Capabilities                                           | Yes      |
 
 ### 3.2.1 Version
 
@@ -453,7 +482,7 @@ Keeping the window of validity as short as possible is RECOMMENDED. Limiting the
 
 ### 3.2.4 Nonce
 
-The OPTIONAL nonce parameter `nnc` MAY be any value. A randomly generated string is RECOMMENDED to provide a unique UCAN, though it MAY also be a monotonically increasing count of the number of links in the hash chain. This field helps prevent replay attacks and ensures a unique CID per delegation. The `iss`, `aud`, and `exp` fields together will often ensure that UCANs are unique, but adding the nonce ensures this uniqueness.
+The REQUIRED nonce parameter `nnc` MAY be any value. A randomly generated string is RECOMMENDED to provide a unique UCAN, though it MAY also be a monotonically increasing count of the number of links in the hash chain. This field helps prevent replay attacks and ensures a unique CID per delegation. The `iss`, `aud`, and `exp` fields together will often ensure that UCANs are unique, but adding the nonce ensures this uniqueness.
 
 The recommeneded size of the nonce differs by key type. In many cases, a random 12-byte nonce is sufficient. If uncertain, check the nonce in your DID's cryptosuite.
 
@@ -493,7 +522,7 @@ The OPTIONAL `fct` field contains a map of arbitrary facts and proofs of knowled
 Capabilities MUST be presented as a map. This map is REQUIRED but MAY be empty.
 
 This map MUST contain some or none of the following:
-1. A strict subset (attenuation) of the capability authority from the `prf` field
+1. A strict subset (attenuation) of the capability authority from the next direct `prf` field
 2. Capabilities composed from multiple proofs (see [rights amplification])
 3. Capabilities originated by the `iss` DID (i.e. by parenthood)
 
@@ -570,33 +599,9 @@ Note that for consistency in this syntax, the empty array MUST be equivalent to 
 
 ### 3.2.7 Proof of Delegation
 
-Attenuations MUST be satisfied by matching the attenuated capability to a proof in the [`prf` array][prf field].
+Attenuations MUST be satisfied by matching the attenuated capability to a proof in the invocation's [`prf` array][invocation prf].
 
 Proofs MUST be resolvable by the recipient. A proof MAY be left unresolvable if it is not used as support for the top-level UCAN's capability chain. The exact format MUST be defined in the relevant transport specification. Some examples of possible formats include: a JSON object payload delivered with the UCAN, a federated HTTP endpoint, a DHT, or a shared database.
-
-#### 3.2.7.1 `prf` Field
-
-The `prf` field MUST contain the [content address][content identifiers] of UCAN proofs (the "inputs" of a UCAN). 
-
-#### 3.2.7.2 Examples
-
-``` json
-"prf": [
-  "bafkreihogico5an3e2xy3fykalfwxxry7itbhfcgq6f47sif6d7w6uk2ze",
-  "bafkreiemaanh3kxqchhcdx3yckeb3xvmboztptlgtmnu5jp63bvymxtlva"
-]
-```
-
-Which in a JSON representation would resolve to the following table:
-
-```json
-{
-  "bafkreiemaanh3kxqchhcdx3yckeb3xvmboztptlgtmnu5jp63bvymxtlva": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCIsInVjdiI6IjAuOC4xIn0.eyJhdWQiOiJkaWQ6a2V5Ono2TWtmUWhMSEJTRk11UjdiUVhUUWVxZTVrWVVXNTFIcGZaZWF5bWd5MXprUDJqTSIsImF0dCI6W3sid2l0aCI6eyJzY2hlbWUiOiJ3bmZzIiwiaGllclBhcnQiOiIvL2RlbW91c2VyLmZpc3Npb24ubmFtZS9wdWJsaWMvcGhvdG9zLyJ9LCJjYW4iOnsibmFtZXNwYWNlIjoid25mcyIsInNlZ21lbnRzIjpbIk9WRVJXUklURSJdfX0seyJ3aXRoIjp7InNjaGVtZSI6InduZnMiLCJoaWVyUGFydCI6Ii8vZGVtb3VzZXIuZmlzc2lvbi5uYW1lL3B1YmxpYy9ub3Rlcy8ifSwiY2FuIjp7Im5hbWVzcGFjZSI6InduZnMiLCJzZWdtZW50cyI6WyJPVkVSV1JJVEUiXX19XSwiZXhwIjo5MjU2OTM5NTA1LCJpc3MiOiJkaWQ6a2V5Ono2TWtyNWFlZmluMUR6akc3TUJKM25zRkNzbnZIS0V2VGIyQzRZQUp3Ynh0MWpGUyIsInByZiI6WyJleUpoYkdjaU9pSkZaRVJUUVNJc0luUjVjQ0k2SWtwWFZDSXNJblZqZGlJNklqQXVPQzR4SW4wLmV5SmhkV1FpT2lKa2FXUTZhMlY1T25vMlRXdHlOV0ZsWm1sdU1VUjZha2MzVFVKS00yNXpSa056Ym5aSVMwVjJWR0l5UXpSWlFVcDNZbmgwTVdwR1V5SXNJbUYwZENJNlczc2lkMmwwYUNJNmV5SnpZMmhsYldVaU9pSjNibVp6SWl3aWFHbGxjbEJoY25RaU9pSXZMMlJsYlc5MWMyVnlMbVpwYzNOcGIyNHVibUZ0WlM5d2RXSnNhV012Y0dodmRHOXpMeUo5TENKallXNGlPbnNpYm1GdFpYTndZV05sSWpvaWQyNW1jeUlzSW5ObFoyMWxiblJ6SWpwYklrOVdSVkpYVWtsVVJTSmRmWDFkTENKbGVIQWlPamt5TlRZNU16azFNRFVzSW1semN5STZJbVJwWkRwclpYazZlalpOYTJ0WGIzRTJVek4wY1ZKWGNXdFNibmxOWkZobWNuTTFORGxGWm5VMmNVTjFOSFZxUkdaTlkycEdVRXBTSWl3aWNISm1JanBiWFgwLlNqS2FIR18yQ2UwcGp1TkY1T0QtYjZqb04xU0lKTXBqS2pqbDRKRTYxX3VwT3J0dktvRFFTeFo3V2VZVkFJQVREbDhFbWNPS2o5T3FPU3cwVmc4VkNBIiwiZXlKaGJHY2lPaUpGWkVSVFFTSXNJblI1Y0NJNklrcFhWQ0lzSW5WamRpSTZJakF1T0M0eEluMC5leUpoZFdRaU9pSmthV1E2YTJWNU9ubzJUV3R5TldGbFptbHVNVVI2YWtjM1RVSktNMjV6UmtOemJuWklTMFYyVkdJeVF6UlpRVXAzWW5oME1XcEdVeUlzSW1GMGRDSTZXM3NpZDJsMGFDSTZleUp6WTJobGJXVWlPaUozYm1aeklpd2lhR2xsY2xCaGNuUWlPaUl2TDJSbGJXOTFjMlZ5TG1acGMzTnBiMjR1Ym1GdFpTOXdkV0pzYVdNdmNHaHZkRzl6THlKOUxDSmpZVzRpT25zaWJtRnRaWE53WVdObElqb2lkMjVtY3lJc0luTmxaMjFsYm5SeklqcGJJazlXUlZKWFVrbFVSU0pkZlgxZExDSmxlSEFpT2preU5UWTVNemsxTURVc0ltbHpjeUk2SW1ScFpEcHJaWGs2ZWpaTmEydFhiM0UyVXpOMGNWSlhjV3RTYm5sTlpGaG1jbk0xTkRsRlpuVTJjVU4xTkhWcVJHWk5ZMnBHVUVwU0lpd2ljSEptSWpwYlhYMC5TakthSEdfMkNlMHBqdU5GNU9ELWI2am9OMVNJSk1waktqamw0SkU2MV91cE9ydHZLb0RRU3haN1dlWVZBSUFURGw4RW1jT0tqOU9xT1N3MFZnOFZDQSJdfQ.Ab-xfYRoqYEHuo-252MKXDSiOZkLD-h1gHt8gKBP0AVdJZ6Jruv49TLZOvgWy9QkCpiwKUeGVbHodKcVx-azCQ",
-  "bafkreihogico5an3e2xy3fykalfwxxry7itbhfcgq6f47sif6d7w6uk2ze": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsInVhdiI6IjAuMS4wIn0.eyJhdWQiOiJkaWQ6a2V5OnpTdEVacHpTTXRUdDlrMnZzemd2Q3dGNGZMUVFTeUExNVc1QVE0ejNBUjZCeDRlRko1Y3JKRmJ1R3hLbWJtYTQiLCJpc3MiOiJkaWQ6a2V5Ono1QzRmdVAyRERKQ2hoTUJDd0FrcFlVTXVKWmROV1dINU5lWWpVeVk4YnRZZnpEaDNhSHdUNXBpY0hyOVR0anEiLCJuYmYiOjE1ODg3MTM2MjIsImV4cCI6MTU4OTAwMDAwMCwic2NwIjoiLyIsInB0YyI6IkFQUEVORCIsInByZiI6bnVsbH0.Ay8C5ajYWHxtD8y0msla5IJ8VFffTHgVq448Hlr818JtNaTUzNIwFiuutEMECGTy69hV9Xu9bxGxTe0TpC7AzV34p0wSFax075mC3w9JYB8yqck_MEBg_dZ1xlJCfDve60AHseKPtbr2emp6hZVfTpQGZzusstimAxyYPrQUWv9wqTFmin0Ls-loAWamleUZoE1Tarlp_0h9SeV614RfRTC0e3x_VP9Ra_84JhJHZ7kiLf44TnyPl_9AbzuMdDwCvu-zXjd_jMlDyYcuwamJ15XqrgykLOm0WTREgr_sNLVciXBXd6EQ-Zh2L7hd38noJm1P_MIr9_EDRWAhoRLXPQ"
-}
-```
-
-For more on this representation, please refer to [canonical collections].
 
 # 4 Reserved Namespaces
 
@@ -849,7 +854,7 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [canonical collections]: #71-canonical-json-collection
 [content identifiers]: #65-content-identifiers
 [delegation]: #51-ucan-delegation
-[prf field]: #3271-prf-field
+[invocation prf]: FIXME
 [replay attack prevention]: #93-replay-attack-prevention
 [revocation]: #66-revocation
 [rights amplification]: #64-rights-amplification
