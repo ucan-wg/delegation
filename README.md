@@ -2,23 +2,8 @@
 
 
 
-TODO
-- Remove general motivation section, narrow to delegation
-- Consider batch signatures for batch use cases
-  - Cature as an invocation? Seems like overkill
-  - Define `alg: "batch/RS256"`, `alg: "batch/EdDSA"`, etc? No
-- Scope all to DIDs
-
-
-
-
-
-
-
-
-
-
-
+TODOs
+- externally owned resources
 
 
 ## Editors
@@ -44,59 +29,46 @@ The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "S
 
 # 0 Abstract
 
-UCAN Delegation is a component of the [UCAN] specification. This specification describes the semantics and serialization format for [UCAN] delegation between principals. It provides public-key verifiable, delegable, expressive, openly extensible [capabilities] by extending the familiar [JWT] structure. UCANs achieve public verifiability with chained certificates and [decentralized identifiers (DIDs)][DID]. Verifiable chain compression is enabled via [content addressing]. Being encoded with the familiar JWT, UCAN improves the familiarity and adoptability of schemes like [SPKI/SDSI][SPKI] for web and native application contexts.
+UCAN Delegation is a component of [UCAN]. This specification describes the semantics and serialization format for [UCAN] delegation between principals. UCAN Delegation provides a cryptographically verifiable container, batched capabilties, heirarchical authority, and extensible caveats.
 
 # 1 Introduction
 
 ## 1.1 Motivation
 
+Design goals:
 
-# 2 Terminology
+- Flexible pathing
+- Extensibilty
+- Consistency for interop
 
+# 2 Token Structure
 
+Regardless of how a Delegation is serialized on the wire, the sigature of a UCAN Delegation MUST be over a payload serialized as a [JWT] .
 
-
-
-
-
-
-
-
-
-
-## 2.11 Time
-
-Time takes on [multiple meanings][time definition] in systems representing facts or knowledge. The senses of the word "time" are given below.
-
-### 2.11.1 Valid Time Range
-
-The period of time that a capability is valid from and until.
-
-### 2.11.2 Assertion Time
-
-The moment at which a delegation was asserted. This MAY be captured via an `iat` field, but is generally superfluous to capture in the token. "Assertion time" is useful when discussing the lifecycle of a token.
-
-### 2.11.3 Decision (or Validation) Time
-
-Decision time is the part of the lifecycle when "a decision" about the token is made. This is typically during validation, but also includes resolving external state (e.g. storage quotas).
-
-# 3 JWT Structure
-
-UCANs MUST be formatted as [JWT]s, with additional keys as described in this document. The overall container of a header, claims, and signature remains. Please refer to [RFC 7519][JWT] for more on this format.
+The overall container of a header, claims, and signature remain as per [RFC 7519][JWT].
 
 ## 3.1 Header
 
-The header MUST include all of the following fields:
+The header is a standard JWT header, and MUST include all of the following fields:
+
 | Field | Type     | Description                    | Required |
 |-------|----------|--------------------------------|----------|
 | `alg` | `String` | Signature algorithm            | Yes      |
 | `typ` | `String` | Type (MUST be `"JWT"`)         | Yes      |
 
-The header is a standard JWT header.
+### 3.1.1 Algorithms
 
-EdDSA, as applied to JOSE (including JWT), is described in [RFC 8037].
+It is RECOMMENDED that the following algorithms be supported:
 
-Note that the JWT `"alg": "none"` option MUST NOT be supported. The lack of signature prevents the issuer from being validatable.
+- [RS256]
+- [EdDSA][RFC 8037]
+- [P-256 ECDSA]
+
+All algorithms MUST match the DID principal in the `iss` field. This enforces that the `alg` field MUST be asymmetric (public key cryptography or nonstandard but emerging patterns like smart contract signatures)
+
+The JWT `"alg": "none"` MUST NOT be supported, as the lack of signature prevents the issuer DID from being validated.
+
+Symmetric algorithms such as HMACs (e.g. `"alg": "HS256"`) MUST NOT be supported, since they cannot be used to prove control over the issuer DID.
 
 ### 3.1.1 Examples
 
@@ -140,6 +112,8 @@ It is RECOMMENDED that the following `did:key` types be supported:
 - [EdDSA][did:key EdDSA]
 - [P-256 ECDSA][did:key ECDSA]
 
+Note that every [Subject] MUST correspond to a root delegation issuer.
+
 #### 3.2.2.1 Examples
 
 ```json
@@ -172,6 +146,8 @@ The `exp` field MUST be set. Following the [principle of least authority][POLA],
 
 Keeping the window of validity as short as possible is RECOMMENDED. Limiting the time range can mitigate the risk of a malicious user abusing a UCAN. However, this is situationally dependent. It may be desirable to limit the frequency of forced reauthorizations for trusted devices. Due to clock drift, time bounds SHOULD NOT be considered exact. A buffer of ±60 seconds is RECOMMENDED.
 
+Several named points of time in the UCAN lifecycle [can be found in the high level spec].
+
 [^js-num-size]: JavaScript has a single numeric type ([`Number`][JS Number]) for both integers and floats. This representation is defined as a [IEEE-754] double-precision floating point number, which has a 53-bit significand.
 
 #### 3.2.3.1 Example
@@ -192,16 +168,18 @@ The recommeneded size of the nonce differs by key type. In many cases, a random 
 
 This field SHOULD NOT be used to sign arbitrary data, such as signature challenges. See the [`fct`][Facts] field for more.
 
-#### 3.2.4.1 Examples
+#### 3.2.4.1 Example
 
 ``` json
 {
   // ...
-  "nnc": "1701-D"
+  "nnc": "NCC-1701-D"
 }
 ```
 
 ### 3.2.5 Facts
+
+FIXME not validated in the chain: do what you want!
 
 The OPTIONAL `fct` field contains a map of arbitrary facts and proofs of knowledge. The enclosed data MUST be self-evident and externally verifiable. It MAY include information such as hash preimages, server challenges, a Merkle proof, dictionary data, etc.
 
@@ -223,7 +201,7 @@ The OPTIONAL `fct` field contains a map of arbitrary facts and proofs of knowled
 
 ### 3.2.6 Capabilities & Attenuation
 
-Capabilities MUST be presented as a map. This map is REQUIRED but MAY be empty.
+Capabilities MUST be presented as a map under the `cap` field. This map is REQUIRED but MAY be empty.
 
 This map MUST contain some or none of the following:
 1. A strict subset (attenuation) of the capability authority from the next direct `prf` field
@@ -232,48 +210,102 @@ This map MUST contain some or none of the following:
 
 The anatomy of a capability MUST be given as a mapping of resource URI to abilities to array of caveats.
 
+The capabilities take this form:
+
 ```
-{ $SUBJECT: { $ABILITY: [ ...$CAVEATS ] } }
+{ $SUBJECT: { $ABILITY: $CAVEATS } }
 ```
 
-#### 3.2.6.2 Abilities
+FIXME example
+
+#### 3.2.6.1 Subject
+
+The Subject MUST be the DID that initiated the delegation chain.
+
+For example:
+
+``` js
+{
+  // ...
+  cap: {
+    "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp": "ucan/*"
+  //└───────────────────────────┬────────────────────────────┘
+  //                         SUBJECT
+  }
+}
+```
+
+#### 3.2.6.2 Resource
+
+By default, the Resource of a capability is the Subject. This makes the delegation chain self-certifying.
+
+``` js
+{
+  // ...
+  "cap": {
+  //                     Subject & Resource
+  //┌────────────────────────────┴────────────────────────────┐
+    "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp": {
+      "crud/update": {
+        "status": "draft"
+      }
+    }
+  }
+}
+```
+
+In the case where access to an external resource is delegated, the Subject MUST own the relationship to the Resource. The Resource SHOULD be referenced by a `uri` key in the relevant [Caveat](s), except where it would be clearer to do otherwise.
+
+
+FIXME point at /spec#5.5 external resources
+
+
+``` js
+{
+  // ...
+  "cap": {
+  //                          Subject
+  //┌────────────────────────────┴────────────────────────────┐
+    "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp": {
+      "crud/create": {
+        "uri": "https://blog.example.com/blog/",
+        //     └──────────────┬───────────────┘
+        //                Resource
+        "status": "draft"
+      },
+      "msg/send": {
+        "sender": "mailto:alice@example.com",
+        //        └───────────┬────────────┘
+        //                Resource
+        "subject": "Weekly Reports",
+        "day": "friday"
+      }
+    }
+  }
+}
+```
+
+#### 3.2.6.3 Abilities
 
 Abilities MUST be presented as a string. By convention, abilities SHOULD be namespaced with a slash, such as `msg/send`. One or more abilities MUST be given for each resource.
 
-#### 3.2.6.3 Caveats
+Abilities MUST be defined by the Subject. While it is correct in this narrow context to think about the Subject as a namespace, 
 
+#### 3.2.6.4 Caveats
+
+Caveat semantics MUST be defined by the Subject.
 
 FIXME add _so much_ clarification
 - Semantics defined by resource & OG issuer
-- 
-
-
-
- 
-<!--
-
-FIXME push resource into caveats
-
-
-#### 3.2.6.1 Resource
-
-Resources MUST be unique and given as [URI]s.
-
-Resources in the capabilities map MAY overlap. For example, the following MAY coexist as top-level keys in a capabilities map:
-
-```json
-"https://example.com",
-"https://example.com/blog"
-```
--->
-
+- push resource into caveats
+- optional resource, message passing analogy
+- Normal form and compact form
 
 
 
 Caveats MAY be open ended. Caveats MUST be understood by the executor of the eventual [invocation]. Caveats MUST prevent invocation otherwise. Caveats MUST be formatted as objects.
 
 On validation, the caveat array MUST be treated as a logically disjunct (an "OR", NOT an "and"). In other words: passing validation against _any_ caveat in the array MUST pass the check. For example, consider the following capabilities:
-
 
 
 
@@ -402,7 +434,14 @@ Proofs MUST be resolvable by the recipient. A proof MAY be left unresolvable if 
 
 ## 4.1 `ucan`
 
-The `ucan` resource and abilty namespace MUST be reserved. Implementation of the [`ucan-uri`] spec is RECOMMENDED.
+The `ucan` resource and abilty namespace MUST be reserved.
+
+### 4.1.1 `ucan/*`
+
+Support for `ucan/*` is RECOMMENDED.
+
+
+FIXME
 
 ## 4.2 "Top" Ability
 
@@ -440,6 +479,8 @@ flowchart BT
 In concept there is a "bottom" ability ("none" or "void"), but it is not possible to represent in an ability. As it is merely the absence of any ability, it is not possible to construct a capability with a bottom ability.
 
 # 5 Validation
+
+FIXME note that validation happens at exection time
 
 Each capability has its own semantics, which needs to be interpretable by the target resource handler. Therefore, a validator MUST NOT reject all capabilities when only one is not understood.
 
@@ -487,6 +528,8 @@ const ensureProofExp = (ucan, proof) => {
 ```
 
 ## 5.2 Principal Alignment
+
+FIXME move to high level spec
 
 In delegation, the `aud` field of every proof MUST match the `iss` field of the UCAN being delegated to. This alignment MUST form a chain back to the originating principal for each resource. 
 
@@ -540,21 +583,7 @@ The following UCAN fragment would be valid to invoke as `did:key:zH3C2AVvLMv6gmM
 
 A good litmus test for invocation validity by a invoking agent is to check if they would be able to create a valid delegation for that capability.
 
-### 5.2.2 Token Uniqueness
 
-Each remote invocation MUST be a unique UCAN: for instance using a nonce (`nnc`) or simply a unique expiry. The recipient MUST validate that they have not received the top-level UCAN before. For implementation recommentations, please refer to the [replay attack prevention] section. 
-
-## 5.3 Proof Chaining
-
-Each capability MUST either be originated by the issuer (root capability, or "parenthood") or have one-or-more proofs in the `prf` field to attest that this issuer is authorized to use that capability ("introduction"). In the introduction case, this check MUST be recursively applied to its proofs until a root proof is found (i.e. issued by the resource owner).
-
-Except for rights amplification (below), each capability delegation MUST have equal or narrower capabilities from its proofs. The time bounds MUST also be equal to or contained inside the time bounds of the proof's time bounds. This lowering of rights at each delegation is called "attenuation."
-
-
-
-
-
-FIXME removed section, fix numbering
 
 ## 5.5 Content Identifiers
 
@@ -573,15 +602,6 @@ A canonical CID can be important for some use cases, such as caching and [revoca
 * [SHA2-256]
 * [Raw data multicodec] (`0x55`)
 
-# 6 Token Resolution
-
-Token resolution is transport specific. The exact format is left to the relevant UCAN transport specification. At minimum, such a specification MUST define at least the following:
-
-1. Request protocol
-2. Response protocol
-3. Collections format
-
-Note that if an instance cannot dereference a CID at runtime, the UCAN MUST fail validation. This is consistent with the [constructive semantics] of UCAN.
 
 # 9. Acknowledgments
 
@@ -611,133 +631,6 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 
 <!-- Internal Links -->
 
-[Token Uniqueness]: #622-token-uniqueness
-[canonical collections]: #71-canonical-json-collection
-[content identifiers]: #65-content-identifiers
-[delegation]: #51-ucan-delegation
-[invocation prf]: FIXME
-[replay attack prevention]: #93-replay-attack-prevention
-[revocation]: #66-revocation
-[rights amplification]: #64-rights-amplification
-[token resolution]: #8-token-resolution
-[top ability]: #41-top
 
 <!-- External Links -->
-
-[Alan Karp]: https://github.com/alanhkarp
-[Benjamin Goering]: https://github.com/gobengo
-[Biscuit]: https://github.com/biscuit-auth/biscuit/
-[Blaine Cook]: https://github.com/blaine
-[Bluesky]: https://blueskyweb.xyz/
-[Brendan O'Brien]: https://github.com/b5
-[Brian Ginsburg]: https://github.com/bgins
-[Brooklyn Zelenka]: https://github.com/expede 
-[CACAO]: https://blog.ceramic.network/capability-based-data-security-on-ceramic/
-[CIDv1]: https://docs.ipfs.io/concepts/content-addressing/#identifier-formats
-[Canonical CID]: #651-cid-canonicalization
-[Capability Myths Demolished]: https://srl.cs.jhu.edu/pubs/SRL2003-02.pdf
-[Christine Lemmer-Webber]: https://github.com/cwebber
-[Christopher Joel]: https://github.com/cdata
-[DID fragment]: https://www.w3.org/TR/did-core/#fragment
-[DID path]: https://www.w3.org/TR/did-core/#path
-[DID subject]: https://www.w3.org/TR/did-core/#dfn-did-subjects
-[DID]: https://www.w3.org/TR/did-core/
-[Dan Finlay]: https://github.com/danfinlay
-[Daniel Holmgren]: https://github.com/dholms
-[ECDSA security]: https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm#Security
-[FIDO]: https://fidoalliance.org/fido-authentication/
-[Fission]: https://fission.codes
-[Hugo Dias]: https://github.com/hugomrdias
-[IEEE 754]: https://ieeexplore.ieee.org/document/8766229
-[Irakli Gozalishvili]: https://github.com/Gozala
-[JS Number]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number
-[JWT]: https://datatracker.ietf.org/doc/html/rfc7519
-[Juan Caballero]: https://github.com/bumblefudge
-[Local-First Auth]: https://github.com/local-first-web/auth
-[Macaroon]: https://storage.googleapis.com/pub-tools-public-publication-data/pdf/41892.pdf
-[Mark Miller]: https://github.com/erights
-[Mikael Rogers]: https://github.com/mikeal/
-[OCAP]: http://erights.org/elib/capability/index.html
-[OCapN]: https://github.com/ocapn/ocapn
-[POLA]: https://en.wikipedia.org/wiki/Principle_of_least_privilege
-[Philipp Krüger]: https://github.com/matheus23
-[Protocol Labs]: https://protocol.ai/
-[RFC 2119]: https://datatracker.ietf.org/doc/html/rfc2119
-[RFC 3339]: https://www.rfc-editor.org/rfc/rfc3339
-[RFC 8037]: https://datatracker.ietf.org/doc/html/rfc8037
-[SHA2-256]: https://en.wikipedia.org/wiki/SHA-2
-[SPKI/SDSI]: https://datatracker.ietf.org/wg/spki/about/
-[SPKI]: https://theworld.com/~cme/html/spki.html
-[Seitan token exchange]: https://book.keybase.io/docs/teams/seitan
-[Steven Vandevelde]: https://github.com/icidasset
-[UCAN Invocation]: https://github.com/ucan-wg/invocation
-[UCAN Revocation]: https://github.com/ucan-wg/revocation
-[URI]: https://www.rfc-editor.org/rfc/rfc3986
-[Verifiable credentials]: https://www.w3.org/2017/vc/WG/
-[W3C]: https://www.w3.org/
-[ZCAP-LD]: https://w3c-ccg.github.io/zcap-spec/
-[`did:3`]: https://github.com/ceramicnetwork/CIPs/blob/main/CIPs/cip-79.md
-[`did:ion`]: https://github.com/decentralized-identity/ion
-[`did:key`]: https://w3c-ccg.github.io/did-method-key/
-[base32]: https://github.com/multiformats/multibase/blob/master/multibase.csv#L12
-[browser api crypto key]: https://developer.mozilla.org/en-US/docs/Web/API/CryptoKey
-[capabilities]: https://en.wikipedia.org/wiki/Object-capability_model
-[caps as keys]: http://www.erights.org/elib/capability/duals/myths.html#caps-as-keys
-[confinement]: http://www.erights.org/elib/capability/dist-confine.html
-[constructive semantics]: https://en.wikipedia.org/wiki/Intuitionistic_logic
-[content addressable storage]: https://en.wikipedia.org/wiki/Content-addressable_storage
-[content addressing]: https://en.wikipedia.org/wiki/Content-addressable_storage
-[dag-json multicodec]: https://github.com/multiformats/multicodec/blob/master/table.csv#L104
-[did:key ECDSA]: https://w3c-ccg.github.io/did-method-key/#p-256
-[did:key EdDSA]: https://w3c-ccg.github.io/did-method-key/#ed25519-x25519
-[did:key RSA]: https://w3c-ccg.github.io/did-method-key/#rsa
-[disjunction]: https://en.wikipedia.org/wiki/Logical_disjunction
-[invocation]: https://github.com/ucan-wg/invocation
-[raw data multicodec]: https://github.com/multiformats/multicodec/blob/a03169371c0a4aec0083febc996c38c3846a0914/table.csv?plain=1#L41
-[secure hardware enclave]: https://support.apple.com/en-ca/guide/security/sec59b0b31ff
-[spki rfc]: https://www.rfc-editor.org/rfc/rfc2693.html
-[time definition]: https://en.wikipedia.org/wiki/Temporal_database
-[ucan-uri]: https://github.com/ucan-wg/ucan-uri
-[ucan.xyz]: https://ucan.xyz
-
-
-
-
-
-
-
-
-
-
-
-
-
-FIXME move to own spec?
-
-# 7. Collections
-
-FIXME update exmaple to latest format ...or break out into own spec :shrug:
-
-UCANs are indexed by their hash — often called their ["content address"][content addressable storage]. UCANs MUST be addressable as [CIDv1]. Use of a [canonical CID] is RECOMMENDED.
-
-Content addressing the proofs has multiple advantages over inlining tokens, including:
-* Avoids re-encoding deeply nested proofs as Base64 many times (and the associated size increase)
-* Canonical signature
-* Enables only transmitting the relevant proofs 
-
-Multiple UCANs in a single request MAY be collected into one table. It is RECOMMENDED that these be indexed by CID. The [canonical JSON representation][canonical collections] (below) MUST be supported. Implementations MAY include more formats, for example to optimize for a particular transport. Transports MAY map their collection to this collection format.
-
-### 7.1 Canonical JSON Collection
-
-The canonical JSON representation is an key-value object, mapping UCAN content identifiers to their fully-encoded base64url strings. A root "entry point" (if one exists) MUST be indexed by the slash `/` character.
-
-#### 7.1.1 Example
-
-
-``` json
-{
-  "/": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCIsInVjdiI6IjAuOC4xIn0.eyJhdWQiOiJkaWQ6a2V5Ono2TWtmUWhMSEJTRk11UjdiUVhUUWVxZTVrWVVXNTFIcGZaZWF5bWd5MXprUDJqTSIsImF0dCI6W3sid2l0aCI6eyJzY2hlbWUiOiJ3bmZzIiwiaGllclBhcnQiOiIvL2RlbW91c2VyLmZpc3Npb24ubmFtZS9wdWJsaWMvcGhvdG9zLyJ9LCJjYW4iOnsibmFtZXNwYWNlIjoid25mcyIsInNlZ21lbnRzIjpbIk9WRVJXUklURSJdfX0seyJ3aXRoIjp7InNjaGVtZSI6InduZnMiLCJoaWVyUGFydCI6Ii8vZGVtb3VzZXIuZmlzc2lvbi5uYW1lL3B1YmxpYy9ub3Rlcy8ifSwiY2FuIjp7Im5hbWVzcGFjZSI6InduZnMiLCJzZWdtZW50cyI6WyJPVkVSV1JJVEUiXX19XSwiZXhwIjo5MjU2OTM5NTA1LCJpc3MiOiJkaWQ6a2V5Ono2TWtyNWFlZmluMUR6akc3TUJKM25zRkNzbnZIS0V2VGIyQzRZQUp3Ynh0MWpGUyIsInByZiI6WyJleUpoYkdjaU9pSkZaRVJUUVNJc0luUjVjQ0k2SWtwWFZDSXNJblZqZGlJNklqQXVPQzR4SW4wLmV5SmhkV1FpT2lKa2FXUTZhMlY1T25vMlRXdHlOV0ZsWm1sdU1VUjZha2MzVFVKS00yNXpSa056Ym5aSVMwVjJWR0l5UXpSWlFVcDNZbmgwTVdwR1V5SXNJbUYwZENJNlczc2lkMmwwYUNJNmV5SnpZMmhsYldVaU9pSjNibVp6SWl3aWFHbGxjbEJoY25RaU9pSXZMMlJsYlc5MWMyVnlMbVpwYzNOcGIyNHVibUZ0WlM5d2RXSnNhV012Y0dodmRHOXpMeUo5TENKallXNGlPbnNpYm1GdFpYTndZV05sSWpvaWQyNW1jeUlzSW5ObFoyMWxiblJ6SWpwYklrOVdSVkpYVWtsVVJTSmRmWDFkTENKbGVIQWlPamt5TlRZNU16azFNRFVzSW1semN5STZJbVJwWkRwclpYazZlalpOYTJ0WGIzRTJVek4wY1ZKWGNXdFNibmxOWkZobWNuTTFORGxGWm5VMmNVTjFOSFZxUkdaTlkycEdVRXBTSWl3aWNISm1JanBiWFgwLlNqS2FIR18yQ2UwcGp1TkY1T0QtYjZqb04xU0lKTXBqS2pqbDRKRTYxX3VwT3J0dktvRFFTeFo3V2VZVkFJQVREbDhFbWNPS2o5T3FPU3cwVmc4VkNBIiwiZXlKaGJHY2lPaUpGWkVSVFFTSXNJblI1Y0NJNklrcFhWQ0lzSW5WamRpSTZJakF1T0M0eEluMC5leUpoZFdRaU9pSmthV1E2YTJWNU9ubzJUV3R5TldGbFptbHVNVVI2YWtjM1RVSktNMjV6UmtOemJuWklTMFYyVkdJeVF6UlpRVXAzWW5oME1XcEdVeUlzSW1GMGRDSTZXM3NpZDJsMGFDSTZleUp6WTJobGJXVWlPaUozYm1aeklpd2lhR2xsY2xCaGNuUWlPaUl2TDJSbGJXOTFjMlZ5TG1acGMzTnBiMjR1Ym1GdFpTOXdkV0pzYVdNdmNHaHZkRzl6THlKOUxDSmpZVzRpT25zaWJtRnRaWE53WVdObElqb2lkMjVtY3lJc0luTmxaMjFsYm5SeklqcGJJazlXUlZKWFVrbFVSU0pkZlgxZExDSmxlSEFpT2preU5UWTVNemsxTURVc0ltbHpjeUk2SW1ScFpEcHJaWGs2ZWpaTmEydFhiM0UyVXpOMGNWSlhjV3RTYm5sTlpGaG1jbk0xTkRsRlpuVTJjVU4xTkhWcVJHWk5ZMnBHVUVwU0lpd2ljSEptSWpwYlhYMC5TakthSEdfMkNlMHBqdU5GNU9ELWI2am9OMVNJSk1waktqamw0SkU2MV91cE9ydHZLb0RRU3haN1dlWVZBSUFURGw4RW1jT0tqOU9xT1N3MFZnOFZDQSJdfQ.Ab-xfYRoqYEHuo-252MKXDSiOZkLD-h1gHt8gKBP0AVdJZ6Jruv49TLZOvgWy9QkCpiwKUeGVbHodKcVx-azCQ",
-  "bafkreihogico5an3e2xy3fykalfwxxry7itbhfcgq6f47sif6d7w6uk2ze": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsInVhdiI6IjAuMS4wIn0.eyJhdWQiOiJkaWQ6a2V5OnpTdEVacHpTTXRUdDlrMnZzemd2Q3dGNGZMUVFTeUExNVc1QVE0ejNBUjZCeDRlRko1Y3JKRmJ1R3hLbWJtYTQiLCJpc3MiOiJkaWQ6a2V5Ono1QzRmdVAyRERKQ2hoTUJDd0FrcFlVTXVKWmROV1dINU5lWWpVeVk4YnRZZnpEaDNhSHdUNXBpY0hyOVR0anEiLCJuYmYiOjE1ODg3MTM2MjIsImV4cCI6MTU4OTAwMDAwMCwic2NwIjoiLyIsInB0YyI6IkFQUEVORCIsInByZiI6bnVsbH0.Ay8C5ajYWHxtD8y0msla5IJ8VFffTHgVq448Hlr818JtNaTUzNIwFiuutEMECGTy69hV9Xu9bxGxTe0TpC7AzV34p0wSFax075mC3w9JYB8yqck_MEBg_dZ1xlJCfDve60AHseKPtbr2emp6hZVfTpQGZzusstimAxyYPrQUWv9wqTFmin0Ls-loAWamleUZoE1Tarlp_0h9SeV614RfRTC0e3x_VP9Ra_84JhJHZ7kiLf44TnyPl_9AbzuMdDwCvu-zXjd_jMlDyYcuwamJ15XqrgykLOm0WTREgr_sNLVciXBXd6EQ-Zh2L7hd38noJm1P_MIr9_EDRWAhoRLXPQ"
-}
-```
 
