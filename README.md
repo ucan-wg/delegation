@@ -4,6 +4,10 @@
 
 TODO
 - Remove general motivation section, narrow to delegation
+- Consider batch signatures for batch use cases
+  - Cature as an invocation? Seems like overkill
+  - Define `alg: "batch/RS256"`, `alg: "batch/EdDSA"`, etc? No
+- Scope all to DIDs
 
 
 
@@ -46,308 +50,8 @@ UCAN Delegation is a component of the [UCAN] specification. This specification d
 
 ## 1.1 Motivation
 
-Since at least the release of Unix, access control lists (ACLs) have been the most popular form of digital authorization, where a list of what each user is allowed to do is maintained on the resource. ACLs have been a successful model suited to architectures where persistent access to a single list is viable. ACLs require that rules are sufficiently well specified, such as in a centralized database with rules covering all possible permutations of rights.
-
-With increasing interconnectivity between machines becoming commonplace, authorization needs to scale to meet the load demands of distributed systems while providing partition tolerance. However, it is not always practical to maintain a single central authorization source. Even when copies of the authorization list are distributed to the relevant servers, latency and partitions introduce troublesome challenges with conflicting updates, to say nothing of storage requirements.
-
-A large portion of personal information now also moves through connected systems. As a result, data privacy is a prominent theme when considering the design of modern applications, to the point of being legislated in parts of the world. 
-
-Ahead-of-time coordination is often a barrier to development in many projects. Flexibility to define specialized authorization semantics for resources and the ability to integrate with external systems trustlessly are essential as the number of autonomous, specialized, and coordinating applications increases.
-
-Many high-value applications run in hostile environments. In recognition of this, many vendors now include public key functionality, such as [non-extractable keys in browsers][browser api crypto key], [certificate systems for external keys][fido], and [secure hardware enclave]s in widespread consumer devices.
-
-Two related models that work exceptionally well in the above context are Simple Public Key Infrastructure ([SPKI][spki rfc]) and object capabilities ([OCAP]). Since offline operation and self-verifiability are two requirements, UCAN adopts an approach closely related to SPKI. UCANs follow the "capabilities as certificates" model, with extensions for revocation and stateful capabilities.
-
-## 1.2 Intuition
-
-By analogy, ACLs are like a bouncer at an exclusive event. This bouncer has a list attendees allowed in and which of those are VIPs that get extra access. The attendees show their government-issued ID and are accepted or rejected.
-
-If there are many such events at many venues, the organizers need to coordinate ahead of time, denials need to be synchronized, and attendees need to show their ID cards to many bouncers. The likelihood of the bouncer letting in the wrong person due to synchronization lag or confusion by someone sharing a name is nonzero.
-
-UCANs work more like [movie tickets][caps as keys] or a festival pass between multiple venues. No one needs to check your ID; who you are is irrelevant. For example, if you have a ticket to see Citizen Kane, you are admitted to Theater 3. If you cannot attend an event, you can hand this ticket to a friend who wants to see the film instead, and there is no coordination required with the theater ahead of time. However, if the theater needs to cancel tickets for some reason, they need a way of uniquely identifying them and sharing this information between them.
-
-The above analogies illustrate several significant tradeoffs between these systems but are only accurate enough to build intuition. A good resource for a more thorough presentation of these tradeoffs is [Capability Myths Demolished]. In this framework, UCAN approximates SPKI with some dynamic features.
-
-## 1.3 Security Considerations
-
-Each UCAN includes a constructive set of assertions of what it is allowed to do. Note that this is not a predicate: it is a positive assertion of rights. "Proofs" are positive evidence (elsewhere called "witnesses") of the possession of rights. They are cryptographically signed data showing that the UCAN issuer either owns this or that it was delegated to them by the root owner.
-
-This signature chain is the root of trust. Private keys themselves SHOULD NOT move from one context to another: this is what the delegation mechanism provides: "sharing authority without sharing keys."
-
-UCANs (and other forms of PKI) depend on the ambient authority of the owner of each resource. This means that the invoking agent must be able to verify the root ownership at decision time. The rest of the chain in-between is self-certifying.
-
-While certificate chains go a long way toward improving security, they do not provide [confinement] on their own. The principle of least authority SHOULD be used when delegating a UCAN: minimizing the amount of time that a UCAN is valid for and reducing authority to the bare minimum required for the delegate to complete their task. This delegate should be trusted as little as is practical since they can further sub-delegate their authority to others without alerting their delegator. UCANs do not offer confinement (as that would require all processes to be online), so it is impossible to guarantee knowledge of all of the sub-delegations that exist. The ability to revoke some or all downstream UCANs exists as a last resort.
-
 
 # 2 Terminology
-
-## 2.1 Roles
-
-There are several roles that an agent MAY assume:
-
-| Name      | Description                                                                                      | 
-| --------- | ------------------------------------------------------------------------------------------------ |
-| Agent     | The general class of entities and principals that interact with a UCAN                           |
-| Validator | Any agent that interprets a UCAN to determine that it is valid, and which capabilities it grants |
-| Principal | An agent identified by DID (listed in a UCAN's `iss` or `aud` field)                             |
-| Audience  | The principal delegated to in the current UCAN. Listed in the `aud` field                        |
-| Issuer    | The signer of the current UCAN. Listed in the `iss` field                                        |
-| Revoker   | The issuer listed in a proof chain that revokes a UCAN                                           |
-| Owner     | The root issuer of a capability, who has some proof that they fully control the resource         |
-
-``` mermaid
-flowchart TD
-    subgraph Agent
-        subgraph Principal
-            direction TB
-
-            subgraph Issuer
-                direction TB
-                
-                Owner
-                Revoker
-            end
-
-            Audience
-        end
-
-        Validator
-    end
-```
-
-## 2.2 Resource
-
-A resource is some data or process that has an address. It can be anything from a row in a database, a user account, storage quota, email address, etc.
-
-A resource describes the noun of a capability. The resource pointer MUST be provided in [URI] format. Arbitrary and custom URIs MAY be used, provided that the intended recipient can decode the URI. The URI is merely a unique identifier to describe the pointer to — and within — a resource.
-
-The same resource MAY be addressed with several URI formats. For instance, a database may have an address at the level of direct memory with `file`, via `sqldb` to gain access to SQL semantics, `http` to use web addressing, and `dnslink` to use Merkle DAGs inside DNS `TXT` records. 
-
-## 2.3 Ability
-
-
-Abilities describe the verb portion of the capability: an ability that can be performed on a resource. For instance, the standard HTTP methods such as `GET`, `PUT`, and `POST` would be possible `can` values for an `http` resource. While arbitrary semantics MAY be described, they MUST apply to the target resource. For instance, it does not make sense to apply `msg/send` to a typical file system. 
-
-Abilities MAY be organized in a hierarchy with enums. A typical example is a superuser capability ("anything") on a file system. Another is read vs write access, such that in an HTTP context, `WRITE` implies `PUT`, `PATCH`, `DELETE`, and so on. Organizing potencies this way allows for adding more options over time in a backward-compatible manner, avoiding the need to reissue UCANs with new resource semantics.
-
-Abilities MUST NOT be case sensitive. For example, `http/post`, `http/POST`, `HTTP/post`, `HTTP/POST`, and `hTtP/pOsT` MUST all mean the same ability.
-
-There MUST be at least one path segment as a namespace. For example, `http/put` and `db/put` MUST be treated as unique from each other.
-
-The only reserved ability MUST be the un-namespaced [`"*"` (top)][top ability], which MUST be allowed on any resource.
-
-##### FIXME operation
-
-## 2.4 Caveats
-
-Capabilities MAY define additional optional or required fields specific to their use case in the caveat fields. This field is OPTIONAL in the general case, but MAY be REQUIRED by particular capability types that require this information to validate. Caveats MAY function as an "escape hatch" for when a use case is not fully captured by the resource and ability fields. Caveats can be read as "on the condition that `<some caveat>` holds".
-
-## 2.5 Capability
-
-A capability is the association of an "ability" to a "resource": `resource × ability × caveats`.
-
-The resource and ability fields are REQUIRED. Any non-normative extensions are OPTIONAL.
-
-```
-{ $RESOURCE: { $ABILITY: $CAVEATS } }
-```
-
-### 2.5.1 Examples
-
-``` json
-{
-  "example://example.com/public/photos/": {
-    "crud/read": [[{}]],
-    "crud/delete": [
-      {
-        "matching": "/(?i)(\\W|^)(baloney|darn|drat|fooey|gosh\\sdarnit|heck)(\\W|$)/"
-      }
-    ]
-  },
-  "example://example.com/private/84MZ7aqwKn7sNiMGsSbaxsEa6EPnQLoKYbXByxNBrCEr": {
-    "wnfs/append": [[{}]]
-  },
-  "mailto:username@example.com": {
-    "msg/send": [[{}]],
-    "msg/receive": [
-      [
-        {
-          "max_count": 5,
-          "templates": [
-            "newsletter",
-            "marketing"
-          ]
-        }
-      ]
-    ]
-  }
-}
-```
-
-### FIXME
-
-MOve sections about RES, ABY, CAV here?
-
-## 2.6 Authority
-
-The set of capabilities delegated by a UCAN is called its "authority." This functions as a declarative description of delegated abilities.
-
-Merging capability authorities MUST follow set semantics, where the result includes all capabilities from the input authorities. Since broader capabilities automatically include narrower ones, this process is always additive. Capability authorities can be combined in any order, with the result always being at least as broad as each of the original authorities.
-
-``` plaintext
-                 ┌───────────────────┐  ─┐
-                 │                   │   │
-                 │                   │   │
-┌────────────────┼───┐               │   │
-│                │   │ Resource B    │   │
-│                │   │               │   │       B×Z
-│                │   │     ×         │   ├─── Capability
-│     Resource A │   │               │   │
-│                │   │ Ability Z     │   │
-│         ×      │   │               │   │
-│                │   │               │   │
-│     Ability Y  │   │               │   │
-│                └───┼───────────────┘  ─┘
-│                    │
-│                    │
-└────────────────────┘
-
-└──────────────────┬─────────────────┘
-                   │
-
-               A×Y U B×Z
-               Authority
-```
-
-Authority is a set of rights space down to the relevant volume of authorizations. Individual capabilities MAY overlap; the authority is the union. Except for [rights amplification], every unique delegation MUST have equal or narrower capabilities from their delegator. Inside this content space, you can draw a boundary around some resource(s) (their type, identifiers, and paths or children) and their capabilities.
-
-For example, given the following authorities against a WebNative filesystem, they can be merged as follows:
-
-```js
-// "wnfs" abilities:
-// fetch < append < overwrite < superuser < top
-
-AuthorityA = {
-  "wnfs://alice.example.com/pictures/": {
-    "wnfs/append": [[{}]]
-  }
-}
-
-AuthorityB = {
-  "wnfs://alice.example.com/pictures/vacation/": {
-    "wnfs/append": [[{}]]
-  },
-  "wnfs://alice.example.com/pictures/vacation/hawaii/": {
-    "wnfs/overwrite": [[{}]]
-  }
-}
-
-merge(AuthorityA, AuthorityB) == {
-  "wnfs://alice.example.com/pictures/": {
-    "wnfs/append": [[{}]],
-  },
-  "wnfs://alice.example.com/pictures/vacation/hawaii": {
-    "wnfs/overwrite": [[{}]]
-  }
-  // Note that ("/pictures/vacation/" x append) has become redundant, being contained in ("/pictures/" x append)
-}
-```
-
-## 2.7 Delegation
-
-Delegation is the act of granting another principal (the delegate) the capability to use a resource that another has (the delegator). A constructive "proof" acts as the authorization proof for a delegation. Proofs are either the owning principal's signature or a UCAN with access to that capability in its authority.
-
-Each direct delegation leaves the ability at the same level or diminishes it. The only exception is in "rights amplification," where a delegation MAY be proven by one-or-more proofs of different types if part of the resource's semantics. 
-
-Note that delegation is a separate concept from [invocation]. Delegation is the act of granting a capability to another, not the act of using it (invocation), which has additional requirements.
-
-## 2.8 Attenuation
-
-Attenuation is the process of constraining the capabilities in a delegation chain.
-
-### 2.8.1 Examples
-
-``` json
-// Example claimed capabilities
-
-{
-  "example://example.com/public/photos/": {
-    "crud/read": [[{}]],
-    "crud/delete": [
-      {
-        "matching": "/(?i)(\\W|^)(baloney|darn|drat|fooey|gosh\\sdarnit|heck)(\\W|$)/"
-      }
-    ]
-  },
-  "mailto:username@example.com": {
-    "msg/send": [[{}]],
-    "msg/receive": [
-      {
-        "max_count": 5,
-        "templates": [
-          "newsletter",
-          "marketing"
-        ]
-      }
-    ]
-  }
-}
-
-// Example proof capabilities
-
-{
-  "example://example.com/public/photos/": {
-    "crud/read": [[{}]],
-    "crud/delete": [[{}]], // Proof is (correctly) broader than claimed
-  },
-  "mailto:username@example.com": {
-    "msg/send": [[{}]], // Proof is (correctly) broader than claimed
-    "msg/receive": [
-      [
-        {
-          "max_count": 5,
-          "templates": [
-            "newsletter",
-            "marketing"
-          ]
-        }
-      ]
-    ]
-  },
-  "dns:example.com": { // Not delegated, so no problem
-    "crud/create": [
-      [{"type": "A"}],
-      [{"type": "CNAME"}],
-      [{"type": "TXT"}]
-    ]
-  }
-}
-```
-
-FIXME
-alteranate caveat mechanism could omit `[{}]`, and use `[{a}, {b}]` when there's no `or`.
-
-e.g. 
-
-``` json
-{
-  "https://example.com/blog": {
-    "crud/create": {},
-    "crud/destroy": {"a": 0}
-    "crud/read": [
-      {"a": 1},
-      {"b": 2}
-    ],
-    "crud/update": [
-      [
-        {"a": 3},
-        {"a": 4}
-      ],
-      {"a": 5}
-    ]
-  }
-}
-```
 
 
 
@@ -529,18 +233,7 @@ This map MUST contain some or none of the following:
 The anatomy of a capability MUST be given as a mapping of resource URI to abilities to array of caveats.
 
 ```
-{ $RESOURCE: { $ABILITY: [ ...$CAVEATS ] } }
-```
-
-#### 3.2.6.1 Resource
-
-Resources MUST be unique and given as [URI]s.
-
-Resources in the capabilities map MAY overlap. For example, the following MAY coexist as top-level keys in a capabilities map:
-
-```json
-"https://example.com",
-"https://example.com/blog"
+{ $SUBJECT: { $ABILITY: [ ...$CAVEATS ] } }
 ```
 
 #### 3.2.6.2 Abilities
@@ -556,6 +249,26 @@ FIXME add _so much_ clarification
 
 
 
+ 
+<!--
+
+FIXME push resource into caveats
+
+
+#### 3.2.6.1 Resource
+
+Resources MUST be unique and given as [URI]s.
+
+Resources in the capabilities map MAY overlap. For example, the following MAY coexist as top-level keys in a capabilities map:
+
+```json
+"https://example.com",
+"https://example.com/blog"
+```
+-->
+
+
+
 
 Caveats MAY be open ended. Caveats MUST be understood by the executor of the eventual [invocation]. Caveats MUST prevent invocation otherwise. Caveats MUST be formatted as objects.
 
@@ -566,22 +279,31 @@ On validation, the caveat array MUST be treated as a logically disjunct (an "OR"
 
 ``` json
 {
-  "dns:example.com": {
-    "crud/create": {}
+  "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp": "ucan/*",
+  "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK": {
+    "crud/create": {
+      "uri": "dns:example.com",
+      "record": "TXT"
+    }
   },
-  "https://example.com/blog": {
-    "crud/read": {"status": "published"},
-    "crud/create": [
-      {"status": "draft"}, 
-      {"status": "published", "day-of-week": "monday"}
-    ],
+  "did:web:example.com": {
+    "crud/read": {
+      "uri": "https://blog.example.com",
+      "status": "published"
+    },
     "crud/update": [
+      {
+        "uri": "https://example.com/newsletter/", 
+        "status": "draft"
+      },
       [
-        {"status": "published"}
-        {"tag": "breaking"},
-        {"tag": "news"},
-      ],
-      {"status": "draft"}
+        {
+          "uri": "https://blog.example.com",
+          "status": "published"
+          "tag": "news",
+        }
+        { "tag": "breaking" },
+      ]
     ]
   }
 }
@@ -589,14 +311,14 @@ On validation, the caveat array MUST be treated as a logically disjunct (an "OR"
 
 The above MUST be interpreted as the set of capabilities below. If _any_ are matched, the check MUST pass validation.
 
-| Resource                   | Ability       | Caveat                                                          |
-|----------------------------|---------------|-----------------------------------------------------------------|
-| `dns:example.com`          | `crud/create` | Always                                                          |
-| `https://example.com/blog` | `crud/read`   | Published posts                                                 |
-| `https://example.com/blog` | `crud/create` | Draft posts                                                     |
-| `https://example.com/blog` | `crud/create` | Published posts on Mondays                                      |
-| `https://example.com/blog` | `crud/update` | Draft posts                                                     |
-| `https://example.com/blog` | `crud/update` | Published posts that are tagged with both `breaking` and `news` |
+| Subject                                                    | Ability       | Caveat                                                                                                 |
+|------------------------------------------------------------|---------------|--------------------------------------------------------------------------------------------------------|
+| `did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp` | `ucan/*`      | Always                                                                                                 |
+| `did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK` | `crud/create` | `TXT` records on `dns:example.com`                                                                     |
+| `did:web:example.com`                                      | `crud/read`   | Posts at `https://blog.example.com` with a `published` status                                          |
+| `did:web:example.com`                                      | `crud/update` | Posts at `https://example.com/newsletter/` with the `draft` status                                     |
+| `did:web:example.com`                                      | `crud/update` | Posts at `https://blog.example.com` with the `published` status and tagged with `published` and `news` |
+
 
 ### XXXX.XXXXX Normal Form
 
@@ -606,22 +328,35 @@ All of the above can be validly expressed in [DNF].
 
 ``` json
 {
-  "dns:example.com": {
-    "crud/create": [[{}]]
+  "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp": {
+    "ucan/*": [[{}]]
   },
-  "https://example.com/blog": {
-    "crud/read": [[{"status": "published"}]],
-    "crud/create": [
-      [{"status": "draft"}], 
-      [{"status": "published", "day-of-week": "monday"}]
+  "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK": {
+    "crud/create": [ FIXME: ambiguity if you only pass crud/create, then later they add a resource. You want to know *what* you can update
+      [
+        { "uri": "dns:example.com" },
+        { "record": "TXT" }
+      ]
+    ]
+  },
+  "did:web:example.com": {
+    "crud/read": [
+      [
+        { "uri": "https://blog.example.com" },
+        { "status": "published" }
+      ]
     ],
     "crud/update": [
       [
-        {"status": "published"}
-        {"tag": "breaking"},
-        {"tag": "news"},
+        { "uri": "https://example.com/newsletter/" }, 
+        { "status": "draft" }
       ],
-      [{"status": "draft"}]
+      [
+        { "uri": "https://blog.example.com" },
+        { "status": "published" },
+        { "tag": "news" },
+        { "tag": "breaking" }
+      ]
     ]
   }
 }
@@ -659,7 +394,7 @@ Note that for consistency in this syntax, the empty array MUST be equivalent to 
 
 ### 3.2.7 Proof of Delegation
 
-Attenuations MUST be satisfied by matching the attenuated capability to a proof in the invocation's [`prf` array][invocation prf].
+Attenuations MUST be satisfied by matching the attenuated [FIXME: in invocation] capability to a proof in the invocation's [`prf` array][invocation prf].
 
 Proofs MUST be resolvable by the recipient. A proof MAY be left unresolvable if it is not used as support for the top-level UCAN's capability chain. The exact format MUST be defined in the relevant transport specification. Some examples of possible formats include: a JSON object payload delivered with the UCAN, a federated HTTP endpoint, a DHT, or a shared database.
 
@@ -815,9 +550,11 @@ Each capability MUST either be originated by the issuer (root capability, or "pa
 
 Except for rights amplification (below), each capability delegation MUST have equal or narrower capabilities from its proofs. The time bounds MUST also be equal to or contained inside the time bounds of the proof's time bounds. This lowering of rights at each delegation is called "attenuation."
 
-## 5.4 Rights Amplification
 
-Some capabilities are more than the sum of their parts. The canonical example is a can of soup and a can opener. You need both to access the soup inside the can, but the can opener may come from a completely separate source than the can of soup. Such semantics MAY be implemented in UCAN capabilities. This means that validating particular capabilities MAY require more than one direct proof. The relevant proofs MAY be of a different resource and ability from the amplified capability. The delegated capability MUST have this behavior in its semantics, even if the proofs do not.
+
+
+
+FIXME removed section, fix numbering
 
 ## 5.5 Content Identifiers
 
@@ -962,3 +699,45 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [time definition]: https://en.wikipedia.org/wiki/Temporal_database
 [ucan-uri]: https://github.com/ucan-wg/ucan-uri
 [ucan.xyz]: https://ucan.xyz
+
+
+
+
+
+
+
+
+
+
+
+
+
+FIXME move to own spec?
+
+# 7. Collections
+
+FIXME update exmaple to latest format ...or break out into own spec :shrug:
+
+UCANs are indexed by their hash — often called their ["content address"][content addressable storage]. UCANs MUST be addressable as [CIDv1]. Use of a [canonical CID] is RECOMMENDED.
+
+Content addressing the proofs has multiple advantages over inlining tokens, including:
+* Avoids re-encoding deeply nested proofs as Base64 many times (and the associated size increase)
+* Canonical signature
+* Enables only transmitting the relevant proofs 
+
+Multiple UCANs in a single request MAY be collected into one table. It is RECOMMENDED that these be indexed by CID. The [canonical JSON representation][canonical collections] (below) MUST be supported. Implementations MAY include more formats, for example to optimize for a particular transport. Transports MAY map their collection to this collection format.
+
+### 7.1 Canonical JSON Collection
+
+The canonical JSON representation is an key-value object, mapping UCAN content identifiers to their fully-encoded base64url strings. A root "entry point" (if one exists) MUST be indexed by the slash `/` character.
+
+#### 7.1.1 Example
+
+
+``` json
+{
+  "/": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCIsInVjdiI6IjAuOC4xIn0.eyJhdWQiOiJkaWQ6a2V5Ono2TWtmUWhMSEJTRk11UjdiUVhUUWVxZTVrWVVXNTFIcGZaZWF5bWd5MXprUDJqTSIsImF0dCI6W3sid2l0aCI6eyJzY2hlbWUiOiJ3bmZzIiwiaGllclBhcnQiOiIvL2RlbW91c2VyLmZpc3Npb24ubmFtZS9wdWJsaWMvcGhvdG9zLyJ9LCJjYW4iOnsibmFtZXNwYWNlIjoid25mcyIsInNlZ21lbnRzIjpbIk9WRVJXUklURSJdfX0seyJ3aXRoIjp7InNjaGVtZSI6InduZnMiLCJoaWVyUGFydCI6Ii8vZGVtb3VzZXIuZmlzc2lvbi5uYW1lL3B1YmxpYy9ub3Rlcy8ifSwiY2FuIjp7Im5hbWVzcGFjZSI6InduZnMiLCJzZWdtZW50cyI6WyJPVkVSV1JJVEUiXX19XSwiZXhwIjo5MjU2OTM5NTA1LCJpc3MiOiJkaWQ6a2V5Ono2TWtyNWFlZmluMUR6akc3TUJKM25zRkNzbnZIS0V2VGIyQzRZQUp3Ynh0MWpGUyIsInByZiI6WyJleUpoYkdjaU9pSkZaRVJUUVNJc0luUjVjQ0k2SWtwWFZDSXNJblZqZGlJNklqQXVPQzR4SW4wLmV5SmhkV1FpT2lKa2FXUTZhMlY1T25vMlRXdHlOV0ZsWm1sdU1VUjZha2MzVFVKS00yNXpSa056Ym5aSVMwVjJWR0l5UXpSWlFVcDNZbmgwTVdwR1V5SXNJbUYwZENJNlczc2lkMmwwYUNJNmV5SnpZMmhsYldVaU9pSjNibVp6SWl3aWFHbGxjbEJoY25RaU9pSXZMMlJsYlc5MWMyVnlMbVpwYzNOcGIyNHVibUZ0WlM5d2RXSnNhV012Y0dodmRHOXpMeUo5TENKallXNGlPbnNpYm1GdFpYTndZV05sSWpvaWQyNW1jeUlzSW5ObFoyMWxiblJ6SWpwYklrOVdSVkpYVWtsVVJTSmRmWDFkTENKbGVIQWlPamt5TlRZNU16azFNRFVzSW1semN5STZJbVJwWkRwclpYazZlalpOYTJ0WGIzRTJVek4wY1ZKWGNXdFNibmxOWkZobWNuTTFORGxGWm5VMmNVTjFOSFZxUkdaTlkycEdVRXBTSWl3aWNISm1JanBiWFgwLlNqS2FIR18yQ2UwcGp1TkY1T0QtYjZqb04xU0lKTXBqS2pqbDRKRTYxX3VwT3J0dktvRFFTeFo3V2VZVkFJQVREbDhFbWNPS2o5T3FPU3cwVmc4VkNBIiwiZXlKaGJHY2lPaUpGWkVSVFFTSXNJblI1Y0NJNklrcFhWQ0lzSW5WamRpSTZJakF1T0M0eEluMC5leUpoZFdRaU9pSmthV1E2YTJWNU9ubzJUV3R5TldGbFptbHVNVVI2YWtjM1RVSktNMjV6UmtOemJuWklTMFYyVkdJeVF6UlpRVXAzWW5oME1XcEdVeUlzSW1GMGRDSTZXM3NpZDJsMGFDSTZleUp6WTJobGJXVWlPaUozYm1aeklpd2lhR2xsY2xCaGNuUWlPaUl2TDJSbGJXOTFjMlZ5TG1acGMzTnBiMjR1Ym1GdFpTOXdkV0pzYVdNdmNHaHZkRzl6THlKOUxDSmpZVzRpT25zaWJtRnRaWE53WVdObElqb2lkMjVtY3lJc0luTmxaMjFsYm5SeklqcGJJazlXUlZKWFVrbFVSU0pkZlgxZExDSmxlSEFpT2preU5UWTVNemsxTURVc0ltbHpjeUk2SW1ScFpEcHJaWGs2ZWpaTmEydFhiM0UyVXpOMGNWSlhjV3RTYm5sTlpGaG1jbk0xTkRsRlpuVTJjVU4xTkhWcVJHWk5ZMnBHVUVwU0lpd2ljSEptSWpwYlhYMC5TakthSEdfMkNlMHBqdU5GNU9ELWI2am9OMVNJSk1waktqamw0SkU2MV91cE9ydHZLb0RRU3haN1dlWVZBSUFURGw4RW1jT0tqOU9xT1N3MFZnOFZDQSJdfQ.Ab-xfYRoqYEHuo-252MKXDSiOZkLD-h1gHt8gKBP0AVdJZ6Jruv49TLZOvgWy9QkCpiwKUeGVbHodKcVx-azCQ",
+  "bafkreihogico5an3e2xy3fykalfwxxry7itbhfcgq6f47sif6d7w6uk2ze": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsInVhdiI6IjAuMS4wIn0.eyJhdWQiOiJkaWQ6a2V5OnpTdEVacHpTTXRUdDlrMnZzemd2Q3dGNGZMUVFTeUExNVc1QVE0ejNBUjZCeDRlRko1Y3JKRmJ1R3hLbWJtYTQiLCJpc3MiOiJkaWQ6a2V5Ono1QzRmdVAyRERKQ2hoTUJDd0FrcFlVTXVKWmROV1dINU5lWWpVeVk4YnRZZnpEaDNhSHdUNXBpY0hyOVR0anEiLCJuYmYiOjE1ODg3MTM2MjIsImV4cCI6MTU4OTAwMDAwMCwic2NwIjoiLyIsInB0YyI6IkFQUEVORCIsInByZiI6bnVsbH0.Ay8C5ajYWHxtD8y0msla5IJ8VFffTHgVq448Hlr818JtNaTUzNIwFiuutEMECGTy69hV9Xu9bxGxTe0TpC7AzV34p0wSFax075mC3w9JYB8yqck_MEBg_dZ1xlJCfDve60AHseKPtbr2emp6hZVfTpQGZzusstimAxyYPrQUWv9wqTFmin0Ls-loAWamleUZoE1Tarlp_0h9SeV614RfRTC0e3x_VP9Ra_84JhJHZ7kiLf44TnyPl_9AbzuMdDwCvu-zXjd_jMlDyYcuwamJ15XqrgykLOm0WTREgr_sNLVciXBXd6EQ-Zh2L7hd38noJm1P_MIr9_EDRWAhoRLXPQ"
+}
+```
+
