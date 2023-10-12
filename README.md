@@ -458,7 +458,6 @@ Expressing caveats in this standard way simplifies ad hoc extension at delegatio
 
 In this example, the original caveat had not accounted for there being multiple tags at runtime. The attenuated capability grants access to blog posts at `https://blog.example.com/"` that are tagged with both `"news"` and `"breaking"` due to the `AND` in the predicate.
 
-
 This is also helpful if each object has a special meaning or sense:
 
 ``` js
@@ -476,6 +475,103 @@ This is also helpful if each object has a special meaning or sense:
 ]
 ```
 
+Note that while adding whole objects is useful in many situation as above, attenuation MAY also be achieved by adding fields to an object:
+
+``` js
+// Original Caveat
+[
+  [
+    {
+      "uri": "https://blog.example.com/",
+      "tag": "news"
+    }
+  ]
+]
+
+// Attenuated Caveat
+[
+  [
+    {
+      "uri": "https://blog.example.com/",
+      "tag": "news",
+      "status": "draft" // New field
+    }
+  ]
+]
+```
+
+FIXME empty case
+
+### 4.4.2 Compact Form
+
+Normal from is consistent, but needlessly verbose for simple cases. Compact form omits superflous branches. Consider the following normal form capabilities:
+
+``` json
+{
+  "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp": {
+    "ucan/*": [[{}]]
+  },
+  "did:web:example.com": {
+    "crud/read": [
+      [
+        { 
+          "uri": "https://blog.example.com",
+          "status": "published" 
+        }
+      ]
+    ],
+    "crud/update": [
+      [
+        { 
+          "uri": "https://example.com/newsletter/",
+          "status": "draft"
+        }
+      ],
+      [
+        { 
+          "uri": "https://blog.example.com",
+          "status": "published",
+          "tag": "news" 
+        },
+        { "tag": "breaking" }
+      ]
+    ]
+  }
+}
+```
+
+The above MAY be expressed in compact form as follows:
+
+``` json
+{
+  "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp": "ucan/*",
+  "did:web:example.com": {
+    "crud/read": { 
+      "uri": "https://blog.example.com",
+      "status": "published" 
+    },
+    "crud/update": [
+      { 
+        "uri": "https://example.com/newsletter/",
+        "status": "draft"
+      },
+      [
+        { 
+          "uri": "https://blog.example.com",
+          "status": "published",
+          "tag": "news" 
+        },
+        { "tag": "breaking" }
+      ]
+    ]
+  }
+}
+```
+
+
+
+
+FIXME attenuation can add fields
 
 
 
@@ -492,45 +588,6 @@ This is also helpful if each object has a special meaning or sense:
 
 Note that all caveats need to be understable to th eexecitor
 
-All of the above can be validly expressed in [DNF].
-
-``` json
-{
-  "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp": {
-    "ucan/*": [[{}]]
-  },
-  "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK": {
-    "crud/create": [ FIXME: ambiguity if you only pass crud/create, then later they add a resource. You want to know *what* you can update
-      [
-        { "uri": "dns:example.com" },
-        { "record": "TXT" }
-      ]
-    ]
-  },
-  "did:web:example.com": {
-    "crud/read": [
-      [
-        { "uri": "https://blog.example.com" },
-        { "status": "published" }
-      ]
-    ],
-    "crud/update": [
-      [
-        { "uri": "https://example.com/newsletter/" }, 
-        { "status": "draft" }
-      ],
-      [
-        { "uri": "https://blog.example.com" },
-        { "status": "published" },
-        { "tag": "news" },
-        { "tag": "breaking" }
-      ]
-    ]
-  }
-}
-```
-
-### 4.4.2 Compact Form
 
 
 
