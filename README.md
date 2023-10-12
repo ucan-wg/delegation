@@ -698,43 +698,56 @@ This calculation MUST NOT take into account [DID fragment]s. If present, fragmen
 ``` mermaid
 flowchart RL
     invoker((&nbsp&nbsp&nbsp&nbspDan&nbsp&nbsp&nbsp&nbsp))
-    subject((&nbsp&nbsp&nbsp&nbspAlice&nbsp&nbsp&nbsp&nbsp)) -. controls .-> resource[(Storage)]
+    subject((&nbsp&nbsp&nbsp&nbspAlice&nbsp&nbsp&nbsp&nbsp))
 
-    rootCap -. references .-> resource
+    subject -- controls --> resource[(Storage)]
+    rootCap -- references --> resource
 
     subgraph Delegations
-    subgraph root [Root UCAN]
-        rootIss(iss: Alice)
-        rootAud(aud: Bob)
-        rootCap("cap: (Storage, crud/*)")
-    end
+        subgraph root [Root UCAN]
+            subgraph rooting [Root Issuer]
+                rootIss(iss: Alice)
+                rootSub(sub: Alice)
+            end
 
-    subgraph del1 [Delegated UCAN]
-        del1Iss(iss: Bob) -.-> rootAud
-        del1Aud(aud: Carol)
-        del1Cap("cap: (Storage, crud/*)") -.-> rootCap
-    end
+            rootCap("cap: (Storage, crud/*)")
+            rootAud(aud: Bob)
+        end
 
-    subgraph del2 [Delegated UCAN]
-        del2Iss(iss: Carol) -.-> del1Aud
-        del2Aud(aud: Dan)
-        del2Cap("cap: (Storage, crud/*)") -.-> del1Cap
-    end
+        subgraph del1 [Delegated UCAN]
+            del1Iss(iss: Bob) --> rootAud
+            del1Sub(sub: Alice)
+            del1Aud(aud: Carol)
+            del1Cap("cap: (Storage, crud/*)") --> rootCap
+
+
+            del1Sub --> rootSub
+        end
+
+        subgraph del2 [Delegated UCAN]
+            del2Iss(iss: Carol) --> del1Aud
+            del2Sub(sub: Alice)
+            del2Aud(aud: Dan)
+            del2Cap("cap: (Storage, crud/*)") --> del1Cap
+
+            del2Sub --> del1Sub
+        end
     end
 
      subgraph inv [Invocation]
         invIss(iss: Dan)
-        invAud(aud: Alice)
         args("args: [Storage, crud/update, (key, value)]")
+        invSub(sub: Alice)
         prf("proofs")
     end
 
-    invIss -.-> del2Aud
+    invIss --> del2Aud
     invoker --> invIss
-    args -.-> del2Cap
-    invAud -.-> rootIss
+    args --> del2Cap
+    invSub --> del2Sub
     rootIss --> subject
-    prf -.-> Delegations
+    rootSub --> subject
+    prf --> Delegations
 ```
 
 In the above diagram, Alice has some storage. This storage may exist in one location with a single source of truth, but to help build intuition this example is location independent: local versions and remote stored copies are eventually consistent, and there is no one "correct" copy. As such, we list the owner (Alice) directly on the resource.
