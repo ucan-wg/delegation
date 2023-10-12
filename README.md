@@ -386,7 +386,7 @@ In concept there is a "bottom" ability ("none" or "void"), but it is not possibl
 
 Caveats define a set of constraints on what can be redelegated or invoked. Caveat semantics MUST be established by the Subject. They are openly extensivle, but vocabularies may be reused across many Subjects.
 
-Caveats MAY be open ended. Caveats MUST be understood by the executor of the eventual [invocation]. Caveats MUST be formatted as maps.
+Caveats MAY be open ended. Caveats MUST be understood by the executor of the eventual [invocation][UCAN Invocation]. Caveats MUST be formatted as maps.
 
 On validation, the caveat array MUST be treated as a logically disjunct (`OR`). In other words: passing validation against _any_ caveat in the array MUST pass the check. For example, consider the following capabilities:
 
@@ -486,18 +486,18 @@ For instance, the following represents `({a: 1, b:2} AND {c: 3}) OR {d: 4}`:
 ``` js
 [
   [
-    {        // ┐
-      a: 1,  // ├─ Caveat ─┐
-      b: 2   // │          │
-    },       // ┘          ├─ AND ─┐
-    {        // ┐          │       │
-      c: 3   // ├─ Caveat ─┘       │
-    }        // ┘                  ├─ OR
-  ],         //                    │
-  [          //                    │
-    {        // ┐                  │
-      d: 4   // ├─ Caveat ─────────┘
-    }        // ┘
+    {       // ┐
+      a: 1, // ├─ Caveat ─┐
+      b: 2  // │          │
+    },      // ┘          ├─ AND ─┐
+    {       // ┐          │       │
+      c: 3  // ├─ Caveat ─┘       │
+    }       // ┘                  ├─ OR
+  ],        //                    │
+  [         //                    │
+    {       // ┐                  │
+      d: 4  // ├─ Caveat ─────────┘
+    }       // ┘
   ]
 ]
 ```
@@ -642,7 +642,7 @@ The above MAY be expressed in compact form as follows:
 
 # 5 Validation
 
-Validation of a UCAN chain MAY occur at any time, but MUST occur upon receipt of an [Invocation] prior to execution.
+Validation of a UCAN chain MAY occur at any time, but MUST occur upon receipt of an [Invocation] prior to execution. While proof chains exist outside of a particular delegation (and are made concrete in [UCAN Invocation]s), each delegate MUST store one or more valid delegations chains for a particular claim.
 
 Each capability has its own semantics, which needs to be interpretable by the [Executor]. Therefore, a validator MUST NOT reject all capabilities when one that is not relevant to them is not understood. For example, if a caveat fails a delegation check at execution time, but is not relevant to the invocation, it MUST be ignored.
 
@@ -690,8 +690,6 @@ const ensureProofExp = (ucan, proof) => {
 ```
 
 ## 5.2 Principal Alignment
-
-FIXME move to high level spec
 
 In delegation, the `aud` field of every proof MUST match the `iss` field of the UCAN being delegated to. This alignment MUST form a chain back to the originating principal for each resource. 
 
@@ -849,6 +847,7 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [SHA2-256]: https://github.com/multiformats/multicodec/blob/master/table.csv#L9
 [SPKI/SDSI]: https://datatracker.ietf.org/wg/spki/about/
 [SPKI]: https://theworld.com/~cme/html/spki.html
+[UCAN Invocation]: https://github.com/ucan-wg/invocation
 [UCAN]: https://github.com/ucan-wg/spec
 [ZCAP-LD]: https://w3c-ccg.github.io/zcap-spec/
 [`did:ion`]: https://identity.foundation/ion/
