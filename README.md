@@ -228,14 +228,16 @@ For example:
 {
   // ...
   cap: {
-    "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp": "ucan/*"
-  //└───────────────────────────┬────────────────────────────┘
-  //                         SUBJECT
+    "did:web:example.com": "ucan/*"
+  //└─────────┬─────────┘
+  //       Subject
   }
 }
 ```
 
 #### 3.2.6.2 Resource
+
+Unlike Subjects and Abilities, Resources are semantic rather than syntactic. The Resource is the "what" that a capability describes.
 
 By default, the Resource of a capability is the Subject. This makes the delegation chain self-certifying.
 
@@ -243,8 +245,8 @@ By default, the Resource of a capability is the Subject. This makes the delegati
 {
   // ...
   "cap": {
-  //                     Subject & Resource
-  //┌────────────────────────────┴────────────────────────────┐
+  //                    Subject & Resource
+  //┌───────────────────────────┴────────────────────────────┐
     "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp": {
       "crud/update": {
         "status": "draft"
@@ -254,18 +256,14 @@ By default, the Resource of a capability is the Subject. This makes the delegati
 }
 ```
 
-In the case where access to an external resource is delegated, the Subject MUST own the relationship to the Resource. The Resource SHOULD be referenced by a `uri` key in the relevant [Caveat](s), except where it would be clearer to do otherwise.
-
-
-FIXME point at /spec#5.5 external resources
-
+In the case where access to an [external resource] is delegated, the Subject MUST own the relationship to the Resource. The Resource SHOULD be referenced by a `uri` key in the relevant [Caveat](s), except where it would be clearer to do otherwise. This MUST be defined by the Subject and understood by the executor.
 
 ``` js
 {
   // ...
   "cap": {
-  //                          Subject
-  //┌────────────────────────────┴────────────────────────────┐
+  //                         Subject
+  //┌───────────────────────────┴────────────────────────────┐
     "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp": {
       "crud/create": {
         "uri": "https://blog.example.com/blog/",
@@ -289,12 +287,28 @@ FIXME point at /spec#5.5 external resources
 
 Abilities MUST be presented as a string. By convention, abilities SHOULD be namespaced with a slash, such as `msg/send`. One or more abilities MUST be given for each resource.
 
-Abilities MUST be defined by the Subject. While it is correct in this narrow context to think about the Subject as a namespace, 
+``` js
+{
+  // ...
+  "cap": {
+    "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp": {
+  //     Ability
+  //  ┌─────┴─────┐
+      "crud/create": {
+        "uri": "https://blog.example.com/blog/",
+        "status": "draft"
+      }
+    }
+  }
+}
+```
+
+Abilities MAY be organized in a hierarchy that abstract over many [Operation]s. A typical example is a superuser capability ("anything") on a file system. Another is read vs write access, such that in an HTTP context, `WRITE` implies `PUT`, `PATCH`, `DELETE`, and so on. Organizing abilities this way allows for adding more options over time in a backward-compatible manner, avoiding the need to reissue UCANs with new resource semantics.
 
 #### 3.2.6.4 Caveats
 
 Caveat semantics MUST be defined by the Subject.
-
+  * [ ] 
 FIXME add _so much_ clarification
 - Semantics defined by resource & OG issuer
 - push resource into caveats
@@ -634,3 +648,4 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 
 <!-- External Links -->
 
+[external resource]: FIXME /spec sectioj 5.5 diagram
