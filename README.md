@@ -697,8 +697,8 @@ This calculation MUST NOT take into account [DID fragment]s. If present, fragmen
 
 ``` mermaid
 flowchart RL
-    invoker((&nbsp&nbsp&nbsp&nbspDan&nbsp&nbsp&nbsp&nbsp\n👨))
-    subject((&nbsp&nbsp&nbsp&nbspAlice&nbsp&nbsp&nbsp&nbsp\n👩)) -. controls .-> resource[(Storage)]
+    invoker((&nbsp&nbsp&nbsp&nbspDan&nbsp&nbsp&nbsp&nbsp))
+    subject((&nbsp&nbsp&nbsp&nbspAlice&nbsp&nbsp&nbsp&nbsp)) -. controls .-> resource[(Storage)]
 
     rootCap -. references .-> resource
 
