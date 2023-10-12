@@ -1,11 +1,5 @@
 # UCAN Delegation Specification v1.0.0-rc.1
 
-
-
-TODOs
-- externally owned resources
-
-
 ## Editors
 
 * [Brooklyn Zelenka], [Fission]
@@ -51,10 +45,10 @@ The overall container of a header, claims, and signature remain as per [RFC 7519
 
 The header is a standard JWT header, and MUST include all of the following fields:
 
-| Field | Type     | Description                    | Required |
-|-------|----------|--------------------------------|----------|
-| `alg` | `String` | Signature algorithm            | Yes      |
-| `typ` | `String` | Type (MUST be `"JWT"`)         | Yes      |
+| Field | Type     | Description            | Required |
+|-------|----------|------------------------|----------|
+| `alg` | `String` | Signature algorithm    | Yes      |
+| `typ` | `String` | Type (MUST be `"JWT"`) | Yes      |
 
 ### 3.1.1 Algorithms
 
@@ -409,6 +403,33 @@ The above MUST be interpreted as the set of capabilities below. If _any_ are mat
 
 ### 4.4.1 Normal Form
 
+Caveats MAY be expressed in a compact form, but any caveat MUST be expressable in disjunctive normal form ([DNF]). Expanding to normal form during validation is RECOMMENDED to ease checking.
+
+Normal form MUST take the following shape: `[[{}]]`. The outer array represents a logical `any` (chained `OR`s), and the inner arrays represent logical `all` (chained `AND`s).
+
+For instance, the following represents `({a: 1, b:2} AND {c: 3}) OR {d: 4}`:
+
+``` js
+[
+  [
+    {        // ┐
+      a: 1,  // ├─ Caveat ┐
+      b: 2   // │         │
+    },       // ┘         ├─ AND ┐
+    {        // ┐         │      │
+      c: 3   // ├─ Caveat ┘      │
+    }        // ┘                ├─ OR
+  ],         //                  │
+  [          //                  │
+    {d: 4}   // ]─ Caveat ───────┘
+  ]
+]
+```
+
+
+
+
+
 
 
 | Subject                                                    | Ability       | Caveat                                                                                                 |
@@ -472,38 +493,9 @@ All of the above can be validly expressed in [DNF].
 
 
 
-The caveat array SHOULD NOT be empty, as an empty array means "in no case" (which is equivalent to not listing the ability). This follows from the rule that delegations MUST be of equal or lesser scope. When an array is given, an attenuated caveat MUST (syntactically) include all of the fields of the relevant proof caveat, plus the newly introduced caveats.
-
-| Proof Caveats | Delegated Caveats | Is Valid? | Comment                                |
-|---------------|-------------------|-----------|----------------------------------------|
-| `[{}]`        | `[{}]`            | Yes       | Equal                                  |
-| `[x]`         | `[x]`             | Yes       | Equal                                  |
-| `[x]`         | `[{}]`            | No        | Escalation to any                      |
-| `[{}]`        | `[x]`             | Yes       | Attenuates the `{}` caveat to `x`      |
-| `[x]`         | `[y]`             | No        | Escalation by using a different caveat |
-| `[x, y]`      | `[x]`             | Yes       | Removes a capability                   |
-| `[x, y]`      | `[x, (y + z)]`    | Yes       | Attenuates existing caveat             |
-| `[x, y]`      | `[x, y, z]`       | No        | Escalation by adding new capability    |
-
-Note that for consistency in this syntax, the empty array MUST be equivalent to disallowing the capability. Conversely, an empty object MUST be treated as "no caveats".
-
-| Proof Caveats          | Comment                                                       |
-|------------------------|---------------------------------------------------------------|
-| `[]`                   | No capabilities                                               |
-| `{}`, `[{}]`, `[[{}]]` | Full capabilities for this resource/ability pair (no caveats) |
-
-<!--
-
-FIXME move to invocatyion, maybe a small section here
-### 3.2.7 Proof of Delegation
-
-Attenuations MUST be satisfied by matching the attenuated [FIXME: in invocation] capability to a proof in the invocation's [`prf` array][invocation prf].
-
-Proofs MUST be resolvable by the recipient. A proof MAY be left unresolvable if it is not used as support for the top-level UCAN's capability chain. The exact format MUST be defined in the relevant transport specification. Some examples of possible formats include: a JSON object payload delivered with the UCAN, a federated HTTP endpoint, a DHT, or a shared database.
- 
- -->
-
 # 5 Validation
+
+
 
 FIXME note that validation happens at exection time
 
@@ -608,9 +600,41 @@ The following UCAN fragment would be valid to invoke as `did:key:zH3C2AVvLMv6gmM
 
 A good litmus test for invocation validity by a invoking agent is to check if they would be able to create a valid delegation for that capability.
 
+## 5.4 Caveat Attenuation
+
+The caveat array SHOULD NOT be empty, as an empty array means "in no case" (which is equivalent to not listing the ability). This follows from the rule that delegations MUST be of equal or lesser scope. When an array is given, an attenuated caveat MUST (syntactically) include all of the fields of the relevant proof caveat, plus the newly introduced caveats.
+
+| Proof Caveats | Delegated Caveats | Is Valid? | Comment                                |
+|---------------|-------------------|-----------|----------------------------------------|
+| `[{}]`        | `[{}]`            | Yes       | Equal                                  |
+| `[x]`         | `[x]`             | Yes       | Equal                                  |
+| `[x]`         | `[{}]`            | No        | Escalation to any                      |
+| `[{}]`        | `[x]`             | Yes       | Attenuates the `{}` caveat to `x`      |
+| `[x]`         | `[y]`             | No        | Escalation by using a different caveat |
+| `[x, y]`      | `[x]`             | Yes       | Removes a capability                   |
+| `[x, y]`      | `[x, (y + z)]`    | Yes       | Attenuates existing caveat             |
+| `[x, y]`      | `[x, y, z]`       | No        | Escalation by adding new capability    |
+
+Note that for consistency in this syntax, the empty array MUST be equivalent to disallowing the capability. Conversely, an empty object MUST be treated as "no caveats".
+
+| Proof Caveats          | Comment                                                       |
+|------------------------|---------------------------------------------------------------|
+| `[]`                   | No capabilities                                               |
+| `{}`, `[{}]`, `[[{}]]` | Full capabilities for this resource/ability pair (no caveats) |
+
+<!--
+
+FIXME move to invocatyion, maybe a small section here
+### 3.2.7 Proof of Delegation
+
+Attenuations MUST be satisfied by matching the attenuated [FIXME: in invocation] capability to a proof in the invocation's [`prf` array][invocation prf].
+
+Proofs MUST be resolvable by the recipient. A proof MAY be left unresolvable if it is not used as support for the top-level UCAN's capability chain. The exact format MUST be defined in the relevant transport specification. Some examples of possible formats include: a JSON object payload delivered with the UCAN, a federated HTTP endpoint, a DHT, or a shared database.
+ 
+ -->
 
 
-## 5.5 Content Identifiers
+# 6. Content Identifiers
 
 A UCAN token MUST be referenced as a [base32] [CIDv1]. [SHA2-256] is the RECOMMENDED hash algorithm.
 
