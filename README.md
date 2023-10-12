@@ -399,9 +399,58 @@ On validation, the caveat array MUST be treated as a logically disjunct (an "OR"
 }
 ```
 
-The above MUST be interpreted as the set of capabilities below. If _any_ are matched, the check MUST pass validation.
+The above MUST be interpreted as the set of capabilities below in the following table:
 
-### 4.4.1 Normal Form
+| Subject                                                    | Ability       | Caveat                                                                                                 |
+|------------------------------------------------------------|---------------|--------------------------------------------------------------------------------------------------------|
+| `did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp` | `ucan/*`      | Always                                                                                                 |
+| `did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK` | `crud/create` | `TXT` records on `dns:example.com`                                                                     |
+| `did:web:example.com`                                      | `crud/read`   | Posts at `https://blog.example.com` with a `published` status                                          |
+| `did:web:example.com`                                      | `crud/update` | Posts at `https://example.com/newsletter/` with the `draft` status                                     |
+| `did:web:example.com`                                      | `crud/update` | Posts at `https://blog.example.com` with the `published` status and tagged with `published` and `news` |
+
+When validating a delegation chain in the abstract, all caveats MUST be present in each sucessive delegation. At invocation time, only the capability being invoked MUST be match the delegation chain.
+Note that all caveats need to be understable to th execitor
+
+### 4.4.1 All or Nothing
+
+Caveats MAY include user-supplied fields, but there are two default cases that MUST be supported. These are called the "top" and "bottom" caveats.
+
+#### 4.4.1.1 The Top Caveat
+
+The top caveat MUST represent the lack of caveat. In predicate logic terms, it represents `true`. In [normal form], it MUST be represented as `[[{}]]`. In compact form, the caveat array MAY be omitted.
+
+``` js
+// Normal Form
+{
+  "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp": {
+    "some/ability": [[{}]]
+  }
+}
+
+// Compact Form
+{
+  "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp": "some/ability",
+}
+```
+
+#### 4.4.1.2 The Bottom Caveat
+
+The explicitly empty caveat (`[[]]`) MUST represent disallowing any action on the resource. In predicate logic terms, this represents `false`. While possible to express with the bottom caveat, it is equivalent to simply omitting the affected branches or capabilities. For reasons of legibility and size, omission is RECOMMENDED.
+
+``` js
+{
+  "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp": {
+    "some/ability": [[]] // Equivalent to omitting this ability
+  }
+}
+```
+
+### 4.4.2 Serialization
+
+Caveats have two isomorphic serilaizations: [compact form] and [normal form]. It is often easiest for validators to expand to normal form prior to checking. Compact form is more easily legible and requires fewer bytes.
+
+### 4.4.2.1 Normal Form
 
 Caveats MAY be expressed in a compact form, but any caveat MUST be expressable in disjunctive normal form ([DNF]). Expanding to normal form during validation is RECOMMENDED to ease checking.
 
@@ -415,14 +464,14 @@ For instance, the following represents `({a: 1, b:2} AND {c: 3}) OR {d: 4}`:
     {        // ┐
       a: 1,  // ├─ Caveat ─┐
       b: 2   // │          │
-    },       // ┘          ├─ AND ┐
-    {        // ┐          │      │
-      c: 3   // ├─ Caveat ─┘      │
-    }        // ┘                 ├─ OR
-  ],         //                   │
-  [          //                   │
-    {        // ┐                 │
-      d: 4   // ├─ Caveat ────────┘
+    },       // ┘          ├─ AND ─┐
+    {        // ┐          │       │
+      c: 3   // ├─ Caveat ─┘       │
+    }        // ┘                  ├─ OR
+  ],         //                    │
+  [          //                    │
+    {        // ┐                  │
+      d: 4   // ├─ Caveat ─────────┘
     }        // ┘
   ]
 ]
@@ -500,9 +549,7 @@ Note that while adding whole objects is useful in many situation as above, atten
 ]
 ```
 
-FIXME empty case
-
-### 4.4.2 Compact Form
+### 4.4.2.1 Compact Form
 
 Normal from is consistent, but needlessly verbose for simple cases. Compact form omits superflous branches. Consider the following normal form capabilities:
 
@@ -567,37 +614,6 @@ The above MAY be expressed in compact form as follows:
   }
 }
 ```
-
-
-
-
-FIXME attenuation can add fields
-
-
-
-
-
-| Subject                                                    | Ability       | Caveat                                                                                                 |
-|------------------------------------------------------------|---------------|--------------------------------------------------------------------------------------------------------|
-| `did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp` | `ucan/*`      | Always                                                                                                 |
-| `did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK` | `crud/create` | `TXT` records on `dns:example.com`                                                                     |
-| `did:web:example.com`                                      | `crud/read`   | Posts at `https://blog.example.com` with a `published` status                                          |
-| `did:web:example.com`                                      | `crud/update` | Posts at `https://example.com/newsletter/` with the `draft` status                                     |
-| `did:web:example.com`                                      | `crud/update` | Posts at `https://blog.example.com` with the `published` status and tagged with `published` and `news` |
-
-
-Note that all caveats need to be understable to th eexecitor
-
-
-
-
-
-
-### 4.4.3 Top Caveat
-
-
-
-
 
 # 5 Validation
 
