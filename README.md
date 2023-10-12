@@ -52,7 +52,7 @@ The header is a standard JWT header, and MUST include all of the following field
 
 ### 3.1.1 Algorithms
 
-It is RECOMMENDED that the following algorithms be supported:
+The following algorithms are RECOMMENDED to be validatable:
 
 - [ES256]
 - [EdDSA][RFC 8037]
@@ -100,11 +100,7 @@ The `iss` and `aud` fields MUST contain a single principal each.
 
 If an issuer's DID has more than one key (e.g. [`did:ion`], [`did:3`]), the key used to sign the UCAN MUST be made explicit, using the [DID fragment] (the hash index) in the `iss` field. The `aud` field SHOULD NOT include a hash field, as this defeats the purpose of delegating to an identifier for multiple keys instead of an identity.
 
-It is RECOMMENDED that the following `did:key` types be supported:
-
-- [RSA][did:key RSA]
-- [EdDSA][did:key EdDSA]
-- [P-256 ECDSA][did:key ECDSA]
+[EdDSA] `did:key`s MUST be suppoted, and their use is RECOMMENDED. [RSA][did:key RSA] and [P-256 ECDSA][did:key ECDSA] `did:key`s MUST be supported, but SHOULD NOT be used when other options are available.
 
 Note that every [Subject] MUST correspond to a root delegation issuer.
 
@@ -505,7 +501,7 @@ Expressing caveats in this standard way simplifies ad hoc extension at delegatio
 ]
 ```
 
-In this example, the original caveat had not accounted for there being multiple tags at runtime. The attenuated capability grants access to blog posts at `https://blog.example.com/"` that are tagged with both `"news"` and `"breaking"` due to the `AND` in the predicate.
+In this example, the original caveat had not accounted for there being multiple tags at runtime. The attenuated capability grants access to blog posts at `https://blog.example.com/` that are tagged with both `news` and `breaking` due to the `AND` in the predicate.
 
 This is also helpful if each object has a special meaning or sense:
 
@@ -784,6 +780,8 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 
 <!-- Internal Links -->
 
+[Facts]
+[* gives full access]
 
 <!-- External Links -->
 
@@ -825,3 +823,7 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [did:key EdDSA]: https://w3c-ccg.github.io/did-method-key/#ed25519-x25519
 [did:key RSA]: https://w3c-ccg.github.io/did-method-key/#rsa
 [external resource]: https://github.com/ucan-wg/spec#55-wrapping-existing-systems
+
+[DNF]
+[POLA]
+
