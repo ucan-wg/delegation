@@ -64,12 +64,12 @@ The JWT `"alg": "none"` MUST NOT be supported, as the lack of signature prevents
 
 Symmetric algorithms such as HMACs (e.g. `"alg": "HS256"`) MUST NOT be supported, since they cannot be used to prove control over the issuer DID.
 
-### 3.1.1 Examples
+Here is a common example:
 
 ```json
 {
   "alg": "EdDSA",
-  "typ": "JWT",
+  "typ": "JWT"
 }
 ```
 
@@ -104,7 +104,7 @@ If an issuer's DID has multiple or mutable keys (e.g. [`did:plc`], [`did:ion`]),
 
 Note that every [Subject] MUST correspond to a root delegation issuer.
 
-#### 3.2.2.1 Examples
+Below are a couple examples:
 
 ```json
 "aud": "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp",
@@ -140,13 +140,28 @@ Several named points of time in the UCAN lifecycle [can be found in the high lev
 
 [^js-num-size]: JavaScript has a single numeric type ([`Number`][JS Number]) for both integers and floats. This representation is defined as a [IEEE-754] double-precision floating point number, which has a 53-bit significand.
 
-#### 3.2.3.1 Example
+Below are a couple examples:
 
 ```js
 {
-  "nbf": 1529496683,
-  "exp": 1575606941,
   // ...
+  "nbf": 1529496683,
+  "exp": 1575606941
+}
+```
+
+```js
+{
+  // ...
+  "exp": 1575606941
+}
+```
+
+```js
+{
+  // ...
+  "nbf": 1529496683,
+  "exp": null
 }
 ```
 
@@ -158,25 +173,24 @@ The recommeneded size of the nonce differs by key type. In many cases, a random 
 
 This field SHOULD NOT be used to sign arbitrary data, such as signature challenges. See the [`fct`][Facts] field for more.
 
-#### 3.2.4.1 Example
+Here is a simple example.
 
-``` json
+``` js
 {
   // ...
-  "nnc": "NCC-1701-D"
+  "nnc": "_NCC-1701-D_"
 }
 ```
 
 ### 3.2.5 Facts
 
-FIXME not validated in the chain: do what you want!
+The OPTIONAL `fct` field contains a map of arbitrary facts and proofs of knowledge. The enclosed data MUST be self-evident and externally verifiable. It MAY include information such as hash preimages, server challenges, a Merkle proof, dictionary data, etc. Facts themselves MUST NOT be semantically meaningful to delegation chains. 
 
-The OPTIONAL `fct` field contains a map of arbitrary facts and proofs of knowledge. The enclosed data MUST be self-evident and externally verifiable. It MAY include information such as hash preimages, server challenges, a Merkle proof, dictionary data, etc.
-
-#### 3.2.5.1 Examples
+Below is an example:
 
 ``` json
 {
+  // ...
   "fct": {
     "challenges": {
       "example.com": "abcdef",
@@ -310,7 +324,7 @@ Abilities MUST be presented as a case-insensitive string. By convention, abiliti
 }
 ```
 
-Abilities MAY be organized in a hierarchy that abstract over many [Operation]s. A typical example is a superuser capability ("anything") on a file system. Another is command vs query access, such that in an HTTP context, `WRITE` implies `PUT`, `PATCH`, `DELETE`, and so on. [`*` gives full access] to a Resource more in the vein of object capabilities. Organizing abilities this way allows Resources to evolve over time in a backward-compatible manner, avoiding the need to reissue UCANs with new resource semantics.
+Abilities MAY be organized in a hierarchy that abstract over many [Operation]s. A typical example is a superuser capability ("anything") on a file system. Another is command vs query access, such that in an HTTP context, `WRITE` implies `PUT`, `PATCH`, `DELETE`, and so on. [`*` gives full access][Top Ability] to a Resource more in the vein of object capabilities. Organizing abilities this way allows Resources to evolve over time in a backward-compatible manner, avoiding the need to reissue UCANs with new resource semantics.
 
 ### 4.3.1 Reserved Abilities
 
@@ -795,8 +809,8 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 
 <!-- Internal Links -->
 
-[Facts]
-[* gives full access]
+[Facts]: #325-facts
+[Top Ability]: #4312--aka-top
 
 <!-- External Links -->
 
