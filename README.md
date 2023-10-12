@@ -871,6 +871,7 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [Protocol Labs]: https://protocol.ai/
 [RFC 8037]: https://www.rfc-editor.org/rfc/rfc8037
 [RS256]: https://www.rfc-editor.org/rfc/rfc7518#section-3.3
+[Raw data multicodec]: https://github.com/multiformats/multicodec/blob/master/table.csv#L41
 [SHA2-256]: https://github.com/multiformats/multicodec/blob/master/table.csv#L9
 [SPKI/SDSI]: https://datatracker.ietf.org/wg/spki/about/
 [SPKI]: https://theworld.com/~cme/html/spki.html
