@@ -98,8 +98,8 @@ The `iss` and `aud` fields describe the token's principals. They are distinguish
 
 The `iss` and `aud` fields MUST contain a single principal each.
 
-If an issuer's DID has more than one key (e.g. [`did:ion`], [`did:3`]), the key used to sign the UCAN MUST be made explicit, using the [DID fragment] (the hash index) in the `iss` field. The `aud` field SHOULD NOT include a hash field, as this defeats the purpose of delegating to an identifier for multiple keys instead of an identity.
-
+If an issuer's DID has multiple or mutable keys (e.g. [`did:plc`], [`did:ion`]), the key used to sign the UCAN MUST be made explicit, using the [DID fragment] (the hash index) in the `iss` field. The `aud` field SHOULD NOT include a hash field, as this defeats the purpose of delegating to an identifier for multiple keys instead of an identity.
+ 
 [EdDSA] `did:key`s MUST be suppoted, and their use is RECOMMENDED. [RSA][did:key RSA] and [P-256 ECDSA][did:key ECDSA] `did:key`s MUST be supported, but SHOULD NOT be used when other options are available.
 
 Note that every [Subject] MUST correspond to a root delegation issuer.
@@ -117,13 +117,13 @@ Note that every [Subject] MUST correspond to a root delegation issuer.
 ```
 
 ```json
-"aud": "did:ion:EiCrsG_DLDmSKic1eaeJGDtUoC1dj8tj19nTRD9ODzAjaQ",
+"aud": "did:plc:ewvi7nxzyoun6zhxrhs64oiz",
 "iss": "did:ion:test:EiANCLg1uCmxUR4IUkpW8Y5_nuuXLbAEwonQd4q8pflTnw#key-1",
 ```
 
 ```json
-"aud": "did:ion:EiCrsG_DLDmSKic1eaeJGDtUoC1dj8tj19nTRD9ODzAjaQ",
-"iss": "did:3:bafyreiffkeeq4wq2htejqla2is5ognligi4lvjhwrpqpl2kazjdoecmugi#yh27jTt7Ny2Pwdy",
+"aud": "did:pkh:eth:0xb9c5714089478a327f09197987f16f9e5d936e8a",
+"iss": "did:plc:ewvi7nxzyoun6zhxrhs64oiz",
 ```
 
 ### 3.2.3 Time Bounds
@@ -132,7 +132,7 @@ Note that every [Subject] MUST correspond to a root delegation issuer.
 
 The `nbf` field is OPTIONAL. When omitted, the token MUST be treated as valid beginning from the Unix epoch. Setting the `nbf` field to a time in the future MUST delay using a UCAN. For example, pre-provisioning access to conference materials ahead of time but not allowing access until the day it starts is achievable with judicious use of `nbf`.
 
-The `exp` field MUST be set. Following the [principle of least authority][POLA], it is RECOMMENDED to give a timestamp expiry for UCANs. If the token explicitly never expires, the `exp` field MUST be set to `null`. If the time is in the past at validation time, the token MUST be treated as expired and invalid.
+The `exp` field MUST be set. Following the [principle of least authority][PoLA], it is RECOMMENDED to give a timestamp expiry for UCANs. If the token explicitly never expires, the `exp` field MUST be set to `null`. If the time is in the past at validation time, the token MUST be treated as expired and invalid.
 
 Keeping the window of validity as short as possible is RECOMMENDED. Limiting the time range can mitigate the risk of a malicious user abusing a UCAN. However, this is situationally dependent. It may be desirable to limit the frequency of forced reauthorizations for trusted devices. Due to clock drift, time bounds SHOULD NOT be considered exact. A buffer of ±60 seconds is RECOMMENDED.
 
@@ -292,7 +292,7 @@ In the case where access to an [external resource] is delegated, the Subject MUS
 
 ## 4.3 Abilities
 
-Abilities MUST be presented as a string. By convention, abilities SHOULD be namespaced with a slash, such as `msg/send`. One or more abilities MUST be given for each resource.
+Abilities MUST be presented as a case-insensitive string. By convention, abilities SHOULD be namespaced with a slash, such as `msg/send`. One or more abilities MUST be given for each resource.
 
 ``` js
 {
@@ -310,7 +310,7 @@ Abilities MUST be presented as a string. By convention, abilities SHOULD be name
 }
 ```
 
-Abilities MAY be organized in a hierarchy that abstract over many [Operation]s. A typical example is a superuser capability ("anything") on a file system. Another is read vs write access, such that in an HTTP context, `WRITE` implies `PUT`, `PATCH`, `DELETE`, and so on. [`*` gives full access] to a Resource more in the vein of object capabilities. Organizing abilities this way allows Resources to evolve over time in a backward-compatible manner, avoiding the need to reissue UCANs with new resource semantics.
+Abilities MAY be organized in a hierarchy that abstract over many [Operation]s. A typical example is a superuser capability ("anything") on a file system. Another is command vs query access, such that in an HTTP context, `WRITE` implies `PUT`, `PATCH`, `DELETE`, and so on. [`*` gives full access] to a Resource more in the vein of object capabilities. Organizing abilities this way allows Resources to evolve over time in a backward-compatible manner, avoiding the need to reissue UCANs with new resource semantics.
 
 ### 4.3.1 Reserved Abilities
 
@@ -402,7 +402,7 @@ On validation, the caveat array MUST be treated as a logically disjunct (`OR`). 
           "tag": "news",                     // │
         },                                   // ┘
         {                   // ┐
-          "tag": "breaking" // ├ Caveat
+          "tag": "breaking" // ├─ Caveat
         }                   // ┘
       ]
     ]
@@ -811,9 +811,11 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [Christine Lemmer-Webber]: https://github.com/cwebber
 [Christopher Joel]: https://github.com/cdata
 [DID]: https://www.w3.org/TR/did-core/
+[DNF]: https://en.wikipedia.org/wiki/Disjunctive_normal_form
 [Dan Finlay]: https://github.com/danfinlay
 [Daniel Holmgren]: https://github.com/dholms
 [ES256]: https://www.rfc-editor.org/rfc/rfc7518#section-3.4
+[EdDSA]: https://en.wikipedia.org/wiki/EdDSA 
 [Executor]: https://github.com/ucan-wg/spec#31-roles
 [Fission]: https://fission.codes
 [Hugo Dias]: https://github.com/hugomrdias
@@ -826,6 +828,7 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [Martin Kleppmann]: https://martin.kleppmann.com/
 [Mikael Rogers]: https://github.com/mikeal/
 [Philipp Krüger]: https://github.com/matheus23
+[PoLA]: https://en.wikipedia.org/wiki/Principle_of_least_privilege 
 [Protocol Labs]: https://protocol.ai/
 [RFC 8037]: https://www.rfc-editor.org/rfc/rfc8037
 [RS256]: https://www.rfc-editor.org/rfc/rfc7518#section-3.3
@@ -833,12 +836,12 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [SPKI/SDSI]: https://datatracker.ietf.org/wg/spki/about/
 [SPKI]: https://theworld.com/~cme/html/spki.html
 [UCAN]: https://github.com/ucan-wg/spec
+[ZCAP-LD]: https://w3c-ccg.github.io/zcap-spec/
+[`did:ion`]: https://identity.foundation/ion/
+[`did:key`]: https://w3c-ccg.github.io/did-method-key/
+[`did:plc`]: https://github.com/did-method-plc/did-method-plc
 [base32]: https://github.com/multiformats/multibase/blob/master/multibase.csv#L13
 [did:key ECDSA]: https://w3c-ccg.github.io/did-method-key/#p-256
 [did:key EdDSA]: https://w3c-ccg.github.io/did-method-key/#ed25519-x25519
 [did:key RSA]: https://w3c-ccg.github.io/did-method-key/#rsa
 [external resource]: https://github.com/ucan-wg/spec#55-wrapping-existing-systems
-
-[DNF]
-[POLA]
-
