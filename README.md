@@ -199,9 +199,13 @@ The OPTIONAL `fct` field contains a map of arbitrary facts and proofs of knowled
 }
 ```
 
-### 3.2.6 Capabilities & Attenuation
+# 4. Capabilities
 
-Capabilities MUST be presented as a map under the `cap` field. This map is REQUIRED but MAY be empty.
+Capabilities are the semantically-relevant claims of a delegation. They MUST be presented as a map under the `cap` field as a map. This map is REQUIRED but MAY be empty. This MUST take the following form:
+
+```
+{ $SUBJECT: { $ABILITY: $CAVEATS } }
+```
 
 This map MUST contain some or none of the following:
 1. A strict subset (attenuation) of the capability authority from the next direct `prf` field
@@ -210,15 +214,28 @@ This map MUST contain some or none of the following:
 
 The anatomy of a capability MUST be given as a mapping of resource URI to abilities to array of caveats.
 
-The capabilities take this form:
+Here is an illustrative example:
 
+``` js
+{
+  // ...
+  "cap": {
+    "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp": {
+      "crud/create": {
+        "uri": "https://blog.example.com/blog/",
+        "status": "draft"
+      },
+      "msg/send": {
+        "sender": "mailto:alice@example.com",
+        "subject": "Weekly Reports",
+        "day": "friday"
+      }
+    }
+  }
+}
 ```
-{ $SUBJECT: { $ABILITY: $CAVEATS } }
-```
 
-FIXME example
-
-#### 3.2.6.1 Subject
+## 4.1 Subject
 
 The Subject MUST be the DID that initiated the delegation chain.
 
@@ -235,7 +252,7 @@ For example:
 }
 ```
 
-#### 3.2.6.2 Resource
+## 4.2 Resource
 
 Unlike Subjects and Abilities, Resources are semantic rather than syntactic. The Resource is the "what" that a capability describes.
 
@@ -283,7 +300,7 @@ In the case where access to an [external resource] is delegated, the Subject MUS
 }
 ```
 
-#### 3.2.6.3 Abilities
+## 4.3 Abilities
 
 Abilities MUST be presented as a string. By convention, abilities SHOULD be namespaced with a slash, such as `msg/send`. One or more abilities MUST be given for each resource.
 
@@ -303,25 +320,58 @@ Abilities MUST be presented as a string. By convention, abilities SHOULD be name
 }
 ```
 
-Abilities MAY be organized in a hierarchy that abstract over many [Operation]s. A typical example is a superuser capability ("anything") on a file system. Another is read vs write access, such that in an HTTP context, `WRITE` implies `PUT`, `PATCH`, `DELETE`, and so on. Organizing abilities this way allows for adding more options over time in a backward-compatible manner, avoiding the need to reissue UCANs with new resource semantics.
+Abilities MAY be organized in a hierarchy that abstract over many [Operation]s. A typical example is a superuser capability ("anything") on a file system. Another is read vs write access, such that in an HTTP context, `WRITE` implies `PUT`, `PATCH`, `DELETE`, and so on. [`*` gives full access] to a Resource more in the vein of object capabilities. Organizing abilities this way allows Resources to evolve over time in a backward-compatible manner, avoiding the need to reissue UCANs with new resource semantics.
 
-#### 3.2.6.4 Caveats
+### 4.3.1 Reserved Abilities
 
-Caveat semantics MUST be defined by the Subject.
-  * [ ] 
-FIXME add _so much_ clarification
-- Semantics defined by resource & OG issuer
-- push resource into caveats
-- optional resource, message passing analogy
-- Normal form and compact form
+#### 43.1.1 `ucan`
 
+The `ucan` abilty namespace MUST be reserved. Support for `ucan/*` is RECOMMENDED
 
+FIXME
 
-Caveats MAY be open ended. Caveats MUST be understood by the executor of the eventual [invocation]. Caveats MUST prevent invocation otherwise. Caveats MUST be formatted as objects.
+#### 4.3.1.2 "Top" Ability
+
+The "top" (or "super user") ability MUST be denoted `*`. The top ability grants access to all other capabilities for the specified resource, across all possible namespaces. Top corresponds to an "all" matcher, whereas [delegation] corresponds to "any" in the UCAN chain. The top ability is useful when "linking" agents by delegating all access to resource(s). This is the most powerful ability, and as such it SHOULD be handled with care.
+
+``` mermaid
+%%{ init: { 'flowchart': { 'curve': 'linear' } } }%%
+
+flowchart BT
+  *
+
+  msg/* --> *
+  subgraph msgGraph [ ]
+    msg/send --> msg/*
+    msg/receive --> msg/*
+  end
+
+  crud/* --> *
+  subgraph crudGraph [ ]
+    crud/read --> crud/*
+    crud/mutate --> crud/*
+
+    subgraph mutationGraph [ ]
+        crud/create --> crud/mutate
+        crud/update --> crud/mutate
+        crud/destroy --> crud/mutate
+    end
+  end
+
+  ... --> *
+```
+
+#### 4.3.1.3 Bottom
+
+In concept there is a "bottom" ability ("none" or "void"), but it is not possible to represent in an ability. As it is merely the absence of any ability, it is not possible to construct a capability with a bottom ability.
+
+## 4.4 Caveats
+
+Caveats define a set of constraints on what can be redelegated or invoked. Caveat semantics MUST be established by the Subject. They are openly extensivle, but vocabularies may be reused across many Subjects.
+
+Caveats MAY be open ended. Caveats MUST be understood by the executor of the eventual [invocation]. Caveats MUST be formatted as maps.
 
 On validation, the caveat array MUST be treated as a logically disjunct (an "OR", NOT an "and"). In other words: passing validation against _any_ caveat in the array MUST pass the check. For example, consider the following capabilities:
-
-
 
 ``` json
 {
@@ -357,6 +407,10 @@ On validation, the caveat array MUST be treated as a logically disjunct (an "OR"
 
 The above MUST be interpreted as the set of capabilities below. If _any_ are matched, the check MUST pass validation.
 
+### 4.4.1 Normal Form
+
+
+
 | Subject                                                    | Ability       | Caveat                                                                                                 |
 |------------------------------------------------------------|---------------|--------------------------------------------------------------------------------------------------------|
 | `did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp` | `ucan/*`      | Always                                                                                                 |
@@ -365,8 +419,6 @@ The above MUST be interpreted as the set of capabilities below. If _any_ are mat
 | `did:web:example.com`                                      | `crud/update` | Posts at `https://example.com/newsletter/` with the `draft` status                                     |
 | `did:web:example.com`                                      | `crud/update` | Posts at `https://blog.example.com` with the `published` status and tagged with `published` and `news` |
 
-
-### XXXX.XXXXX Normal Form
 
 Note that all caveats need to be understable to th eexecitor
 
@@ -408,11 +460,13 @@ All of the above can be validly expressed in [DNF].
 }
 ```
 
+### 4.4.2 Compact Form
 
 
 
 
 
+### 4.4.3 Top Caveat
 
 
 
@@ -438,59 +492,16 @@ Note that for consistency in this syntax, the empty array MUST be equivalent to 
 | `[]`                   | No capabilities                                               |
 | `{}`, `[{}]`, `[[{}]]` | Full capabilities for this resource/ability pair (no caveats) |
 
+<!--
+
+FIXME move to invocatyion, maybe a small section here
 ### 3.2.7 Proof of Delegation
 
 Attenuations MUST be satisfied by matching the attenuated [FIXME: in invocation] capability to a proof in the invocation's [`prf` array][invocation prf].
 
 Proofs MUST be resolvable by the recipient. A proof MAY be left unresolvable if it is not used as support for the top-level UCAN's capability chain. The exact format MUST be defined in the relevant transport specification. Some examples of possible formats include: a JSON object payload delivered with the UCAN, a federated HTTP endpoint, a DHT, or a shared database.
-
-# 4 Reserved Namespaces
-
-## 4.1 `ucan`
-
-The `ucan` resource and abilty namespace MUST be reserved.
-
-### 4.1.1 `ucan/*`
-
-Support for `ucan/*` is RECOMMENDED.
-
-
-FIXME
-
-## 4.2 "Top" Ability
-
-The "top" (or "super user") ability MUST be denoted `*`. The top ability grants access to all other capabilities for the specified resource, across all possible namespaces. Top corresponds to an "all" matcher, whereas [delegation] corresponds to "any" in the UCAN chain. The top ability is useful when "linking" agents by delegating all access to resource(s). This is the most powerful ability, and as such it SHOULD be handled with care.
-
-``` mermaid
-%%{ init: { 'flowchart': { 'curve': 'linear' } } }%%
-
-flowchart BT
-  *
-
-  msg/* --> *
-  subgraph msgGraph [ ]
-    msg/send --> msg/*
-    msg/receive --> msg/*
-  end
-
-  crud/* --> *
-  subgraph crudGraph [ ]
-    crud/read --> crud/*
-    crud/mutate --> crud/*
-
-    subgraph mutationGraph [ ]
-        crud/create --> crud/mutate
-        crud/update --> crud/mutate
-        crud/destroy --> crud/mutate
-    end
-  end
-
-  ... --> *
-```
-
-### 4.2.1 Bottom
-
-In concept there is a "bottom" ability ("none" or "void"), but it is not possible to represent in an ability. As it is merely the absence of any ability, it is not possible to construct a capability with a bottom ability.
+ 
+ -->
 
 # 5 Validation
 
