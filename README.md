@@ -314,15 +314,28 @@ Abilities MAY be organized in a hierarchy that abstract over many [Operation]s. 
 
 ### 4.3.1 Reserved Abilities
 
-#### 43.1.1 `ucan`
+#### 43.1.1 `ucan` Namespace
 
-The `ucan` abilty namespace MUST be reserved. Support for `ucan/*` is RECOMMENDED
+The `ucan` abilty namespace MUST be reserved. This MUST include any ability string matching the regex `/^ucan.*/`
 
-FIXME
+Support for the `ucan/*` delegated proof ability is RECOMMENDED.
 
-#### 4.3.1.2 "Top" Ability
+#### 4.3.1.2 `*` AKA "Top"
 
-The "top" (or "super user") ability MUST be denoted `*`. The top ability grants access to all other capabilities for the specified resource, across all possible namespaces. Top corresponds to an "all" matcher, whereas [delegation] corresponds to "any" in the UCAN chain. The top ability is useful when "linking" agents by delegating all access to resource(s). This is the most powerful ability, and as such it SHOULD be handled with care.
+_"Top" (`*`) is the most powerful ability, and as such it SHOULD be handled with care and used sparingly._
+
+The "top" (or "any") ability MUST be denoted `*`. This can be thought of as something akin to a super user permission in RBAC. 
+
+``` js
+{
+ // ...                                                         Top
+  "cap": {                                                    //┌┴┐
+    "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp": "*"
+  }
+}
+```
+
+The top ability grants access to all other capabilities for the specified resource, across all possible namespaces. The top ability is useful when "linking" agents by delegating all access to another device controlled by the same user, and that should behave as the same agent. It is extremely powerful, and should be used with care. Among other things, it permits the delgate to update a Subject's mutable DID document (change their private keys), revoke UCAN delegations, and use any resources delegated to the Subject by others.
 
 ``` mermaid
 %%{ init: { 'flowchart': { 'curve': 'linear' } } }%%
@@ -363,32 +376,34 @@ Caveats MAY be open ended. Caveats MUST be understood by the executor of the eve
 
 On validation, the caveat array MUST be treated as a logically disjunct (`OR`). In other words: passing validation against _any_ caveat in the array MUST pass the check. For example, consider the following capabilities:
 
-``` json
+``` js
 {
   "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp": "ucan/*",
   "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK": {
-    "crud/create": {
-      "uri": "dns:example.com",
-      "record": "TXT"
-    }
+    "crud/create": { 
+      "uri": "dns:example.com", // ┐
+      "record": "TXT"           // ├─ Caveat
+    }                           // ┘
   },
   "did:web:example.com": {
     "crud/read": {
-      "uri": "https://blog.example.com",
-      "status": "published"
-    },
+      "uri": "https://blog.example.com", // ┐
+      "status": "published"              // ├─ Caveat
+    },                                   // ┘
     "crud/update": [
-      {
-        "uri": "https://example.com/newsletter/", 
-        "status": "draft"
-      },
+      {                                           // ┐
+        "uri": "https://example.com/newsletter/", // ├─ Caveat
+        "status": "draft"                         // │
+      },                                          // ┘
       [
-        {
-          "uri": "https://blog.example.com",
-          "status": "published"
-          "tag": "news",
-        }
-        { "tag": "breaking" }
+        {                                    // ┐
+          "uri": "https://blog.example.com", // │
+          "status": "published"              // ├─ Caveat
+          "tag": "news",                     // │
+        },                                   // ┘
+        {                   // ┐
+          "tag": "breaking" // ├ Caveat
+        }                   // ┘
       ]
     ]
   }
