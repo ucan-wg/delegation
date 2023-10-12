@@ -413,19 +413,68 @@ For instance, the following represents `({a: 1, b:2} AND {c: 3}) OR {d: 4}`:
 [
   [
     {        // ┐
-      a: 1,  // ├─ Caveat ┐
-      b: 2   // │         │
-    },       // ┘         ├─ AND ┐
-    {        // ┐         │      │
-      c: 3   // ├─ Caveat ┘      │
-    }        // ┘                ├─ OR
-  ],         //                  │
-  [          //                  │
-    {d: 4}   // ]─ Caveat ───────┘
+      a: 1,  // ├─ Caveat ─┐
+      b: 2   // │          │
+    },       // ┘          ├─ AND ┐
+    {        // ┐          │      │
+      c: 3   // ├─ Caveat ─┘      │
+    }        // ┘                 ├─ OR
+  ],         //                   │
+  [          //                   │
+    {        // ┐                 │
+      d: 4   // ├─ Caveat ────────┘
+    }        // ┘
   ]
 ]
 ```
 
+Expressing caveats in this standard way simplifies ad hoc extension at delegation time. As a concrete example, if a root UCAN caveat has a `tag` field but no `tags` field, it is still possible to express multiplicity by adding another `AND`ed caveat:
+
+``` js
+// Original Caveat
+[
+  [
+    {
+      "uri": "https://blog.example.com/",
+      "tag": "news"
+    }
+  ]
+]
+
+// Attenuated Caveat
+[
+  [
+    {
+      "uri": "https://blog.example.com/",
+      "tag": "news"
+    }, 
+    // AND
+    {
+      "tag": "breaking"
+    }
+  ]
+]
+```
+
+In this example, the original caveat had not accounted for there being multiple tags at runtime. The attenuated capability grants access to blog posts at `https://blog.example.com/"` that are tagged with both `"news"` and `"breaking"` due to the `AND` in the predicate.
+
+
+This is also helpful if each object has a special meaning or sense:
+
+``` js
+[
+  [
+    {
+      "type": "path",
+      "segments": ["blog", "october"]
+    },
+    {
+      "type": "market",
+      "segments": ["manufacturing", "healthcare", "service", "technology"]
+    }
+  ]
+]
+```
 
 
 
