@@ -697,30 +697,44 @@ This calculation MUST NOT take into account [DID fragment]s. If present, fragmen
 
 ``` mermaid
 flowchart RL
-  owner[/Alice\] -. owns .-> resource[(Storage)]
-  executor[/"Compute Service"\] --> del2Aud
-  rootIss --> owner
+    invoker((&nbsp&nbsp&nbsp&nbspDan&nbsp&nbsp&nbsp&nbsp\n👨))
+    subject((&nbsp&nbsp&nbsp&nbspAlice&nbsp&nbsp&nbsp&nbsp\n👩)) -. controls .-> resource[(Storage)]
 
-  executor -. accesses .-> resource
-  rootCap -. references .-> resource
+    rootCap -. references .-> resource
 
-  subgraph root [Root UCAN]
-    rootIss(iss: Alice)
-    rootAud(aud: Bob)
-    rootCap("cap: (Storage, crud/*)")
-  end
+    subgraph Delegations
+    subgraph root [Root UCAN]
+        rootIss(iss: Alice)
+        rootAud(aud: Bob)
+        rootCap("cap: (Storage, crud/*)")
+    end
 
-  subgraph del1 [Delegated UCAN]
-    del1Iss(iss: Bob) --> rootAud
-    del1Aud(aud: Carol)
-    del1Cap("cap: (Storage, crud/*)") --> rootCap
-  end
+    subgraph del1 [Delegated UCAN]
+        del1Iss(iss: Bob) -.-> rootAud
+        del1Aud(aud: Carol)
+        del1Cap("cap: (Storage, crud/*)") -.-> rootCap
+    end
 
-  subgraph del2 [Final UCAN]
-    del2Iss(iss: Carol) --> del1Aud
-    del2Aud(aud: Compute Service)
-    del2Cap("cap: (Storage, crud/*)") --> del1Cap
-  end
+    subgraph del2 [Delegated UCAN]
+        del2Iss(iss: Carol) -.-> del1Aud
+        del2Aud(aud: Dan)
+        del2Cap("cap: (Storage, crud/*)") -.-> del1Cap
+    end
+    end
+
+     subgraph inv [Invocation]
+        invIss(iss: Dan)
+        invAud(aud: Alice)
+        args("args: [Storage, crud/update, (key, value)]")
+        prf("proofs")
+    end
+
+    invIss -.-> del2Aud
+    invoker --> invIss
+    args -.-> del2Cap
+    invAud -.-> rootIss
+    rootIss --> subject
+    prf -.-> Delegations
 ```
 
 In the above diagram, Alice has some storage. This storage may exist in one location with a single source of truth, but to help build intuition this example is location independent: local versions and remote stored copies are eventually consistent, and there is no one "correct" copy. As such, we list the owner (Alice) directly on the resource.
