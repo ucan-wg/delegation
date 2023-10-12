@@ -54,9 +54,9 @@ The header is a standard JWT header, and MUST include all of the following field
 
 It is RECOMMENDED that the following algorithms be supported:
 
-- [RS256]
+- [ES256]
 - [EdDSA][RFC 8037]
-- [P-256 ECDSA]
+- [RS256]
 
 All algorithms MUST match the DID principal in the `iss` field. This enforces that the `alg` field MUST be asymmetric (public key cryptography or nonstandard but emerging patterns like smart contract signatures)
 
@@ -794,21 +794,34 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [Brendan O'Brien]: https://github.com/b5
 [Brian Ginsburg]: https://github.com/bgins
 [Brooklyn Zelenka]: https://github.com/expede 
+[CIDv1]: https://github.com/multiformats/cid?tab=readme-ov-file#cidv1
 [Christine Lemmer-Webber]: https://github.com/cwebber
 [Christopher Joel]: https://github.com/cdata
+[DID]: https://www.w3.org/TR/did-core/
 [Dan Finlay]: https://github.com/danfinlay
 [Daniel Holmgren]: https://github.com/dholms
+[ES256]: https://www.rfc-editor.org/rfc/rfc7518#section-3.4
+[Executor]: https://github.com/ucan-wg/spec#31-roles
 [Fission]: https://fission.codes
 [Hugo Dias]: https://github.com/hugomrdias
 [Ink & Switch]: https://www.inkandswitch.com/
 [Irakli Gozalishvili]: https://github.com/Gozala
 [JS Number]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number
+[JWT]: https://www.rfc-editor.org/rfc/rfc7519
 [Juan Caballero]: https://github.com/bumblefudge
 [Mark Miller]: https://github.com/erights
 [Martin Kleppmann]: https://martin.kleppmann.com/
 [Mikael Rogers]: https://github.com/mikeal/
 [Philipp Krüger]: https://github.com/matheus23
 [Protocol Labs]: https://protocol.ai/
+[RFC 8037]: https://www.rfc-editor.org/rfc/rfc8037
+[RS256]: https://www.rfc-editor.org/rfc/rfc7518#section-3.3
+[SHA2-256]: https://github.com/multiformats/multicodec/blob/master/table.csv#L9
 [SPKI/SDSI]: https://datatracker.ietf.org/wg/spki/about/
 [SPKI]: https://theworld.com/~cme/html/spki.html
+[UCAN]: https://github.com/ucan-wg/spec
+[base32]: https://github.com/multiformats/multibase/blob/master/multibase.csv#L13
+[did:key ECDSA]: https://w3c-ccg.github.io/did-method-key/#p-256
+[did:key EdDSA]: https://w3c-ccg.github.io/did-method-key/#ed25519-x25519
+[did:key RSA]: https://w3c-ccg.github.io/did-method-key/#rsa
 [external resource]: https://github.com/ucan-wg/spec#55-wrapping-existing-systems
