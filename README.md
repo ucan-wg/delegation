@@ -365,7 +365,7 @@ Caveats define a set of constraints on what can be redelegated or invoked. Cavea
 
 Caveats MAY be open ended. Caveats MUST be understood by the executor of the eventual [invocation]. Caveats MUST be formatted as maps.
 
-On validation, the caveat array MUST be treated as a logically disjunct (an "OR", NOT an "and"). In other words: passing validation against _any_ caveat in the array MUST pass the check. For example, consider the following capabilities:
+On validation, the caveat array MUST be treated as a logically disjunct (`OR`). In other words: passing validation against _any_ caveat in the array MUST pass the check. For example, consider the following capabilities:
 
 ``` json
 {
@@ -392,7 +392,7 @@ On validation, the caveat array MUST be treated as a logically disjunct (an "OR"
           "status": "published"
           "tag": "news",
         }
-        { "tag": "breaking" },
+        { "tag": "breaking" }
       ]
     ]
   }
@@ -617,11 +617,9 @@ The above MAY be expressed in compact form as follows:
 
 # 5 Validation
 
+Validation of a UCAN chain MAY occur at any time, but MUST occur upon receipt of an [Invocation] prior to execution.
 
-
-FIXME note that validation happens at exection time
-
-Each capability has its own semantics, which needs to be interpretable by the target resource handler. Therefore, a validator MUST NOT reject all capabilities when only one is not understood.
+Each capability has its own semantics, which needs to be interpretable by the [Executor]. Therefore, a validator MUST NOT reject all capabilities when one that is not relevant to them is not understood. For example, if a caveat fails a delegation check at execution time, but is not relevant to the invocation, it MUST be ignored.
 
 If _any_ of the following criteria are not met, the UCAN MUST be considered invalid:
 
@@ -726,35 +724,20 @@ A good litmus test for invocation validity by a invoking agent is to check if th
 
 The caveat array SHOULD NOT be empty, as an empty array means "in no case" (which is equivalent to not listing the ability). This follows from the rule that delegations MUST be of equal or lesser scope. When an array is given, an attenuated caveat MUST (syntactically) include all of the fields of the relevant proof caveat, plus the newly introduced caveats.
 
-| Proof Caveats | Delegated Caveats | Is Valid? | Comment                                |
-|---------------|-------------------|-----------|----------------------------------------|
-| `[{}]`        | `[{}]`            | Yes       | Equal                                  |
-| `[x]`         | `[x]`             | Yes       | Equal                                  |
-| `[x]`         | `[{}]`            | No        | Escalation to any                      |
-| `[{}]`        | `[x]`             | Yes       | Attenuates the `{}` caveat to `x`      |
-| `[x]`         | `[y]`             | No        | Escalation by using a different caveat |
-| `[x, y]`      | `[x]`             | Yes       | Removes a capability                   |
-| `[x, y]`      | `[x, (y + z)]`    | Yes       | Attenuates existing caveat             |
-| `[x, y]`      | `[x, y, z]`       | No        | Escalation by adding new capability    |
+Here are some abstract cases given in [normal form].
 
-Note that for consistency in this syntax, the empty array MUST be equivalent to disallowing the capability. Conversely, an empty object MUST be treated as "no caveats".
-
-| Proof Caveats          | Comment                                                       |
-|------------------------|---------------------------------------------------------------|
-| `[]`                   | No capabilities                                               |
-| `{}`, `[{}]`, `[[{}]]` | Full capabilities for this resource/ability pair (no caveats) |
-
-<!--
-
-FIXME move to invocatyion, maybe a small section here
-### 3.2.7 Proof of Delegation
-
-Attenuations MUST be satisfied by matching the attenuated [FIXME: in invocation] capability to a proof in the invocation's [`prf` array][invocation prf].
-
-Proofs MUST be resolvable by the recipient. A proof MAY be left unresolvable if it is not used as support for the top-level UCAN's capability chain. The exact format MUST be defined in the relevant transport specification. Some examples of possible formats include: a JSON object payload delivered with the UCAN, a federated HTTP endpoint, a DHT, or a shared database.
- 
- -->
-
+| Proof Caveats          | Delegated Caveats                  | Is Valid? | Comment                                        |
+|------------------------|------------------------------------|-----------|------------------------------------------------|
+| `[[{}]]`               | `[[{}]]`                           | Yes       | Equal                                          |
+| `[[{a: 1}]]`           | `[[{a: 1}]]`                       | Yes       | Equal                                          |
+| `[[{a: 1}]]`           | `[[{}]]`                           | No        | Escalation by removing fields                  |
+| `[[{}]]`               | `[[{a: 1}]]`                       | Yes       | Attenuates `{}` by adding fields               |
+| `[[{a: 1}]]`           | `[[{b: 2}]]`                       | No        | Escalation by using a different caveat         |
+| `[{a: 1}], [{b: 2}]]`  | `[[{a: 1}]]`                       | Yes       | Removes a capability (removes an `OR` branch)  |
+| `[[{a: 1}], [{b: 2}]]` | `[[{a: 1}], [{b: 2, c: 3}]]`       | Yes       | Attenuates existing caveat                     |
+| `[[{a: 1}]]`           | `[[{a: 1}], [{b: 2}]]]`            | No        | Escalation by adding new capability            |
+| `[[{a: 1}]]`           | `[[{a: 1}], [{b: 2}]]`             | No        | Escalation by adding new capability (`{b: 2}`) |
+| `[[{a: 1}]]`           | `[[{a: 1, b: 2}], [{a: 1, c: 3}]]` | Yes       | Attenuates the original capability             |
 
 # 6. Content Identifiers
 
@@ -764,7 +747,7 @@ The [`0x55` raw data][raw data multicodec] codec MUST be supported. If other cod
 
 The resolution of these addresses is left to the implementation and end-user, and MAY (non-exclusively) include the following: local store, a distributed hash table (DHT), gossip network, or RESTful service. Please refer to [token resolution] for more.
 
-## 5.5.1 CID Canonicalization
+## 6.1 CID Canonicalization
 
 A canonical CID can be important for some use cases, such as caching and [revocation]. A canonical CID MUST conform to the following:
 
@@ -773,8 +756,7 @@ A canonical CID can be important for some use cases, such as caching and [revoca
 * [SHA2-256]
 * [Raw data multicodec] (`0x55`)
 
-
-# 9. Acknowledgments
+# 7. Acknowledgments
 
 Thank you to [Brendan O'Brien] for real-world feedback, technical collaboration, and implementing the first Golang UCAN library.
 
