@@ -23,7 +23,7 @@ The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "S
 
 # 0 Abstract
 
-UCAN Delegation is a component of [UCAN]. This specification describes the semantics and serialization format for [UCAN] delegation between principals. UCAN Delegation provides a cryptographically verifiable container, batched capabilties, heirarchical authority, and extensible caveats.
+UCAN Delegation is a component of [UCAN]. This specification describes the semantics and serialization format for [UCAN] delegation between principals. UCAN Delegation provides a cryptographically verifiable container, batched capabilities, hierarchical authority, and extensible caveats.
 
 # 1 Introduction
 
@@ -31,13 +31,14 @@ UCAN Delegation is a component of [UCAN]. This specification describes the seman
 
 Design goals:
 
-- Flexible pathing
-- Extensibilty
-- Consistency for interop
+- Flexible delegation paths
+- Semantic extensibility
+- Ad hoc caveats
+- Consistency for interoperability
 
 # 2 Token Structure
 
-Regardless of how a Delegation is serialized on the wire, the sigature of a UCAN Delegation MUST be over a payload serialized as a [JWT] .
+Regardless of how a Delegation is serialized on the wire, the signature of a UCAN Delegation MUST be over a payload serialized as a [JWT] .
 
 The overall container of a header, claims, and signature remain as per [RFC 7519][JWT].
 
@@ -80,13 +81,13 @@ The payload MUST describe the authorization claims, who is involved, and its val
 | Field | Type                                      | Description                                            | Required |
 |-------|-------------------------------------------|--------------------------------------------------------|----------|
 | `ucv` | `String`                                  | UCAN Semantic Version (`1.0.0-rc.1`)                   | Yes      |
-| `iss` | `String`                                  | Issuer DID (sender)                                    | Yes      |
-| `aud` | `String`                                  | Audience DID (receiver)                                | Yes      |
+| `iss` | `DID`                                     | Issuer DID (sender)                                    | Yes      |
+| `aud` | `DID`                                     | Audience DID (receiver)                                | Yes      |
 | `nbf` | `Integer` (53-bits[^js-num-size])         | Not Before UTC Unix Timestamp in seconds (valid from)  | No       |
 | `exp` | `Integer \| null` (53-bits[^js-num-size]) | Expiration UTC Unix Timestamp in seconds (valid until) | Yes      |
 | `nnc` | `String`                                  | Nonce                                                  | Yes      |
 | `fct` | `{String: Any}`                           | Facts (asserted, signed data)                          | No       |
-| `cap` | `{URI: {Ability: Caveat}}`                | Capabilities                                           | Yes      |
+| `cap` | `{DID: {Ability: Caveat}}`                | Capabilities                                           | Yes      |
 
 ### 3.2.1 Version
 
@@ -100,7 +101,7 @@ The `iss` and `aud` fields MUST contain a single principal each.
 
 If an issuer's DID has multiple or mutable keys (e.g. [`did:plc`], [`did:ion`]), the key used to sign the UCAN MUST be made explicit, using the [DID fragment] (the hash index) in the `iss` field. The `aud` field SHOULD NOT include a hash field, as this defeats the purpose of delegating to an identifier for multiple keys instead of an identity.
  
-[EdDSA] `did:key`s MUST be suppoted, and their use is RECOMMENDED. [RSA][did:key RSA] and [P-256 ECDSA][did:key ECDSA] `did:key`s MUST be supported, but SHOULD NOT be used when other options are available.
+[EdDSA] `did:key`s MUST be supported, and their use is RECOMMENDED. [RSA][did:key RSA] and [P-256 ECDSA][did:key ECDSA] `did:key`s MUST be supported, but SHOULD NOT be used when other options are available.
 
 Note that every [Subject] MUST correspond to a root delegation issuer.
 
@@ -169,7 +170,7 @@ Below are a couple examples:
 
 The REQUIRED nonce parameter `nnc` MAY be any value. A randomly generated string is RECOMMENDED to provide a unique UCAN, though it MAY also be a monotonically increasing count of the number of links in the hash chain. This field helps prevent replay attacks and ensures a unique CID per delegation. The `iss`, `aud`, and `exp` fields together will often ensure that UCANs are unique, but adding the nonce ensures this uniqueness.
 
-The recommeneded size of the nonce differs by key type. In many cases, a random 12-byte nonce is sufficient. If uncertain, check the nonce in your DID's cryptosuite.
+The recommended size of the nonce differs by key type. In many cases, a random 12-byte nonce is sufficient. If uncertain, check the nonce in your DID's crypto suite.
 
 This field SHOULD NOT be used to sign arbitrary data, such as signature challenges. See the [`fct`][Facts] field for more.
 
@@ -212,9 +213,11 @@ Capabilities are the semantically-relevant claims of a delegation. They MUST be 
 ```
 
 This map MUST contain some or none of the following:
-1. A strict subset (attenuation) of the capability authority from the next direct `prf` field
-2. Capabilities composed from multiple proofs (see [rights amplification])
-3. Capabilities originated by the `iss` DID (i.e. by parenthood)
+
+0. Nothing
+1. Capabilities unchanged from a previous delegation
+2. A strict subset (attenuation) of the capability authority from the next direct `prf` field
+3. Capabilities about a Subject that matches the Issuer (`iss`) DID
 
 The anatomy of a capability MUST be given as a mapping of resource URI to abilities to array of caveats.
 
@@ -324,32 +327,32 @@ Abilities MUST be presented as a case-insensitive string. By convention, abiliti
 }
 ```
 
-Abilities MAY be organized in a hierarchy that abstract over many [Operation]s. A typical example is a superuser capability ("anything") on a file system. Another is command vs query access, such that in an HTTP context, `WRITE` implies `PUT`, `PATCH`, `DELETE`, and so on. [`*` gives full access][Top Ability] to a Resource more in the vein of object capabilities. Organizing abilities this way allows Resources to evolve over time in a backward-compatible manner, avoiding the need to reissue UCANs with new resource semantics.
+Abilities MAY be organized in a hierarchy that abstract over many [Operation]s. A typical example is a superuser capability ("anything") on a file system. Another is command vs query access, such that in an HTTP context, `WRITE` implies `PUT`, `PATCH`, `DELETE`, and so on. [`*` gives full access][Wildcard Ability] to a Resource more in the vein of object capabilities. Organizing abilities this way allows Resources to evolve over time in a backward-compatible manner, avoiding the need to reissue UCANs with new resource semantics.
 
 ### 4.3.1 Reserved Abilities
 
 #### 4.3.1.1 `ucan` Namespace
 
-The `ucan` abilty namespace MUST be reserved. This MUST include any ability string matching the regex `/^ucan.*/`
+The `ucan` ability namespace MUST be reserved. This MUST include any ability string matching the regex `/^ucan.*/`
 
 Support for the `ucan/*` delegated proof ability is RECOMMENDED.
 
-#### 4.3.1.2 `*` AKA "Top"
+#### 4.3.1.2 `*` AKA "Wildcard"
 
-_"Top" (`*`) is the most powerful ability, and as such it SHOULD be handled with care and used sparingly._
+_"Wildcard" (`*`) is the most powerful ability, and as such it SHOULD be handled with care and used sparingly._
 
-The "top" (or "any") ability MUST be denoted `*`. This can be thought of as something akin to a super user permission in RBAC. 
+The "wildcard" (or "any", or "top") ability MUST be denoted `*`. This can be thought of as something akin to a super user permission in RBAC. 
 
 ``` js
 {
- // ...                                                         Top
+ // ...                                                      Wildcard
   "cap": {                                                    //┌┴┐
     "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp": "*"
   }
 }
 ```
 
-The top ability grants access to all other capabilities for the specified resource, across all possible namespaces. The top ability is useful when "linking" agents by delegating all access to another device controlled by the same user, and that should behave as the same agent. It is extremely powerful, and should be used with care. Among other things, it permits the delgate to update a Subject's mutable DID document (change their private keys), revoke UCAN delegations, and use any resources delegated to the Subject by others.
+The wildcard ability grants access to all other capabilities for the specified resource, across all possible namespaces. The wildcard ability is useful when "linking" agents by delegating all access to another device controlled by the same user, and that should behave as the same agent. It is extremely powerful, and should be used with care. Among other things, it permits the delegate to update a Subject's mutable DID document (change their private keys), revoke UCAN delegations, and use any resources delegated to the Subject by others.
 
 ``` mermaid
 %%{ init: { 'flowchart': { 'curve': 'linear' } } }%%
@@ -380,7 +383,7 @@ flowchart BT
 
 ## 4.4 Caveats
 
-Caveats define a set of constraints on what can be redelegated or invoked. Caveat semantics MUST be established by the Subject. They are openly extensivle, but vocabularies may be reused across many Subjects.
+Caveats define a set of constraints on what can be redelegated or invoked. Caveat semantics MUST be established by the Subject. They are openly extensible, but vocabularies may be reused across many Subjects.
 
 Caveats MAY be open ended. Caveats MUST be understood by the executor of the eventual [invocation][UCAN Invocation]. Caveats MUST be formatted as maps.
 
@@ -430,8 +433,8 @@ The above MUST be interpreted as the set of capabilities below in the following 
 | `did:web:example.com`                                      | `crud/update` | Posts at `https://example.com/newsletter/` with the `draft` status                                     |
 | `did:web:example.com`                                      | `crud/update` | Posts at `https://blog.example.com` with the `published` status and tagged with `published` and `news` |
 
-When validating a delegation chain in the abstract, all caveats MUST be present in each sucessive delegation. At invocation time, only the capability being invoked MUST be match the delegation chain.
-Note that all caveats need to be understable to th execitor
+When validating a delegation chain in the abstract, all caveats MUST be present in each successive delegation. At invocation time, only the capability being invoked MUST be match the delegation chain.
+Note that all caveats need to be understable to th executor
 
 ### 4.4.1 The "True" Caveat
 
@@ -458,11 +461,11 @@ The "True" caveat MUST represent the lack of caveat. In predicate logic terms, i
 
 ### 4.4.2 Serialization
 
-Caveats have two isomorphic serilaizations: [compact form] and [normal form]. It is often easiest for validators to expand to normal form prior to checking. Compact form is more easily legible and requires fewer bytes.
+Caveats have two isomorphic serializations: [compact form] and [normal form]. It is often easiest for validators to expand to normal form prior to checking. Compact form is more easily legible and requires fewer bytes.
 
 ### 4.4.2.1 Normal Form
 
-Caveats MAY be expressed in a compact form, but any caveat MUST be expressable in disjunctive normal form ([DNF]). Expanding to normal form during validation is RECOMMENDED to ease checking.
+Caveats MAY be expressed in a compact form, but any caveat MUST be expressible in disjunctive normal form ([DNF]). Expanding to normal form during validation is RECOMMENDED to ease checking.
 
 Normal form MUST take the following shape: `[[{}]]`. The outer array represents a logical `any` (chained `OR`s), and the inner arrays represent logical `all` (chained `AND`s).
 
@@ -561,7 +564,7 @@ Note that while adding whole objects is useful in many situation as above, atten
 
 ### 4.4.2.1 Compact Form
 
-Normal from is consistent, but needlessly verbose for simple cases. Compact form omits superflous branches. Consider the following normal form capabilities:
+Normal from is consistent, but needlessly verbose for simple cases. Compact form omits superfluous branches. Consider the following normal form capabilities:
 
 ``` json
 {
@@ -663,13 +666,13 @@ const ensureTimeBounds = (ucan) => {
 
 const ensureProofNbf = (ucan, proof) => {
   if (!!proof.nbf && ucan.nbf < proof.nbf) {
-    throw new Error("Time escelation: delegation starts before proof starts")
+    throw new Error("Time escalation: delegation starts before proof starts")
   }
 }
 
 const ensureProofExp = (ucan, proof) => {
   if (proof.exp !== null && ucan.exp > proof.exp) {
-    throw new Error("Time escelation: delegation ends after proof ends")
+    throw new Error("Time escalation: delegation ends after proof ends")
   }
 }
 ```
@@ -821,8 +824,8 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 <!-- Internal Links -->
 
 [Facts]: #325-facts
-[Top Ability]: #4312--aka-top
-[noral form]
+[Wildcard Ability]: #4312--aka-wildcard
+[normal form]: $4421-normal-form
 
 <!-- External Links -->
 
