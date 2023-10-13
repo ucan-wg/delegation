@@ -328,7 +328,7 @@ Abilities MAY be organized in a hierarchy that abstract over many [Operation]s. 
 
 ### 4.3.1 Reserved Abilities
 
-#### 43.1.1 `ucan` Namespace
+#### 4.3.1.1 `ucan` Namespace
 
 The `ucan` abilty namespace MUST be reserved. This MUST include any ability string matching the regex `/^ucan.*/`
 
@@ -377,10 +377,6 @@ flowchart BT
 
   ... --> *
 ```
-
-#### 4.3.1.3 Bottom
-
-In concept there is a "bottom" ability ("none" or "void"), but it is not possible to represent in an ability. As it is merely the absence of any ability, it is not possible to construct a capability with a bottom ability.
 
 ## 4.4 Caveats
 
@@ -437,36 +433,25 @@ The above MUST be interpreted as the set of capabilities below in the following 
 When validating a delegation chain in the abstract, all caveats MUST be present in each sucessive delegation. At invocation time, only the capability being invoked MUST be match the delegation chain.
 Note that all caveats need to be understable to th execitor
 
-### 4.4.1 All or Nothing
+### 4.4.1 The "True" Caveat
 
-Caveats MAY include user-supplied fields, but there are two default cases that MUST be supported. These are called the "top" and "bottom" caveats.
-
-#### 4.4.1.1 The Top Caveat
-
-The top caveat MUST represent the lack of caveat. In predicate logic terms, it represents `true`. In [normal form], it MUST be represented as `[[{}]]`. In compact form, the caveat array MAY be omitted.
+The "True" caveat MUST represent the lack of caveat. In predicate logic terms, it represents `true`. In [normal form], it MUST be represented as `[[{}]]`. In compact form, the caveat array MAY be omitted.
 
 ``` js
-// Normal Form
+// True Caveat in Normal Form
 {
-  "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp": {
+  "did:plc:ewvi7nxzyoun6zhxrhs64oiz": {
     "some/ability": [[{}]]
   }
 }
 
-// Compact Form
+// Valid Compact Forms of the True Caveat
 {
-  "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp": "some/ability",
-}
-```
-
-#### 4.4.1.2 The Bottom Caveat
-
-The explicitly empty caveat (`[[]]`) MUST represent disallowing any action on the resource. In predicate logic terms, this represents `false`. While possible to express with the bottom caveat, it is equivalent to simply omitting the affected branches or capabilities. For reasons of legibility and size, omission is RECOMMENDED.
-
-``` js
-{
+  "did:plc:ewvi7nxzyoun6zhxrhs64oiz": "some/ability",
   "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp": {
-    "some/ability": [[]] // Equivalent to omitting this ability
+    "foo/*": {}
+    "bar/*": []
+    "baz/*": [{}]
   }
 }
 ```
@@ -837,6 +822,7 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 
 [Facts]: #325-facts
 [Top Ability]: #4312--aka-top
+[noral form]
 
 <!-- External Links -->
 
