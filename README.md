@@ -825,7 +825,7 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 
 [Facts]: #325-facts
 [Wildcard Ability]: #4312--aka-wildcard
-[normal form]: $4421-normal-form
+[normal form]: #4421-normal-form
 
 <!-- External Links -->
 
@@ -872,7 +872,7 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [UCAN]: https://github.com/ucan-wg/spec
 [W3C]: https://www.w3.org/
 [ZCAP-LD]: https://w3c-ccg.github.io/zcap-spec/
-[`did:ion`]: https://identity.foundation/ion/
+[`did:ion`]: https://identity.foundation/ion
 [`did:key`]: https://w3c-ccg.github.io/did-method-key/
 [`did:plc`]: https://github.com/did-method-plc/did-method-plc
 [base32]: https://github.com/multiformats/multibase/blob/master/multibase.csv#L13
