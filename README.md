@@ -785,7 +785,7 @@ A UCAN token MUST be referenced as a [base32] [CIDv1]. [SHA2-256] is the RECOMME
 
 The [`0x55` raw data][raw data multicodec] codec MUST be supported. If other codecs are used (such as [`0x0129` `dag-json` multicodec][dag-json multicodec]), the UCAN MUST be able to be interpreted as a valid JWT (including the signature).
 
-The resolution of these addresses is left to the implementation and end-user, and MAY (non-exclusively) include the following: local store, a distributed hash table (DHT), gossip network, or RESTful service. Please refer to [token resolution] for more.
+The resolution of these addresses is left to the implementation and end-user, and MAY (non-exclusively) include the following: local store, a distributed hash table (DHT), gossip network, or RESTful service.
 
 ## 6.1 CID Canonicalization
 
@@ -824,8 +824,11 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 
 <!-- Internal Links -->
 
+[Caveat]: #44-caveats
 [Facts]: #325-facts
+[Subject]: #41-subject
 [Wildcard Ability]: #4312--aka-wildcard
+[compact form]: #4421-compact-form
 [normal form]: #4421-normal-form
 
 <!-- External Links -->
@@ -840,6 +843,7 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [CIDv1]: https://github.com/multiformats/cid?tab=readme-ov-file#cidv1
 [Christine Lemmer-Webber]: https://github.com/cwebber
 [Christopher Joel]: https://github.com/cdata
+[DID fragment]: https://www.w3.org/TR/did-core/#terminology
 [DID]: https://www.w3.org/TR/did-core/
 [DNF]: https://en.wikipedia.org/wiki/Disjunctive_normal_form
 [Dan Finlay]: https://github.com/danfinlay
@@ -849,7 +853,9 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [Executor]: https://github.com/ucan-wg/spec#31-roles
 [Fission]: https://fission.codes
 [Hugo Dias]: https://github.com/hugomrdias
+[IEEE-754]: https://ieeexplore.ieee.org/document/8766229
 [Ink & Switch]: https://www.inkandswitch.com/
+[Invocation]: https://github.com/ucan-wg/invocation
 [Irakli Gozalishvili]: https://github.com/Gozala
 [JS Number]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number
 [JWT]: https://www.rfc-editor.org/rfc/rfc7519
@@ -859,9 +865,11 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [Mikael Rogers]: https://github.com/mikeal/
 [OCAP]: https://en.wikipedia.org/wiki/Object-capability_model
 [OCapN]: https://github.com/ocapn/
+[Operation]: https://github.com/ucan-wg/spec#33-operation
 [Philipp Krüger]: https://github.com/matheus23
 [PoLA]: https://en.wikipedia.org/wiki/Principle_of_least_privilege 
 [Protocol Labs]: https://protocol.ai/
+[RFC 3339]: https://www.rfc-editor.org/rfc/rfc3339
 [RFC 8037]: https://www.rfc-editor.org/rfc/rfc8037
 [RS256]: https://www.rfc-editor.org/rfc/rfc7518#section-3.3
 [Raw data multicodec]: https://github.com/multiformats/multicodec/blob/master/table.csv#L41
@@ -873,13 +881,14 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [UCAN]: https://github.com/ucan-wg/spec
 [W3C]: https://www.w3.org/
 [ZCAP-LD]: https://w3c-ccg.github.io/zcap-spec/
-[`did:web`]: https://w3c-ccg.github.io/did-method-web/
 [`did:key`]: https://w3c-ccg.github.io/did-method-key/
 [`did:plc`]: https://github.com/did-method-plc/did-method-plc
+[`did:web`]: https://w3c-ccg.github.io/did-method-web/
 [base32]: https://github.com/multiformats/multibase/blob/master/multibase.csv#L13
 [dag-json multicodec]: https://github.com/multiformats/multicodec/blob/master/table.csv#L112
 [did:key ECDSA]: https://w3c-ccg.github.io/did-method-key/#p-256
 [did:key EdDSA]: https://w3c-ccg.github.io/did-method-key/#ed25519-x25519
 [did:key RSA]: https://w3c-ccg.github.io/did-method-key/#rsa
 [external resource]: https://github.com/ucan-wg/spec#55-wrapping-existing-systems
+[revocation]: https://github.com/ucan-wg/revocation
 [ucan.xyz]: https://ucan.xyz
