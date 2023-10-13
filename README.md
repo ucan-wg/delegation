@@ -785,6 +785,7 @@ Here are some abstract cases given in [normal form].
 | `[[{a: 1}]]`           | `[[{b: 2}]]`                       | No        | Escalation by using a different caveat         |
 | `[{a: 1}], [{b: 2}]]`  | `[[{a: 1}]]`                       | Yes       | Removes a capability (removes an `OR` branch)  |
 | `[[{a: 1}], [{b: 2}]]` | `[[{a: 1}], [{b: 2, c: 3}]]`       | Yes       | Attenuates existing caveat                     |
+| `[[{a: 1}]]`           | `[[{a: 1}, {a: 2}]]`               | Yes       | Adds new caveat inside an `AND` block                     |
 | `[[{a: 1}]]`           | `[[{a: 1}], [{b: 2}]]]`            | No        | Escalation by adding new capability            |
 | `[[{a: 1}]]`           | `[[{a: 1}], [{b: 2}]]`             | No        | Escalation by adding new capability (`{b: 2}`) |
 | `[[{a: 1}]]`           | `[[{a: 1, b: 2}], [{a: 1, c: 3}]]` | Yes       | Attenuates the original capability             |
