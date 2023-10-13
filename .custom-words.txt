@@ -108,6 +108,7 @@ const
 const
 const
 crudGraph
+crypto
 cryptographically
 del
 delegable
@@ -129,6 +130,7 @@ escelation
 et
 ewvi
 ewvi
+extensibility
 extractable
 filesystem
 fooey

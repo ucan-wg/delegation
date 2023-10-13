@@ -383,7 +383,7 @@ flowchart BT
 
 ## 4.4 Caveats
 
-Caveats define a set of constraints on what can be redelegated or invoked. Caveat semantics MUST be established by the Subject. They are openly extensible, but vocabularies may be reused across many Subjects.
+Caveats define a set of constraints on what can be re-delegated or invoked. Caveat semantics MUST be established by the Subject. They are openly extensible, but vocabularies may be reused across many Subjects.
 
 Caveats MAY be open ended. Caveats MUST be understood by the executor of the eventual [invocation][UCAN Invocation]. Caveats MUST be formatted as maps.
 
@@ -434,7 +434,8 @@ The above MUST be interpreted as the set of capabilities below in the following 
 | `did:web:example.com`                                      | `crud/update` | Posts at `https://blog.example.com` with the `published` status and tagged with `published` and `news` |
 
 When validating a delegation chain in the abstract, all caveats MUST be present in each successive delegation. At invocation time, only the capability being invoked MUST be match the delegation chain.
-Note that all caveats need to be understable to th executor
+
+Note that all caveats need to be understood by the Executor.
 
 ### 4.4.1 The "True" Caveat
 
