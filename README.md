@@ -883,6 +883,7 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [`did:key`]: https://w3c-ccg.github.io/did-method-key/
 [`did:plc`]: https://github.com/did-method-plc/did-method-plc
 [base32]: https://github.com/multiformats/multibase/blob/master/multibase.csv#L13
+[dag-json multicodec]: https://github.com/multiformats/multicodec/blob/master/table.csv#L112
 [did:key ECDSA]: https://w3c-ccg.github.io/did-method-key/#p-256
 [did:key EdDSA]: https://w3c-ccg.github.io/did-method-key/#ed25519-x25519
 [did:key RSA]: https://w3c-ccg.github.io/did-method-key/#rsa
