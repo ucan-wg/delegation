@@ -189,7 +189,7 @@ The OPTIONAL `fct` field contains a map of arbitrary facts and proofs of knowled
 
 Below is an example:
 
-``` json
+``` js
 {
   // ...
   "fct": {
