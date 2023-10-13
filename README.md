@@ -280,7 +280,7 @@ By default, the Resource of a capability is the Subject. This makes the delegati
 }
 ```
 
-In the case where access to an [external resource] is delegated, the Subject MUST own the relationship to the Resource. The Resource SHOULD be referenced by a `uri` key in the relevant [Caveat](s), except where it would be clearer to do otherwise. This MUST be defined by the Subject and understood by the executor.
+In the case where access to an [external resource] is delegated, the Subject MUST own the relationship to the Resource. The Resource SHOULD be referenced by a `uri` key in the relevant [Caveat(s)][Caveat], except where it would be clearer to do otherwise. This MUST be defined by the Subject and understood by the executor.
 
 ``` js
 {
