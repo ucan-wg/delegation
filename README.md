@@ -867,6 +867,8 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [Mark Miller]: https://github.com/erights
 [Martin Kleppmann]: https://martin.kleppmann.com/
 [Mikael Rogers]: https://github.com/mikeal/
+[OCAP]: https://en.wikipedia.org/wiki/Object-capability_model
+[OCapN]: https://github.com/ocapn/
 [Philipp Krüger]: https://github.com/matheus23
 [PoLA]: https://en.wikipedia.org/wiki/Principle_of_least_privilege 
 [Protocol Labs]: https://protocol.ai/
@@ -876,8 +878,10 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [SHA2-256]: https://github.com/multiformats/multicodec/blob/master/table.csv#L9
 [SPKI/SDSI]: https://datatracker.ietf.org/wg/spki/about/
 [SPKI]: https://theworld.com/~cme/html/spki.html
+[Steven Vandevelde]: https://github.com/icidasset
 [UCAN Invocation]: https://github.com/ucan-wg/invocation
 [UCAN]: https://github.com/ucan-wg/spec
+[W3C]: https://www.w3.org/
 [ZCAP-LD]: https://w3c-ccg.github.io/zcap-spec/
 [`did:ion`]: https://identity.foundation/ion/
 [`did:key`]: https://w3c-ccg.github.io/did-method-key/
@@ -888,3 +892,4 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [did:key EdDSA]: https://w3c-ccg.github.io/did-method-key/#ed25519-x25519
 [did:key RSA]: https://w3c-ccg.github.io/did-method-key/#rsa
 [external resource]: https://github.com/ucan-wg/spec#55-wrapping-existing-systems
+[ucan.xyz]: https://ucan.xyz
