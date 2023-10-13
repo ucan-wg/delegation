@@ -99,7 +99,7 @@ The `iss` and `aud` fields describe the token's principals. They are distinguish
 
 The `iss` and `aud` fields MUST contain a single principal each.
 
-If an issuer's DID has multiple or mutable keys (e.g. [`did:plc`], [`did:ion`]), the key used to sign the UCAN MUST be made explicit, using the [DID fragment] (the hash index) in the `iss` field. The `aud` field SHOULD NOT include a hash field, as this defeats the purpose of delegating to an identifier for multiple keys instead of an identity.
+If an issuer's DID has multiple or mutable keys (e.g. [`did:plc`], [`did:web`]), the key used to sign the UCAN MUST be made explicit, using the [DID fragment] (the hash index) in the `iss` field. The `aud` field SHOULD NOT include a hash field, as this defeats the purpose of delegating to an identifier for multiple keys instead of an identity.
  
 [EdDSA] `did:key`s MUST be supported, and their use is RECOMMENDED. [RSA][did:key RSA] and [P-256 ECDSA][did:key ECDSA] `did:key`s MUST be supported, but SHOULD NOT be used when other options are available.
 
@@ -113,13 +113,13 @@ Below are a couple examples:
 ```
 
 ```json
-"aud": "did:ion:EiCrsG_DLDmSKic1eaeJGDtUoC1dj8tj19nTRD9ODzAjaQ",
+"aud": "did:web:example.com",
 "iss": "did:pkh:eth:0xb9c5714089478a327f09197987f16f9e5d936e8a",
 ```
 
 ```json
 "aud": "did:plc:ewvi7nxzyoun6zhxrhs64oiz",
-"iss": "did:ion:test:EiANCLg1uCmxUR4IUkpW8Y5_nuuXLbAEwonQd4q8pflTnw#key-1",
+"iss": "did:web:example.com",
 ```
 
 ```json
@@ -873,7 +873,7 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [UCAN]: https://github.com/ucan-wg/spec
 [W3C]: https://www.w3.org/
 [ZCAP-LD]: https://w3c-ccg.github.io/zcap-spec/
-[`did:ion`]: https://identity.foundation/ion
+[`did:web`]: https://w3c-ccg.github.io/did-method-web/
 [`did:key`]: https://w3c-ccg.github.io/did-method-key/
 [`did:plc`]: https://github.com/did-method-plc/did-method-plc
 [base32]: https://github.com/multiformats/multibase/blob/master/multibase.csv#L13
