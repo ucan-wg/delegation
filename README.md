@@ -1,5 +1,40 @@
 # UCAN Delegation Specification v1.0.0-rc.1
 
+FIXME IPLD?
+
+```
+type Signed struct {
+  del &Delegation
+  sig Signature
+}
+
+type Delegation struct {
+  ucd Semver 
+
+  iss DID
+  aud DID
+
+  exp Integer
+  nbf Integer
+
+  sub DID
+  aby String
+  cav [{String : Any}]
+}
+
+type Signature union {
+  | batch  &BatchSig
+  | inline Bytes
+}
+
+type BatchSig struct {
+  scp [&Any]
+  sig Bytes
+}
+
+FIXME if you used a merkle tree, you could embed the merkle proof inside the payload, but then it's really tied down
+```
+
 ## Editors
 
 * [Brooklyn Zelenka], [Fission]
@@ -15,7 +50,7 @@
 
 * [UCAN]
 * [DID]
-* [JWT]
+* [DSG-CBOR]
 
 ## Language
 
@@ -38,44 +73,6 @@ Design goals:
 
 # 2 Token Structure
 
-Regardless of how a Delegation is serialized on the wire, the signature of a UCAN Delegation MUST be over a payload serialized as a [JWT] .
-
-The overall container of a header, claims, and signature remain as per [RFC 7519][JWT].
-
-## 3.1 Header
-
-The header is a standard JWT header, and MUST include all of the following fields:
-
-| Field | Type     | Description            | Required |
-|-------|----------|------------------------|----------|
-| `alg` | `String` | Signature algorithm    | Yes      |
-| `typ` | `String` | Type (MUST be `"JWT"`) | Yes      |
-
-### 3.1.1 Algorithms
-
-The following algorithms are RECOMMENDED to be validatable:
-
-- [ES256]
-- [EdDSA][RFC 8037]
-- [RS256]
-
-All algorithms MUST match the DID principal in the `iss` field. This enforces that the `alg` field MUST be asymmetric (public key cryptography or nonstandard but emerging patterns like smart contract signatures)
-
-The JWT `"alg": "none"` MUST NOT be supported, as the lack of signature prevents the issuer DID from being validated.
-
-Symmetric algorithms such as HMACs (e.g. `"alg": "HS256"`) MUST NOT be supported, since they cannot be used to prove control over the issuer DID.
-
-Here is a common example:
-
-```json
-{
-  "alg": "EdDSA",
-  "typ": "JWT"
-}
-```
-
-## 3.2 Payload
-
 The payload MUST describe the authorization claims, who is involved, and its validity period.
 
 | Field | Type                                      | Description                                            | Required |
@@ -89,11 +86,11 @@ The payload MUST describe the authorization claims, who is involved, and its val
 | `fct` | `{String: Any}`                           | Facts (asserted, signed data)                          | No       |
 | `cap` | `{DID: {Ability: Caveat}}`                | Capabilities                                           | Yes      |
 
-### 3.2.1 Version
+## 2.1 Version
 
 The `ucv` field sets the version of the UCAN specification used in the payload.
 
-### 3.2.2 Principals
+## 2.2 Principals
 
 The `iss` and `aud` fields describe the token's principals. They are distinguished by having DIDs. These can be conceptualized as the sender and receiver of a postal letter. The token MUST be signed with the private key associated with the DID in the `iss` field. Implementations MUST include the [`did:key`] method, and MAY be augmented with [additional DID methods][DID].
 
@@ -127,7 +124,7 @@ Below are a couple examples:
 "iss": "did:plc:ewvi7nxzyoun6zhxrhs64oiz",
 ```
 
-### 3.2.3 Time Bounds
+## 2.3 Time Bounds
 
 `nbf` and `exp` stand for "not before" and "expires at," respectively. These are standard fields from [RFC 7519][JWT] (JWT) (which in turn uses [RFC 3339]), and MUST represent seconds since the Unix epoch in UTC, without time zone or other offset. Taken together, they represent the time bounds for a token. These timestamps MUST be represented as the number of integer seconds since the Unix epoch. Due to limitations[^js-num-size] in numerics for certain common languages, timestamps outside of the range from $-2^{53} – 1$ to $2^{53} – 1$ MUST be rejected as invalid.
 
@@ -166,7 +163,7 @@ Below are a couple examples:
 }
 ```
 
-### 3.2.4 Nonce
+## 2.4 Nonce
 
 The REQUIRED nonce parameter `nnc` MAY be any value. A randomly generated string is RECOMMENDED to provide a unique UCAN, though it MAY also be a monotonically increasing count of the number of links in the hash chain. This field helps prevent replay attacks and ensures a unique CID per delegation. The `iss`, `aud`, and `exp` fields together will often ensure that UCANs are unique, but adding the nonce ensures this uniqueness.
 
@@ -183,7 +180,7 @@ Here is a simple example.
 }
 ```
 
-### 3.2.5 Facts
+## 2.5 Facts
 
 The OPTIONAL `fct` field contains a map of arbitrary facts and proofs of knowledge. The enclosed data MUST be self-evident and externally verifiable. It MAY include information such as hash preimages, server challenges, a Merkle proof, dictionary data, etc. Facts themselves MUST NOT be semantically meaningful to delegation chains. 
 
@@ -204,12 +201,12 @@ Below is an example:
 }
 ```
 
-# 4. Capabilities
+# 3. Capabilities
 
 Capabilities are the semantically-relevant claims of a delegation. They MUST be presented as a map under the `cap` field as a map. This map is REQUIRED but MAY be empty. This MUST take the following form:
 
 ```
-{ $SUBJECT: { $ABILITY: $CAVEATS } }
+{ $SUBJECT: { $ABILITY: [$CAVEAT] } }
 ```
 
 This map MUST contain some or none of the following:
@@ -226,23 +223,21 @@ Here is an illustrative example:
 ``` js
 {
   // ...
-  "cap": {
-    "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp": {
-      "crud/create": {
-        "uri": "https://blog.example.com/blog/",
-        "status": "draft"
-      },
-      "msg/send": {
-        "sender": "mailto:alice@example.com",
-        "subject": "Weekly Reports",
-        "day": "friday"
-      }
+  sub: "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp"
+  can: "msg/send",
+  cav: [
+    {
+      "sender": "mailto:alice@example.com",
+      "day": "friday"
+    },
+    {
+      "subject": "Weekly Reports",
     }
-  }
+  ]
 }
 ```
 
-## 4.1 Subject
+## 3.1 Subject
 
 The Subject MUST be the DID that initiated the delegation chain.
 
@@ -250,16 +245,12 @@ For example:
 
 ``` js
 {
+  sub: "did:web:example.com",
   // ...
-  cap: {
-    "did:web:example.com": "ucan/*"
-  //└─────────┬─────────┘
-  //       Subject
-  }
 }
 ```
 
-## 4.2 Resource
+## 3.2 Resource
 
 Unlike Subjects and Abilities, Resources are semantic rather than syntactic. The Resource is the "what" that a capability describes.
 
@@ -267,16 +258,10 @@ By default, the Resource of a capability is the Subject. This makes the delegati
 
 ``` js
 {
+  sub: "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp", // Subject & Resource
+  can: "crud/update",
+  cav: [{status: "draft"}]
   // ...
-  "cap": {
-  //                    Subject & Resource
-  //┌───────────────────────────┴────────────────────────────┐
-    "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp": {
-      "crud/update": {
-        "status": "draft"
-      }
-    }
-  }
 }
 ```
 
@@ -284,60 +269,47 @@ In the case where access to an [external resource] is delegated, the Subject MUS
 
 ``` js
 {
-  // ...
-  "cap": {
-  //                         Subject
-  //┌───────────────────────────┴────────────────────────────┐
-    "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp": {
-      "crud/create": {
-        "uri": "https://blog.example.com/blog/",
-        //     └──────────────┬───────────────┘
-        //                Resource
-        "status": "draft"
-      },
-      "msg/send": {
-        "sender": "mailto:alice@example.com",
-        //        └───────────┬────────────┘
-        //                Resource
-        "subject": "Weekly Reports",
-        "day": "friday"
-      }
+  sub: "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp",
+  can: "crud/create",
+  cav: [
+    {
+      "uri": "https://example.com/blog/", // Resource
+      "status": "draft"
     }
-  }
+  ],
+  // ...
 }
 ```
 
-## 4.3 Abilities
+## 3.3 Abilities
 
 Abilities MUST be presented as a case-insensitive string. By convention, abilities SHOULD be namespaced with a slash, such as `msg/send`. One or more abilities MUST be given for each resource.
 
 ``` js
 {
-  // ...
-  "cap": {
-    "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp": {
-  //     Ability
-  //  ┌─────┴─────┐
-      "crud/create": {
-        "uri": "https://blog.example.com/blog/",
-        "status": "draft"
-      }
+  sub: "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp": {
+  can: "msg/send",
+  cav: [
+    {
+      "from": "mailto:alice@example.com",
+      "to": "mailto:bob@example.com"
     }
-  }
+  ],
+  // ...
 }
 ```
 
 Abilities MAY be organized in a hierarchy that abstract over many [Operation]s. A typical example is a superuser capability ("anything") on a file system. Another is command vs query access, such that in an HTTP context, `WRITE` implies `PUT`, `PATCH`, `DELETE`, and so on. [`*` gives full access][Wildcard Ability] to a Resource more in the vein of object capabilities. Organizing abilities this way allows Resources to evolve over time in a backward-compatible manner, avoiding the need to reissue UCANs with new resource semantics.
 
-### 4.3.1 Reserved Abilities
+### 3.3.1 Reserved Abilities
 
-#### 4.3.1.1 `ucan` Namespace
+#### 3.3.1.1 `ucan` Namespace
 
 The `ucan` ability namespace MUST be reserved. This MUST include any ability string matching the regex `/^ucan.*/`
 
 Support for the `ucan/*` delegated proof ability is RECOMMENDED.
 
-#### 4.3.1.2 `*` AKA "Wildcard"
+#### 3.3.1.2 `*` AKA "Wildcard"
 
 _"Wildcard" (`*`) is the most powerful ability, and as such it SHOULD be handled with care and used sparingly._
 
@@ -345,10 +317,8 @@ The "wildcard" (or "any", or "top") ability MUST be denoted `*`. This can be tho
 
 ``` js
 {
- // ...                                                      Wildcard
-  "cap": {                                                    //┌┴┐
-    "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp": "*"
-  }
+  can: "*",
+  // ...
 }
 ```
 
@@ -381,7 +351,7 @@ flowchart BT
   ... --> *
 ```
 
-## 4.4 Caveats
+## 3.4 Caveats
 
 Caveats define a set of constraints on what can be re-delegated or invoked. Caveat semantics MUST be established by the Subject. They are openly extensible, but vocabularies may be reused across many Subjects.
 
@@ -391,47 +361,27 @@ On validation, the caveat array MUST be treated as a logically disjunct (`OR`). 
 
 ``` js
 {
-  "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp": "ucan/*",
-  "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK": {
-    "crud/create": { 
-      "uri": "dns:example.com", // ┐
-      "record": "TXT"           // ├─ Caveat
-    }                           // ┘
-  },
-  "did:web:example.com": {
-    "crud/read": {
-      "uri": "https://blog.example.com", // ┐
-      "status": "published"              // ├─ Caveat
-    },                                   // ┘
-    "crud/update": [
-      {                                           // ┐
-        "uri": "https://example.com/newsletter/", // ├─ Caveat
-        "status": "draft"                         // │
-      },                                          // ┘
-      [
-        {                                    // ┐
-          "uri": "https://blog.example.com", // │
-          "status": "published"              // ├─ Caveat
-          "tag": "news",                     // │
-        },                                   // ┘
-        {                   // ┐
-          "tag": "breaking" // ├─ Caveat
-        }                   // ┘
-      ]
-    ]
-  }
+  sub: "did:web:example.com",
+  can: "crud/update",
+  cav: [
+     {                                    // ┐
+       "uri": "https://blog.example.com", // │
+       "status": "published"              // ├─ Caveat
+       "tag": "news",                     // │
+     },                                   // ┘
+     {                   // ┐
+       "tag": "breaking" // ├─ Caveat
+     }                   // ┘
+  ],
+  // ...
 }
 ```
 
 The above MUST be interpreted as the set of capabilities below in the following table:
 
-| Subject                                                    | Ability       | Caveat                                                                                                 |
-|------------------------------------------------------------|---------------|--------------------------------------------------------------------------------------------------------|
-| `did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp` | `ucan/*`      | Always                                                                                                 |
-| `did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK` | `crud/create` | `TXT` records on `dns:example.com`                                                                     |
-| `did:web:example.com`                                      | `crud/read`   | Posts at `https://blog.example.com` with a `published` status                                          |
-| `did:web:example.com`                                      | `crud/update` | Posts at `https://example.com/newsletter/` with the `draft` status                                     |
-| `did:web:example.com`                                      | `crud/update` | Posts at `https://blog.example.com` with the `published` status and tagged with `published` and `news` |
+| Subject               | Ability       | Caveat                                                                                                 |
+|-----------------------|---------------|--------------------------------------------------------------------------------------------------------|
+| `did:web:example.com` | `crud/update` | Posts at `https://blog.example.com` with the `published` status and tagged with `published` and `news` |
 
 When validating a delegation chain in the abstract, all caveats MUST be present in each successive delegation. At invocation time, only the capability being invoked MUST be match the delegation chain.
 
@@ -439,55 +389,40 @@ Note that all caveats need to be understood by the Executor.
 
 ### 4.4.1 The "True" Caveat
 
-The "True" caveat MUST represent the lack of caveat. In predicate logic terms, it represents `true`. In [normal form], it MUST be represented as `[[{}]]`. In compact form, the caveat array MAY be omitted.
+The "True" caveat MUST represent the lack of caveat. In predicate logic terms, it represents `true`. In [normal form], it MUST be represented as `[{}]`, but is equivalent to `[]`.
 
 ``` js
-// True Caveat in Normal Form
 {
-  "did:plc:ewvi7nxzyoun6zhxrhs64oiz": {
-    "some/ability": [[{}]]
-  }
+  cav: [{}],
+  // ...
 }
 
-// Valid Compact Forms of the True Caveat
 {
-  "did:plc:ewvi7nxzyoun6zhxrhs64oiz": "some/ability",
-  "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp": {
-    "foo/*": {}
-    "bar/*": []
-    "baz/*": [{}]
-  }
+  cav: [],
+  // ...
 }
 ```
-
-### 4.4.2 Serialization
-
-Caveats have two isomorphic serializations: [compact form] and [normal form]. It is often easiest for validators to expand to normal form prior to checking. Compact form is more easily legible and requires fewer bytes.
 
 ### 4.4.2.1 Normal Form
 
 Caveats MAY be expressed in a compact form, but any caveat MUST be expressible in disjunctive normal form ([DNF]). Expanding to normal form during validation is RECOMMENDED to ease checking.
 
-Normal form MUST take the following shape: `[[{}]]`. The outer array represents a logical `any` (chained `OR`s), and the inner arrays represent logical `all` (chained `AND`s).
+Normal form MUST take the following shape: `[{}]`. The arrays represents logical `all` (chained `AND`s). To represent logical `any` / `OR`, issue another delegation with that attenuation.
 
-For instance, the following represents `({a: 1, b:2} AND {c: 3}) OR {d: 4}`:
+For instance, the following represents `({a: 1, b:2} AND {c: 3}) AND {d: 4}`:
 
 ``` js
 [
-  [
-    {       // ┐
-      a: 1, // ├─ Caveat ─┐
-      b: 2  // │          │
-    },      // ┘          ├─ AND ─┐
-    {       // ┐          │       │
-      c: 3  // ├─ Caveat ─┘       │
-    }       // ┘                  ├─ OR
-  ],        //                    │
-  [         //                    │
-    {       // ┐                  │
-      d: 4  // ├─ Caveat ─────────┘
-    }       // ┘
-  ]
+  {       // ┐
+    a: 1, // ├─ Caveat ─┐
+    b: 2  // │          │
+  },      // ┘          ├─ AND ─┐
+  {       // ┐          │       │
+    c: 3  // ├─ Caveat ─┘       │
+  },      // ┘                  ├─ AND
+  {       // ┐                  │
+    d: 4  // ├─ Caveat ─────────┘
+  }       // ┘
 ]
 ```
 
@@ -496,26 +431,22 @@ Expressing caveats in this standard way simplifies ad hoc extension at delegatio
 ``` js
 // Original Caveat
 [
-  [
-    {
-      "uri": "https://blog.example.com/",
-      "tag": "news"
-    }
-  ]
+  {
+    "uri": "https://blog.example.com/",
+    "tag": "news"
+  }
 ]
 
 // Attenuated Caveat
 [
-  [
-    {
-      "uri": "https://blog.example.com/",
-      "tag": "news"
-    }, 
-    // AND
-    {
-      "tag": "breaking"
-    }
-  ]
+  {
+    "uri": "https://blog.example.com/",
+    "tag": "news"
+  }, 
+  // AND
+  {
+    "tag": "breaking"
+  }
 ]
 ```
 
@@ -525,16 +456,14 @@ This is also helpful if each object has a special meaning or sense:
 
 ``` js
 [
-  [
-    {
-      "type": "path",
-      "segments": ["blog", "october"]
-    },
-    {
-      "type": "market",
-      "segments": ["manufacturing", "healthcare", "service", "technology"]
-    }
-  ]
+  {
+    "type": "path",
+    "segments": ["blog", "october"]
+  },
+  {
+    "type": "market",
+    "segments": ["manufacturing", "healthcare", "service", "technology"]
+  }
 ]
 ```
 
@@ -543,90 +472,20 @@ Note that while adding whole objects is useful in many situation as above, atten
 ``` js
 // Original Caveat
 [
-  [
-    {
-      "uri": "https://blog.example.com/",
-      "tag": "news"
-    }
-  ]
+  {
+    "uri": "https://blog.example.com/",
+    "tag": "news"
+  }
 ]
 
 // Attenuated Caveat
 [
-  [
-    {
-      "uri": "https://blog.example.com/",
-      "tag": "news",
-      "status": "draft" // New field
-    }
-  ]
+  {
+    "uri": "https://blog.example.com/",
+    "tag": "news",
+    "status": "draft" // New field
+  }
 ]
-```
-
-### 4.4.2.1 Compact Form
-
-Normal from is consistent, but needlessly verbose for simple cases. Compact form omits superfluous branches. Consider the following normal form capabilities:
-
-``` json
-{
-  "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp": {
-    "ucan/*": [[{}]]
-  },
-  "did:web:example.com": {
-    "crud/read": [
-      [
-        { 
-          "uri": "https://blog.example.com",
-          "status": "published" 
-        }
-      ]
-    ],
-    "crud/update": [
-      [
-        { 
-          "uri": "https://example.com/newsletter/",
-          "status": "draft"
-        }
-      ],
-      [
-        { 
-          "uri": "https://blog.example.com",
-          "status": "published",
-          "tag": "news" 
-        },
-        { "tag": "breaking" }
-      ]
-    ]
-  }
-}
-```
-
-The above MAY be expressed in compact form as follows:
-
-``` json
-{
-  "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp": "ucan/*",
-  "did:web:example.com": {
-    "crud/read": { 
-      "uri": "https://blog.example.com",
-      "status": "published" 
-    },
-    "crud/update": [
-      { 
-        "uri": "https://example.com/newsletter/",
-        "status": "draft"
-      },
-      [
-        { 
-          "uri": "https://blog.example.com",
-          "status": "published",
-          "tag": "news" 
-        },
-        { "tag": "breaking" }
-      ]
-    ]
-  }
-}
 ```
 
 # 5 Validation
@@ -765,36 +624,21 @@ The caveat array SHOULD NOT be empty, as an empty array means "in no case" (whic
 
 Here are some abstract cases given in [normal form].
 
-| Proof Caveats          | Delegated Caveats                  | Is Valid? | Comment                                        |
-|------------------------|------------------------------------|-----------|------------------------------------------------|
-| `[[{}]]`               | `[[{}]]`                           | Yes       | Equal                                          |
-| `[[{a: 1}]]`           | `[[{a: 1}]]`                       | Yes       | Equal                                          |
-| `[[{a: 1}]]`           | `[[{}]]`                           | No        | Escalation by removing fields                  |
-| `[[{}]]`               | `[[{a: 1}]]`                       | Yes       | Attenuates `{}` by adding fields               |
-| `[[{a: 1}]]`           | `[[{b: 2}]]`                       | No        | Escalation by using a different caveat         |
-| `[{a: 1}], [{b: 2}]]`  | `[[{a: 1}]]`                       | Yes       | Removes a capability (removes an `OR` branch)  |
-| `[[{a: 1}], [{b: 2}]]` | `[[{a: 1}], [{b: 2, c: 3}]]`       | Yes       | Attenuates existing caveat                     |
-| `[[{a: 1}]]`           | `[[{a: 1}, {a: 2}]]`               | Yes       | Adds new caveat inside an `AND` block                     |
-| `[[{a: 1}]]`           | `[[{a: 1}], [{b: 2}]]]`            | No        | Escalation by adding new capability            |
-| `[[{a: 1}]]`           | `[[{a: 1}], [{b: 2}]]`             | No        | Escalation by adding new capability (`{b: 2}`) |
-| `[[{a: 1}]]`           | `[[{a: 1, b: 2}], [{a: 1, c: 3}]]` | Yes       | Attenuates the original capability             |
+| Proof Caveats          | Delegated Caveats  | Is Valid? | Comment                               |
+|------------------------|--------------------|-----------|---------------------------------------|
+| `[{}]`               | `[{}]`               | Yes       | Equal                                 |
+| `[{a: 1}]`           | `[[{a: 1}]]`         | Yes       | Equal                                 |
+| `[{}]`               | `[[{a: 1}]]`         | Yes       | Attenuates `{}` by adding fields      |
+| `[{a: 1}], [{b: 2}]` | `[{a: 1, b: 2}]`     | Yes       | Attenuates existing caveat            |
+| `[{a: 1}]`           | `[[{a: 1}, {a: 2}]]` | Yes       | Adds new caveat inside an `AND` block |
+| `[{a: 1}]`           | `[[{}]]`             | No        | Escalation by removing fields         |
+| `[{a: 1}]`           | `[[{b: 2}]]`         | No        | Escalation by replacing fields        |
 
 # 6. Content Identifiers
 
-A UCAN token MUST be referenced as a [base32] [CIDv1]. [SHA2-256] is the RECOMMENDED hash algorithm.
-
-The [`0x55` raw data][raw data multicodec] codec MUST be supported. If other codecs are used (such as [`0x0129` `dag-json` multicodec][dag-json multicodec]), the UCAN MUST be able to be interpreted as a valid JWT (including the signature).
+A UCAN token SHOULD be referenced as a [base32] [CIDv1]. [BLAKE3] is the RECOMMENDED hash algorithm. The [DAG-CBOR] codec MUST be supported, and [DAG-JSON] support is RECOMMENDED. 
 
 The resolution of these addresses is left to the implementation and end-user, and MAY (non-exclusively) include the following: local store, a distributed hash table (DHT), gossip network, or RESTful service.
-
-## 6.1 CID Canonicalization
-
-A canonical CID can be important for some use cases, such as caching and [revocation]. A canonical CID MUST conform to the following:
-
-* [CIDv1]
-* [base32]
-* [SHA2-256]
-* [Raw data multicodec] (`0x55`)
 
 # 7. Acknowledgments
 
