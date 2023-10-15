@@ -1,0 +1,28 @@
+type Delegation struct {
+  dgn &DelegationPayload
+  sig Signature
+}
+
+type DelegationPayload struct {
+  udv Semver
+
+  iss DID
+  aud DID
+
+  exp Integer
+  nbf Integer
+
+  sub DID
+  can String
+  but [{String : Any}]
+}
+
+type Signature union {
+  | batch  &BatchSig
+  | inline Bytes
+}
+
+type BatchSig struct {
+  scp [&Any]
+  sig Bytes
+}

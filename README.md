@@ -1,39 +1,6 @@
 # UCAN Delegation Specification v1.0.0-rc.1
 
-FIXME IPLD?
-
-```
-type Signed struct {
-  del &Delegation
-  sig Signature
-}
-
-type Delegation struct {
-  ucd Semver 
-
-  iss DID
-  aud DID
-
-  exp Integer
-  nbf Integer
-
-  sub DID
-  aby String
-  cav [{String : Any}]
-}
-
-type Signature union {
-  | batch  &BatchSig
-  | inline Bytes
-}
-
-type BatchSig struct {
-  scp [&Any]
-  sig Bytes
-}
-
-FIXME if you used a merkle tree, you could embed the merkle proof inside the payload, but then it's really tied down
-```
+FIXME move fct to meta for consistency?
 
 ## Editors
 
@@ -50,7 +17,7 @@ FIXME if you used a merkle tree, you could embed the merkle proof inside the pay
 
 * [UCAN]
 * [DID]
-* [DSG-CBOR]
+* [DAG-CBOR]
 
 ## Language
 
@@ -77,18 +44,22 @@ The payload MUST describe the authorization claims, who is involved, and its val
 
 | Field | Type                                      | Description                                            | Required |
 |-------|-------------------------------------------|--------------------------------------------------------|----------|
-| `ucv` | `String`                                  | UCAN Semantic Version (`1.0.0-rc.1`)                   | Yes      |
+| `udv` | `String`                                  | UCAN Semantic Version (`1.0.0-rc.1`)                   | Yes      |
 | `iss` | `DID`                                     | Issuer DID (sender)                                    | Yes      |
 | `aud` | `DID`                                     | Audience DID (receiver)                                | Yes      |
 | `nbf` | `Integer` (53-bits[^js-num-size])         | Not Before UTC Unix Timestamp in seconds (valid from)  | No       |
 | `exp` | `Integer \| null` (53-bits[^js-num-size]) | Expiration UTC Unix Timestamp in seconds (valid until) | Yes      |
 | `nnc` | `String`                                  | Nonce                                                  | Yes      |
-| `fct` | `{String: Any}`                           | Facts (asserted, signed data)                          | No       |
-| `cap` | `{DID: {Ability: Caveat}}`                | Capabilities                                           | Yes      |
+| `mta` | `{String : Any}`                          | Facts (asserted, signed data)                          | No       |
+| `sub` | `DID`                                     | Principal that the chain is about (subject)            | Yes      |
+| `can` | `String`                                  | [Ability]                                              | Yes      |
+| `but` | `[Caveat]`                                | Caveats                                                | Yes      |
+
+The payload MUST be serialized as IPLD and signed over FIXME
 
 ## 2.1 Version
 
-The `ucv` field sets the version of the UCAN specification used in the payload.
+The `udv` field sets the version of the UCAN Delegation specification used in the payload.
 
 ## 2.2 Principals
 
@@ -225,7 +196,7 @@ Here is an illustrative example:
   // ...
   sub: "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp"
   can: "msg/send",
-  cav: [
+  but: [
     {
       "sender": "mailto:alice@example.com",
       "day": "friday"
@@ -260,7 +231,7 @@ By default, the Resource of a capability is the Subject. This makes the delegati
 {
   sub: "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp", // Subject & Resource
   can: "crud/update",
-  cav: [{status: "draft"}]
+  but: [{status: "draft"}]
   // ...
 }
 ```
@@ -271,7 +242,7 @@ In the case where access to an [external resource] is delegated, the Subject MUS
 {
   sub: "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp",
   can: "crud/create",
-  cav: [
+  but: [
     {
       "uri": "https://example.com/blog/", // Resource
       "status": "draft"
@@ -289,7 +260,7 @@ Abilities MUST be presented as a case-insensitive string. By convention, abiliti
 {
   sub: "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp": {
   can: "msg/send",
-  cav: [
+  but: [
     {
       "from": "mailto:alice@example.com",
       "to": "mailto:bob@example.com"
@@ -363,7 +334,7 @@ On validation, the caveat array MUST be treated as a logically disjunct (`OR`). 
 {
   sub: "did:web:example.com",
   can: "crud/update",
-  cav: [
+  but: [
      {                                    // ┐
        "uri": "https://blog.example.com", // │
        "status": "published"              // ├─ Caveat
@@ -393,12 +364,12 @@ The "True" caveat MUST represent the lack of caveat. In predicate logic terms, i
 
 ``` js
 {
-  cav: [{}],
+  but: [{}],
   // ...
 }
 
 {
-  cav: [],
+  but: [],
   // ...
 }
 ```
@@ -624,23 +595,27 @@ The caveat array SHOULD NOT be empty, as an empty array means "in no case" (whic
 
 Here are some abstract cases given in [normal form].
 
-| Proof Caveats          | Delegated Caveats  | Is Valid? | Comment                               |
-|------------------------|--------------------|-----------|---------------------------------------|
-| `[{}]`               | `[{}]`               | Yes       | Equal                                 |
-| `[{a: 1}]`           | `[[{a: 1}]]`         | Yes       | Equal                                 |
-| `[{}]`               | `[[{a: 1}]]`         | Yes       | Attenuates `{}` by adding fields      |
-| `[{a: 1}], [{b: 2}]` | `[{a: 1, b: 2}]`     | Yes       | Attenuates existing caveat            |
-| `[{a: 1}]`           | `[[{a: 1}, {a: 2}]]` | Yes       | Adds new caveat inside an `AND` block |
-| `[{a: 1}]`           | `[[{}]]`             | No        | Escalation by removing fields         |
-| `[{a: 1}]`           | `[[{b: 2}]]`         | No        | Escalation by replacing fields        |
+| Proof Caveats        | Delegated Caveats  | Is Valid? | Comment                               |
+|----------------------|--------------------|-----------|---------------------------------------|
+| `[{}]`               | `[{}]`             | Yes       | Equal                                 |
+| `[{a: 1}]`           | `[{a: 1}]`         | Yes       | Equal                                 |
+| `[{}]`               | `[{a: 1}]`         | Yes       | Attenuates `{}` by adding fields      |
+| `[{a: 1}], [{b: 2}]` | `[{a: 1, b: 2}]`   | Yes       | Attenuates existing caveat            |
+| `[{a: 1}]`           | `[{a: 1}, {a: 2}]` | Yes       | Adds new caveat inside an `AND` block |
+| `[{a: 1}]`           | `[{}]]`            | No        | Escalation by removing fields         |
+| `[{a: 1}]`           | `[{b: 2}]`         | No        | Escalation by replacing fields        |
 
-# 6. Content Identifiers
+# 6. Signature
+
+FIXME
+
+# 7. Content Identifiers
 
 A UCAN token SHOULD be referenced as a [base32] [CIDv1]. [BLAKE3] is the RECOMMENDED hash algorithm. The [DAG-CBOR] codec MUST be supported, and [DAG-JSON] support is RECOMMENDED. 
 
 The resolution of these addresses is left to the implementation and end-user, and MAY (non-exclusively) include the following: local store, a distributed hash table (DHT), gossip network, or RESTful service.
 
-# 7. Acknowledgments
+# 8. Acknowledgments
 
 Thank you to [Brendan O'Brien] for real-world feedback, technical collaboration, and implementing the first Golang UCAN library.
 
