@@ -473,13 +473,13 @@ A UCAN's time bounds MUST NOT be considered valid if the current system time is 
 // Pseudocode
 
 const ensureTime = (delegationChain, now) => {
-  delegationChain.forEach((cid) => {
-    if (!!proof.nbf && ucan.nbf < now) {
-      throw new Error("Time escalation: delegation starts before proof starts")
+  delegationChain.forEach((ucan) => {
+    if (!!ucan.nbf && now < can.nbf) {
+      throw new Error(`Delegation is not yet valid, but will become valid at ${ucan.nbf}`)
     }
 
-    if (proof.exp !== null && ucan.exp > now) {
-      throw new Error("Time escalation: delegation ends after proof ends")
+    if (ucan.exp !== null && now > ucan.exp) {
+      throw new Error(`Delegation expired at ${ucan.exp}`)
     }
   })
 }
@@ -566,7 +566,7 @@ The following UCAN fragment would be valid to invoke as `did:key:zH3C2AVvLMv6gmM
 
 A good litmus test for invocation validity by a invoking agent is to check if they would be able to create a valid delegation for that capability.
 
-## 6.4 Caveat Attenuation
+## 6.3 Caveat Attenuation
 
 The caveat array SHOULD NOT be empty, as an empty array means "in no case" (which is equivalent to not listing the ability). This follows from the rule that delegations MUST be of equal or lesser scope. When an array is given, an attenuated caveat MUST (syntactically) include all of the fields of the relevant proof caveat, plus the newly introduced caveats.
 
@@ -582,7 +582,7 @@ Here are some abstract cases given in [normal form].
 | `[{a: 1}]`           | `[{}]]`            | No        | Escalation by removing fields         |
 | `[{a: 1}]`           | `[{b: 2}]`         | No        | Escalation by replacing fields        |
 
-## 6.5 Signature Validation
+## 6.4 Signature Validation
 
 The `sig` field MUST validate against the `iss` DID from the [Payload].
 
