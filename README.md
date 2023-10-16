@@ -163,7 +163,7 @@ Below is an example:
 }
 ```
 
-# 3. Capabilities
+# 3. Capability
 
 Capabilities are the semantically-relevant claims of a delegation. They MUST be presented as a map under the `cap` field as a map. This map is REQUIRED but MAY be empty. This MUST take the following form:
 
@@ -243,7 +243,7 @@ In the case where access to an [external resource] is delegated, the Subject MUS
 }
 ```
 
-## 3.3 Abilities
+## 3.3 Ability
 
 Abilities MUST be presented as a case-insensitive string. By convention, abilities SHOULD be namespaced with a slash, such as `msg/send`. One or more abilities MUST be given for each resource.
 
@@ -616,7 +616,7 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 
 <!-- Internal Links -->
 
-[Ability]: #33-abilities
+[Ability]: #33-ability
 [Caveat]: #44-caveats
 [Envelope]: #5-delegation-envelope
 [Meta]: #25-meta
