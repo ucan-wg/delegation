@@ -662,6 +662,7 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [CIDv1]: https://github.com/multiformats/cid?tab=readme-ov-file#cidv1
 [Christine Lemmer-Webber]: https://github.com/cwebber
 [Christopher Joel]: https://github.com/cdata
+[DAG-CBOR]: https://ipld.io/specs/codecs/dag-cbor/spec/
 [DID fragment]: https://www.w3.org/TR/did-core/#terminology
 [DID]: https://www.w3.org/TR/did-core/
 [DID]: https://www.w3.org/TR/did-core/
