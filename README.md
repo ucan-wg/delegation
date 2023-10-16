@@ -36,7 +36,7 @@ Design goals:
 - Ad hoc caveats
 - Consistency for interoperability
 
-# 2 Structure
+# 2 Delegation Payload
 
 The payload MUST describe the authorization claims, who is involved, and its validity period.
 
@@ -53,7 +53,7 @@ The payload MUST describe the authorization claims, who is involved, and its val
 | `can` | `String`                                  | Yes      | [Ability]                                                 |
 | `iff` | `[Caveat]`                                | Yes      | Caveats                                                   |
 
-The payload MUST be serialized as IPLD and signed over FIXME
+The payload MUST be serialized as IPLD and [signed over][Signature].
 
 ## 2.1 Version
 
@@ -457,7 +457,14 @@ Note that while adding whole objects is useful in many situation as above, atten
 ]
 ```
 
-# 5 Validation
+# 5. Signature
+
+| Field   | Type        | Required | Description                                  |
+|---------|-------------|----------|----------------------------------------------|
+| `ucd`   | `&Payload`  | Yes      | The CID of the [Delegation Payload][Payload] |
+| `sig`   | `Signature` | Yes      | The `iss`'s [Signature] over the `ucd` field |
+
+# 6 Validation
 
 Validation of a UCAN chain MAY occur at any time, but MUST occur upon receipt of an [Invocation] prior to execution. While proof chains exist outside of a particular delegation (and are made concrete in [UCAN Invocation]s), each delegate MUST store one or more valid delegations chains for a particular claim.
 
@@ -465,7 +472,7 @@ Each capability has its own semantics, which needs to be interpretable by the [E
 
 If _any_ of the following criteria are not met, the UCAN MUST be considered invalid:
 
-## 5.1 Time Bounds
+## 6.1 Time Bounds
 
 A UCAN's time bounds MUST NOT be considered valid if the current system time is before the `nbf` field or after the `exp` field. This is called "ambient time validity."
 
@@ -506,7 +513,7 @@ const ensureProofExp = (ucan, proof) => {
 }
 ```
 
-## 5.2 Principal Alignment
+## 6.2 Principal Alignment
 
 In delegation, the `aud` field of every proof MUST match the `iss` field of the UCAN being delegated to. This alignment MUST form a chain back to the originating principal for each resource. 
 
@@ -571,7 +578,7 @@ In the above diagram, Alice has some storage. This storage may exist in one loca
 
 Alice delegates access to Bob. Bob then redelegates to Carol. Carol invokes the UCAN as part of a REST request to a compute service. To do this, she MUST both provide proof that she has access (the UCAN chain), and MUST delegate access to the invoking compute service. The invoking service MUST check that the root issuer (Alice) is in fact the owner (typically the creator) of the resource. This MAY be listed directly on the resource, as it is here. Once the UCAN chain and root ownership are validated, the storage service performs the write.
 
-### 5.2.1 Recipient Validation
+### 6.2.1 Recipient Validation
 
 An agent executing a capability MUST verify that the outermost `aud` field _matches its own DID._ The associated ability MUST NOT be performed if they do not match. Recipient validation is REQUIRED to prevent the misuse of UCANs in an unintended context.
 
@@ -587,7 +594,7 @@ The following UCAN fragment would be valid to invoke as `did:key:zH3C2AVvLMv6gmM
 
 A good litmus test for invocation validity by a invoking agent is to check if they would be able to create a valid delegation for that capability.
 
-## 5.4 Caveat Attenuation
+## 6.4 Caveat Attenuation
 
 The caveat array SHOULD NOT be empty, as an empty array means "in no case" (which is equivalent to not listing the ability). This follows from the rule that delegations MUST be of equal or lesser scope. When an array is given, an attenuated caveat MUST (syntactically) include all of the fields of the relevant proof caveat, plus the newly introduced caveats.
 
@@ -603,9 +610,9 @@ Here are some abstract cases given in [normal form].
 | `[{a: 1}]`           | `[{}]]`            | No        | Escalation by removing fields         |
 | `[{a: 1}]`           | `[{b: 2}]`         | No        | Escalation by replacing fields        |
 
-# 6. Signature
+## 6.5 Signature Validation
 
-FIXME
+The `sig` field MUST validate against the `iss` DID from the [Payload].
 
 # 7. Acknowledgments
 
