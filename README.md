@@ -13,30 +13,25 @@
 
 ## Dependencies
 
-- [UCAN]
 - [DID]
-- [DAG-CBOR]
+- [IPLD]
+- [UCAN]
 
 ## Language
 
 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in [RFC 2119].
 
-# 0 Abstract
+# 0. Abstract
 
-UCAN Delegation is a component of [UCAN]. This specification describes the semantics and serialization format for [UCAN] delegation between principals. UCAN Delegation provides a cryptographically verifiable container, batched capabilities, hierarchical authority, and extensible caveats.
+This specification describes the semantics and serialization format for [UCAN] delegation between principals. UCAN Delegation provides a cryptographically verifiable container, batched capabilities, hierarchical authority, and extensible caveats.
 
-# 1 Introduction
+# 1. Introduction
 
-## 1.1 Motivation
+UCAN Delegation is a certificate capability system with runtime-extensiblity, ad hoc caveats, cachability, and focused on ease of use and interoperabilty. Delegations act as a proofs for [UCAN Invocation]s.
 
-Design goals:
+Delegation provides a way to "transfer authority without transferring cryptograhic keys". As an authorization system, it is more interested in "what" can be done than a list of "who can do what". For more on how Delegation fits into UCAN, please refer to the [high level spec][UCAN].
 
-- Flexible delegation paths
-- Semantic extensibility
-- Ad hoc caveats
-- Consistency for interoperability
-
-# 2 Delegation Payload
+# 2. Delegation Payload
 
 The payload MUST describe the authorization claims, who is involved, and its validity period.
 
@@ -53,7 +48,7 @@ The payload MUST describe the authorization claims, who is involved, and its val
 | `can` | `String`                                  | Yes      | [Ability]                                                   |
 | `iff` | `[Caveat]`                                | Yes      | [Caveat]s                                                   |
 
-The payload MUST be serialized as IPLD and [signed over][Envelope].
+The payload MUST be serialized as [IPLD] and [signed over][Envelope]. The RECOMMENDED IPLD codec is [DAG-CBOR].
 
 ## 2.1 Version
 
@@ -657,6 +652,7 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [Fission]: https://fission.codes
 [Hugo Dias]: https://github.com/hugomrdias
 [IEEE-754]: https://ieeexplore.ieee.org/document/8766229
+[IPLD]: https://ipld.io/
 [Ink & Switch]: https://www.inkandswitch.com/
 [Invocation]: https://github.com/ucan-wg/invocation
 [Irakli Gozalishvili]: https://github.com/Gozala
@@ -695,4 +691,3 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [external resource]: https://github.com/ucan-wg/spec#55-wrapping-existing-systems
 [revocation]: https://github.com/ucan-wg/revocation
 [ucan.xyz]: https://ucan.xyz
- 
