@@ -90,7 +90,7 @@ Below are a couple examples:
 
 ## 2.3 Time Bounds
 
-`nbf` and `exp` stand for "not before" and "expires at," respectively. These are standard fields from [RFC 7519][JWT] (JWT) (which in turn uses [RFC 3339]), and MUST represent seconds since the Unix epoch in UTC, without time zone or other offset. Taken together, they represent the time bounds for a token. These timestamps MUST be represented as the number of integer seconds since the Unix epoch. Due to limitations[^js-num-size] in numerics for certain common languages, timestamps outside of the range from $-2^{53} – 1$ to $2^{53} – 1$ MUST be rejected as invalid.
+`nbf` and `exp` stand for "not before" and "expires at," respectively. These MUST be expressed as seconds since the Unix epoch in UTC, without time zone or other offset. Taken together, they represent the time bounds for a token. These timestamps MUST be represented as the number of integer seconds since the Unix epoch. Due to limitations[^js-num-size] in numerics for certain common languages, timestamps outside of the range from $-2^{53} – 1$ to $2^{53} – 1$ MUST be rejected as invalid.
 
 The `nbf` field is OPTIONAL. When omitted, the token MUST be treated as valid beginning from the Unix epoch. Setting the `nbf` field to a time in the future MUST delay using a UCAN. For example, pre-provisioning access to conference materials ahead of time but not allowing access until the day it starts is achievable with judicious use of `nbf`.
 
@@ -657,7 +657,6 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [Invocation]: https://github.com/ucan-wg/invocation
 [Irakli Gozalishvili]: https://github.com/Gozala
 [JS Number]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number
-[JWT]: https://www.rfc-editor.org/rfc/rfc7519
 [Juan Caballero]: https://github.com/bumblefudge
 [Mark Miller]: https://github.com/erights
 [Martin Kleppmann]: https://martin.kleppmann.com/
