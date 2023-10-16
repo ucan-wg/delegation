@@ -190,9 +190,9 @@ Here is an illustrative example:
 ``` js
 {
   // ...
-  sub: "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp"
-  can: "msg/send",
-  iff: [
+  "sub": "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp"
+  "can": "msg/send",
+  "iff": [
     {
       "sender": "mailto:alice@example.com",
       "day": "friday"
@@ -212,7 +212,7 @@ For example:
 
 ``` js
 {
-  sub: "did:web:example.com",
+  "sub": "did:web:example.com",
   // ...
 }
 ```
@@ -225,9 +225,9 @@ By default, the Resource of a capability is the Subject. This makes the delegati
 
 ``` js
 {
-  sub: "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp", // Subject & Resource
-  can: "crud/update",
-  iff: [{status: "draft"}]
+  "sub": "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp", // Subject & Resource
+  "can": "crud/update",
+  "iff": [{status: "draft"}]
   // ...
 }
 ```
@@ -236,9 +236,9 @@ In the case where access to an [external resource] is delegated, the Subject MUS
 
 ``` js
 {
-  sub: "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp",
-  can: "crud/create",
-  iff: [
+  "sub": "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp",
+  "can": "crud/create",
+  "iff": [
     {
       "uri": "https://example.com/blog/", // Resource
       "status": "draft"
@@ -254,9 +254,9 @@ Abilities MUST be presented as a case-insensitive string. By convention, abiliti
 
 ``` js
 {
-  sub: "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp": {
-  can: "msg/send",
-  iff: [
+  "sub": "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp": {
+  "can": "msg/send",
+  "iff": [
     {
       "from": "mailto:alice@example.com",
       "to": "mailto:bob@example.com"
@@ -284,7 +284,7 @@ The "wildcard" (or "any", or "top") ability MUST be denoted `*`. This can be tho
 
 ``` js
 {
-  can: "*",
+  "can": "*",
   // ...
 }
 ```
@@ -328,9 +328,9 @@ On validation, the caveat array MUST be treated as a logically disjunct (`OR`). 
 
 ``` js
 {
-  sub: "did:web:example.com",
-  can: "crud/update",
-  iff: [
+  "sub": "did:web:example.com",
+  "can": "crud/update",
+  "iff": [
      {                                    // ┐
        "uri": "https://blog.example.com", // │
        "status": "published"              // ├─ Caveat
@@ -360,12 +360,12 @@ The "True" caveat MUST represent the lack of caveat. In predicate logic terms, i
 
 ``` js
 {
-  iff: [{}],
+  "iff": [{}],
   // ...
 }
 
 {
-  iff: [],
+  "iff": [],
   // ...
 }
 ```
