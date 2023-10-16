@@ -477,8 +477,8 @@ A UCAN's time bounds MUST NOT be considered valid if the current system time is 
 ``` js
 // Pseudocode
 
-const ensureTime = async (delegationChain, now) => {
-  await Promise.all(delegationChain.forEach(async (cid) => {
+const ensureTime = (delegationChain, now) => {
+  delegationChain.forEach((cid) => {
     if (!!proof.nbf && ucan.nbf < now) {
       throw new Error("Time escalation: delegation starts before proof starts")
     }
@@ -486,7 +486,7 @@ const ensureTime = async (delegationChain, now) => {
     if (proof.exp !== null && ucan.exp > now) {
       throw new Error("Time escalation: delegation ends after proof ends")
     }
-  }))
+  })
 }
 ```
 
