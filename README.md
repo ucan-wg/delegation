@@ -1,7 +1,5 @@
 # UCAN Delegation Specification v1.0.0-rc.1
 
-FIXME move fct to meta for consistency?
-
 ## Editors
 
 * [Brooklyn Zelenka], [Fission]
@@ -38,22 +36,22 @@ Design goals:
 - Ad hoc caveats
 - Consistency for interoperability
 
-# 2 Token Structure
+# 2 Structure
 
 The payload MUST describe the authorization claims, who is involved, and its validity period.
 
-| Field | Type                                      | Description                                            | Required |
-|-------|-------------------------------------------|--------------------------------------------------------|----------|
-| `udv` | `String`                                  | UCAN Semantic Version (`1.0.0-rc.1`)                   | Yes      |
-| `iss` | `DID`                                     | Issuer DID (sender)                                    | Yes      |
-| `aud` | `DID`                                     | Audience DID (receiver)                                | Yes      |
-| `nbf` | `Integer` (53-bits[^js-num-size])         | Not Before UTC Unix Timestamp in seconds (valid from)  | No       |
-| `exp` | `Integer \| null` (53-bits[^js-num-size]) | Expiration UTC Unix Timestamp in seconds (valid until) | Yes      |
-| `nnc` | `String`                                  | Nonce                                                  | Yes      |
-| `mta` | `{String : Any}`                          | Facts (asserted, signed data)                          | No       |
-| `sub` | `DID`                                     | Principal that the chain is about (subject)            | Yes      |
-| `can` | `String`                                  | [Ability]                                              | Yes      |
-| `but` | `[Caveat]`                                | Caveats                                                | Yes      |
+| Field | Type                                      | Required | Description                                               |
+|-------|-------------------------------------------|----------|-----------------------------------------------------------|
+| `udv` | `String`                                  | Yes      | UCAN Semantic Version (`1.0.0-rc.1`)                      |
+| `iss` | `DID`                                     | Yes      | Issuer DID (sender)                                       |
+| `aud` | `DID`                                     | Yes      | Audience DID (receiver)                                   |
+| `nbf` | `Integer` (53-bits[^js-num-size])         | No       | Not Before UTC Unix Timestamp in seconds (valid from)     |
+| `exp` | `Integer \| null` (53-bits[^js-num-size]) | Yes      | Expiration UTC Unix Timestamp in seconds (valid until)    |
+| `nnc` | `String`                                  | Yes      | Nonce                                                     |
+| `mta` | `{String : Any}`                          | No       | Meta (asserted, signed data) — is not delegated authority |
+| `sub` | `DID`                                     | Yes      | Principal that the chain is about (subject)               |
+| `can` | `String`                                  | Yes      | [Ability]                                                 |
+| `iff` | `[Caveat]`                                | Yes      | Caveats                                                   |
 
 The payload MUST be serialized as IPLD and signed over FIXME
 
@@ -140,7 +138,7 @@ The REQUIRED nonce parameter `nnc` MAY be any value. A randomly generated string
 
 The recommended size of the nonce differs by key type. In many cases, a random 12-byte nonce is sufficient. If uncertain, check the nonce in your DID's crypto suite.
 
-This field SHOULD NOT be used to sign arbitrary data, such as signature challenges. See the [`fct`][Facts] field for more.
+This field SHOULD NOT be used to sign arbitrary data, such as signature challenges. See the [`mta`][Meta] field for more.
 
 Here is a simple example.
 
@@ -151,16 +149,16 @@ Here is a simple example.
 }
 ```
 
-## 2.5 Facts
+## 2.5 Meta
 
-The OPTIONAL `fct` field contains a map of arbitrary facts and proofs of knowledge. The enclosed data MUST be self-evident and externally verifiable. It MAY include information such as hash preimages, server challenges, a Merkle proof, dictionary data, etc. Facts themselves MUST NOT be semantically meaningful to delegation chains. 
+The OPTIONAL `mta` field contains a map of arbitrary metadata, facts, and proofs of knowledge. The enclosed data MUST be self-evident and externally verifiable. It MAY include information such as hash preimages, server challenges, a Merkle proof, dictionary data, etc. Facts themselves MUST NOT be semantically meaningful to delegation chains. 
 
 Below is an example:
 
 ``` js
 {
   // ...
-  "fct": {
+  "mta": {
     "challenges": {
       "example.com": "abcdef",
       "another.example.net": "12345"
@@ -196,7 +194,7 @@ Here is an illustrative example:
   // ...
   sub: "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp"
   can: "msg/send",
-  but: [
+  iff: [
     {
       "sender": "mailto:alice@example.com",
       "day": "friday"
@@ -231,7 +229,7 @@ By default, the Resource of a capability is the Subject. This makes the delegati
 {
   sub: "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp", // Subject & Resource
   can: "crud/update",
-  but: [{status: "draft"}]
+  iff: [{status: "draft"}]
   // ...
 }
 ```
@@ -242,7 +240,7 @@ In the case where access to an [external resource] is delegated, the Subject MUS
 {
   sub: "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp",
   can: "crud/create",
-  but: [
+  iff: [
     {
       "uri": "https://example.com/blog/", // Resource
       "status": "draft"
@@ -260,7 +258,7 @@ Abilities MUST be presented as a case-insensitive string. By convention, abiliti
 {
   sub: "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp": {
   can: "msg/send",
-  but: [
+  iff: [
     {
       "from": "mailto:alice@example.com",
       "to": "mailto:bob@example.com"
@@ -334,7 +332,7 @@ On validation, the caveat array MUST be treated as a logically disjunct (`OR`). 
 {
   sub: "did:web:example.com",
   can: "crud/update",
-  but: [
+  iff: [
      {                                    // ┐
        "uri": "https://blog.example.com", // │
        "status": "published"              // ├─ Caveat
@@ -364,12 +362,12 @@ The "True" caveat MUST represent the lack of caveat. In predicate logic terms, i
 
 ``` js
 {
-  but: [{}],
+  iff: [{}],
   // ...
 }
 
 {
-  but: [],
+  iff: [],
   // ...
 }
 ```
@@ -611,6 +609,8 @@ FIXME
 
 # 7. Content Identifiers
 
+FIXME move tro high level spec
+
 A UCAN token SHOULD be referenced as a [base32] [CIDv1]. [BLAKE3] is the RECOMMENDED hash algorithm. The [DAG-CBOR] codec MUST be supported, and [DAG-JSON] support is RECOMMENDED. 
 
 The resolution of these addresses is left to the implementation and end-user, and MAY (non-exclusively) include the following: local store, a distributed hash table (DHT), gossip network, or RESTful service.
@@ -644,7 +644,7 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 <!-- Internal Links -->
 
 [Caveat]: #44-caveats
-[Facts]: #325-facts
+[Meta]: #25-meta
 [Subject]: #41-subject
 [Wildcard Ability]: #4312--aka-wildcard
 [compact form]: #4421-compact-form
@@ -663,6 +663,7 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [Christine Lemmer-Webber]: https://github.com/cwebber
 [Christopher Joel]: https://github.com/cdata
 [DID fragment]: https://www.w3.org/TR/did-core/#terminology
+[DID]: https://www.w3.org/TR/did-core/
 [DID]: https://www.w3.org/TR/did-core/
 [DNF]: https://en.wikipedia.org/wiki/Disjunctive_normal_form
 [Dan Finlay]: https://github.com/danfinlay

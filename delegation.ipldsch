@@ -1,6 +1,6 @@
 type Delegation struct {
   dgn &DelegationPayload
-  sig Signature
+  sig &Signature
 }
 
 type DelegationPayload struct {
