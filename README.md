@@ -665,7 +665,6 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [DAG-CBOR]: https://ipld.io/specs/codecs/dag-cbor/spec/
 [DID fragment]: https://www.w3.org/TR/did-core/#terminology
 [DID]: https://www.w3.org/TR/did-core/
-[DID]: https://www.w3.org/TR/did-core/
 [DNF]: https://en.wikipedia.org/wiki/Disjunctive_normal_form
 [Dan Finlay]: https://github.com/danfinlay
 [Daniel Holmgren]: https://github.com/dholms
@@ -713,3 +712,4 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [external resource]: https://github.com/ucan-wg/spec#55-wrapping-existing-systems
 [revocation]: https://github.com/ucan-wg/revocation
 [ucan.xyz]: https://ucan.xyz
+ 
