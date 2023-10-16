@@ -450,6 +450,8 @@ Note that while adding whole objects is useful in many situation as above, atten
 
 # 5. Delegation (Envelope)
 
+Delegations MUST include a signature that validates against the `iss` DID. A Delegation Payload on its own MUST NOT be considered a valid Delegation.
+
 | Field   | Type        | Required | Description                                  |
 |---------|-------------|----------|----------------------------------------------|
 | `ucd`   | `&Payload`  | Yes      | The CID of the [Delegation Payload][Payload] |
