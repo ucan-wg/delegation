@@ -14,15 +14,15 @@ type DelegationPayload struct {
 
   sub DID
   can String
-  but [{String : Any}]
+  iff [{String : Any}]
 }
 
 type Signature union {
-  | batch  &BatchSig
+  | batch  BatchSig
   | inline Bytes
-}
+} representation kinded
 
 type BatchSig struct {
-  scp [&Any]
+  scp &[Any]
   sig Bytes
 }

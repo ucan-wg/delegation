@@ -45,10 +45,10 @@ The payload MUST describe the authorization claims, who is involved, and its val
 | `udv` | `String`                                  | Yes      | UCAN Semantic Version (`1.0.0-rc.1`)                        |
 | `iss` | `DID`                                     | Yes      | Issuer DID (sender)                                         |
 | `aud` | `DID`                                     | Yes      | Audience DID (receiver)                                     |
-| `nbf` | `Integer` (53-bits[^js-num-size])         | No       | Not Before UTC Unix Timestamp in seconds (valid from)       |
+| `nbf` | `Integer` (53-bits[^js-num-size])         | No       | "Not before" UTC Unix Timestamp in seconds (valid from)     |
 | `exp` | `Integer \| null` (53-bits[^js-num-size]) | Yes      | Expiration UTC Unix Timestamp in seconds (valid until)      |
 | `nnc` | `String`                                  | Yes      | Nonce                                                       |
-| `mta` | `{String : Any}`                          | No       | [Meta] (asserted, signed data) — is not delegated authority |
+| `mta` | `{String : Any}`                          | No       | [Meta] (asserted, signed data) — is not delegated authority |
 | `sub` | `DID`                                     | Yes      | Principal that the chain is about (the [Subject])           |
 | `can` | `String`                                  | Yes      | [Ability]                                                   |
 | `iff` | `[Caveat]`                                | Yes      | [Caveat]s                                                   |
@@ -348,7 +348,7 @@ The above MUST be interpreted as the set of capabilities below in the following 
 
 | Subject               | Ability       | Caveat                                                                                                 |
 |-----------------------|---------------|--------------------------------------------------------------------------------------------------------|
-| `did:web:example.com` | `crud/update` | Posts at `https://blog.example.com` with the `published` status and tagged with `published` and `news` |
+| `did:web:example.com` | `crud/update` | Posts at `https://blog.example.com` with the `published` status and tagged with `news` and `breaking`  |
 
 When validating a delegation chain in the abstract, all caveats MUST be present in each successive delegation. At invocation time, only the capability being invoked MUST be match the delegation chain.
 
@@ -376,7 +376,7 @@ Caveats MAY be expressed in a compact form, but any caveat MUST be expressible i
 
 Normal form MUST take the following shape: `[{}]`. The arrays represents logical `all` (chained `AND`s). To represent logical `any` / `OR`, issue another delegation with that attenuation.
 
-For instance, the following represents `({a: 1, b:2} AND {c: 3}) AND {d: 4}`:
+For instance, the following represents `{a: 1, b:2} AND {c: 3} AND {d: 4}`:
 
 ``` js
 [
@@ -472,42 +472,21 @@ If _any_ of the following criteria are not met, the UCAN MUST be considered inva
 
 ## 6.1 Time Bounds
 
-A UCAN's time bounds MUST NOT be considered valid if the current system time is before the `nbf` field or after the `exp` field. This is called "ambient time validity."
-
-All proofs MUST contain time bounds equal to or broader than the UCAN being delegated (i.e. delegation maintains or narrows the time bounds). If the proof expires before the delegated UCAN — or starts after it — the validator MUST treat the entire UCAN as invalid. Delegation inside of the time bound is called "timely delegation." These conditions MUST hold even if the current wall clock time is inside of incorrectly delegated bounds. 
-
-A UCAN is valid inclusive from the `nbf` time and until the `exp` field. If the current time is outside of these bounds, the UCAN MUST be considered invalid. When setting these bounds, a delegator or invoker SHOULD account for expected clock drift. Use of time bounds this way is called "timely invocation."
+A UCAN's time bounds MUST NOT be considered valid if the current system time is before the `nbf` field or after the `exp` field. This is called the "validity period." Proofs in a chain MAY have different validity periods, but MUST all be valid at execution-time. This has the effect of making a delegtaion chain valid between the latest `nbf` and earliest `exp`.
 
 ``` js
 // Pseudocode
 
-const ensureTime = async (ucan) => {
-  ensureTimeBounds(ucan)
-  await Promise.all(ucan.prf.forEach(async (cid) => {
-    const proof = await getUcan(cid)
-    ensureProofNbf(ucan, proof)
-    ensureProofExp(ucan, proof)
+const ensureTime = async (delegationChain, now) => {
+  await Promise.all(delegationChain.forEach(async (cid) => {
+    if (!!proof.nbf && ucan.nbf < now) {
+      throw new Error("Time escalation: delegation starts before proof starts")
+    }
+
+    if (proof.exp !== null && ucan.exp > now) {
+      throw new Error("Time escalation: delegation ends after proof ends")
+    }
   }))
-}
-
-// Helpers
-
-const ensureTimeBounds = (ucan) => {
-  if (!!proof.nbf && ucan.exp !== null && ucan.nbf > ucan.exp) {
-    throw new Error("Time violation: UCAN starts after expiry")
-  }
-}
-
-const ensureProofNbf = (ucan, proof) => {
-  if (!!proof.nbf && ucan.nbf < proof.nbf) {
-    throw new Error("Time escalation: delegation starts before proof starts")
-  }
-}
-
-const ensureProofExp = (ucan, proof) => {
-  if (proof.exp !== null && ucan.exp > proof.exp) {
-    throw new Error("Time escalation: delegation ends after proof ends")
-  }
 }
 ```
 
