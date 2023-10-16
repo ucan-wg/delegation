@@ -40,18 +40,18 @@ Design goals:
 
 The payload MUST describe the authorization claims, who is involved, and its validity period.
 
-| Field | Type                                      | Required | Description                                               |
-|-------|-------------------------------------------|----------|-----------------------------------------------------------|
-| `udv` | `String`                                  | Yes      | UCAN Semantic Version (`1.0.0-rc.1`)                      |
-| `iss` | `DID`                                     | Yes      | Issuer DID (sender)                                       |
-| `aud` | `DID`                                     | Yes      | Audience DID (receiver)                                   |
-| `nbf` | `Integer` (53-bits[^js-num-size])         | No       | Not Before UTC Unix Timestamp in seconds (valid from)     |
-| `exp` | `Integer \| null` (53-bits[^js-num-size]) | Yes      | Expiration UTC Unix Timestamp in seconds (valid until)    |
-| `nnc` | `String`                                  | Yes      | Nonce                                                     |
-| `mta` | `{String : Any}`                          | No       | Meta (asserted, signed data) — is not delegated authority |
-| `sub` | `DID`                                     | Yes      | Principal that the chain is about (subject)               |
-| `can` | `String`                                  | Yes      | [Ability]                                                 |
-| `iff` | `[Caveat]`                                | Yes      | Caveats                                                   |
+| Field | Type                                      | Required | Description                                                 |
+|-------|-------------------------------------------|----------|-------------------------------------------------------------|
+| `udv` | `String`                                  | Yes      | UCAN Semantic Version (`1.0.0-rc.1`)                        |
+| `iss` | `DID`                                     | Yes      | Issuer DID (sender)                                         |
+| `aud` | `DID`                                     | Yes      | Audience DID (receiver)                                     |
+| `nbf` | `Integer` (53-bits[^js-num-size])         | No       | Not Before UTC Unix Timestamp in seconds (valid from)       |
+| `exp` | `Integer \| null` (53-bits[^js-num-size]) | Yes      | Expiration UTC Unix Timestamp in seconds (valid until)      |
+| `nnc` | `String`                                  | Yes      | Nonce                                                       |
+| `mta` | `{String : Any}`                          | No       | [Meta] (asserted, signed data) — is not delegated authority |
+| `sub` | `DID`                                     | Yes      | Principal that the chain is about (the [Subject])           |
+| `can` | `String`                                  | Yes      | [Ability]                                                   |
+| `iff` | `[Caveat]`                                | Yes      | [Caveat]s                                                   |
 
 The payload MUST be serialized as IPLD and [signed over][Envelope].
 
