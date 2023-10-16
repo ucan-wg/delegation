@@ -24,14 +24,24 @@ The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "S
 # 0. Abstract
 
 This specification describes the semantics and serialization format for [UCAN] delegation between principals. UCAN Delegation provides a cryptographically verifiable container, batched capabilities, hierarchical authority, and extensible caveats.
-
+  
 # 1. Introduction
 
 UCAN Delegation is a certificate capability system with runtime-extensiblity, ad hoc caveats, cachability, and focused on ease of use and interoperabilty. Delegations act as a proofs for [UCAN Invocation]s.
 
 Delegation provides a way to "transfer authority without transferring cryptograhic keys". As an authorization system, it is more interested in "what" can be done than a list of "who can do what". For more on how Delegation fits into UCAN, please refer to the [high level spec][UCAN].
 
-# 2. Delegation Payload
+# 2. Delegation (Envelope)
+
+Delegations MUST include a signature that validates against the `iss` DID. A Delegation Payload on its own MUST NOT be considered a valid Delegation.
+
+| Field   | Type        | Required | Description                                  |
+|---------|-------------|----------|----------------------------------------------|
+| `ucd`   | `&Payload`  | Yes      | The CID of the [Delegation Payload][Payload] |
+| `sig`   | `Signature` | Yes      | The `iss`'s [Signature] over the `ucd` field |
+
+
+# 3. Delegation Payload
 
 The payload MUST describe the authorization claims, who is involved, and its validity period.
 
@@ -50,11 +60,11 @@ The payload MUST describe the authorization claims, who is involved, and its val
 
 The payload MUST be serialized as [IPLD] and [signed over][Envelope]. The RECOMMENDED IPLD codec is [DAG-CBOR].
 
-## 2.1 Version
+## 3.1 Version
 
 The `udv` field sets the version of the UCAN Delegation specification used in the payload.
 
-## 2.2 Principals
+## 3.2 Principals
 
 The `iss` and `aud` fields describe the token's principals. They are distinguished by having DIDs. These can be conceptualized as the sender and receiver of a postal letter. The token MUST be signed with the private key associated with the DID in the `iss` field. Implementations MUST include the [`did:key`] method, and MAY be augmented with [additional DID methods][DID].
 
@@ -88,7 +98,7 @@ Below are a couple examples:
 "iss": "did:plc:ewvi7nxzyoun6zhxrhs64oiz",
 ```
 
-## 2.3 Time Bounds
+## 3.3 Time Bounds
 
 `nbf` and `exp` stand for "not before" and "expires at," respectively. These MUST be expressed as seconds since the Unix epoch in UTC, without time zone or other offset. Taken together, they represent the time bounds for a token. These timestamps MUST be represented as the number of integer seconds since the Unix epoch. Due to limitations[^js-num-size] in numerics for certain common languages, timestamps outside of the range from $-2^{53} – 1$ to $2^{53} – 1$ MUST be rejected as invalid.
 
@@ -125,7 +135,7 @@ Below are a couple examples:
 }
 ```
 
-## 2.4 Nonce
+## 3.4 Nonce
 
 The REQUIRED nonce parameter `nnc` MAY be any value. A randomly generated string is RECOMMENDED to provide a unique UCAN, though it MAY also be a monotonically increasing count of the number of links in the hash chain. This field helps prevent replay attacks and ensures a unique CID per delegation. The `iss`, `aud`, and `exp` fields together will often ensure that UCANs are unique, but adding the nonce ensures this uniqueness.
 
@@ -142,7 +152,7 @@ Here is a simple example.
 }
 ```
 
-## 2.5 Meta
+## 3.5 Meta
 
 The OPTIONAL `mta` field contains a map of arbitrary metadata, facts, and proofs of knowledge. The enclosed data MUST be self-evident and externally verifiable. It MAY include information such as hash preimages, server challenges, a Merkle proof, dictionary data, etc. Facts themselves MUST NOT be semantically meaningful to delegation chains. 
 
@@ -163,7 +173,7 @@ Below is an example:
 }
 ```
 
-# 3. Capability
+# 4. Capability
 
 Capabilities are the semantically-relevant claims of a delegation. They MUST be presented as a map under the `cap` field as a map. This map is REQUIRED but MAY be empty. This MUST take the following form:
 
@@ -199,7 +209,7 @@ Here is an illustrative example:
 }
 ```
 
-## 3.1 Subject
+## 4.1 Subject
 
 The Subject MUST be the DID that initiated the delegation chain.
 
@@ -212,7 +222,7 @@ For example:
 }
 ```
 
-## 3.2 Resource
+## 4.2 Resource
 
 Unlike Subjects and Abilities, Resources are semantic rather than syntactic. The Resource is the "what" that a capability describes.
 
@@ -243,7 +253,7 @@ In the case where access to an [external resource] is delegated, the Subject MUS
 }
 ```
 
-## 3.3 Ability
+## 4.3 Ability
 
 Abilities MUST be presented as a case-insensitive string. By convention, abilities SHOULD be namespaced with a slash, such as `msg/send`. One or more abilities MUST be given for each resource.
 
@@ -263,15 +273,15 @@ Abilities MUST be presented as a case-insensitive string. By convention, abiliti
 
 Abilities MAY be organized in a hierarchy that abstract over many [Operation]s. A typical example is a superuser capability ("anything") on a file system. Another is command vs query access, such that in an HTTP context, `WRITE` implies `PUT`, `PATCH`, `DELETE`, and so on. [`*` gives full access][Wildcard Ability] to a Resource more in the vein of object capabilities. Organizing abilities this way allows Resources to evolve over time in a backward-compatible manner, avoiding the need to reissue UCANs with new resource semantics.
 
-### 3.3.1 Reserved Abilities
+### 4.3.1 Reserved Abilities
 
-#### 3.3.1.1 `ucan` Namespace
+#### 4.3.1.1 `ucan` Namespace
 
 The `ucan` ability namespace MUST be reserved. This MUST include any ability string matching the regex `/^ucan.*/`
 
 Support for the `ucan/*` delegated proof ability is RECOMMENDED.
 
-#### 3.3.1.2 `*` AKA "Wildcard"
+#### 4.3.1.2 `*` AKA "Wildcard"
 
 _"Wildcard" (`*`) is the most powerful ability, and as such it SHOULD be handled with care and used sparingly._
 
@@ -313,13 +323,9 @@ flowchart BT
   ... --> *
 ```
 
-## 3.4 Caveats
+## 4.4 Caveats
 
-Caveats define a set of constraints on what can be re-delegated or invoked. Caveat semantics MUST be established by the Subject. They are openly extensible, but vocabularies may be reused across many Subjects.
-
-Caveats MAY be open ended. Caveats MUST be Understood by the [Executor] of the eventual [Invocation][UCAN Invocation]. Caveats MUST be formatted as maps.
-
-On validation, the caveat array MUST be treated as a logically disjunct (`OR`). In other words: passing validation against _any_ caveat in the array MUST pass the check. For example, consider the following capabilities:
+Caveats define a set of constraints on what can be re-delegated or invoked. Caveat semantics MUST be established by the Subject. They are openly extensible, but vocabularies may be reused across many Subjects. Caveats MUST be Understood by the [Executor] of the eventual [Invocation][UCAN Invocation]. Each caveats MUST be formatted as a map.
 
 ``` js
 {
@@ -345,31 +351,7 @@ The above MUST be interpreted as the set of capabilities below in the following 
 |-----------------------|---------------|--------------------------------------------------------------------------------------------------------|
 | `did:web:example.com` | `crud/update` | Posts at `https://blog.example.com` with the `published` status and tagged with `news` and `breaking`  |
 
-When validating a delegation chain in the abstract, all caveats MUST be present in each successive delegation. At invocation time, only the capability being invoked MUST be match the delegation chain.
-
-### 4.4.1 The "True" Caveat
-
-The "True" caveat MUST represent the lack of caveat. In predicate logic terms, it represents `true`. In [normal form], it MUST be represented as `[{}]`, but is equivalent to `[]`.
-
-``` js
-{
-  "iff": [{}],
-  // ...
-}
-
-{
-  "iff": [],
-  // ...
-}
-```
-
-### 4.4.2.1 Normal Form
-
-Caveats MAY be expressed in a compact form, but any caveat MUST be expressible in disjunctive normal form ([DNF]). Expanding to normal form during validation is RECOMMENDED to ease checking.
-
-Normal form MUST take the following shape: `[{}]`. The arrays represents logical `all` (chained `AND`s). To represent logical `any` / `OR`, issue another delegation with that attenuation.
-
-For instance, the following represents `{a: 1, b:2} AND {c: 3} AND {d: 4}`:
+The `iff` caveat set MUST take the following shape: `[{}]`. The arrays represents logical `all` (chained `AND`s). To represent logical `any` / `OR`, issue another delegation with that attenuation. For instance, the following represents `{a: 1, b:2} AND {c: 3} AND {d: 4}`:
 
 ``` js
 [
@@ -386,7 +368,7 @@ For instance, the following represents `{a: 1, b:2} AND {c: 3} AND {d: 4}`:
 ]
 ```
 
-Expressing caveats in this standard way simplifies ad hoc extension at delegation time. As a concrete example, if a root UCAN caveat has a `tag` field but no `tags` field, it is still possible to express multiplicity by adding another `AND`ed caveat:
+Expressing caveats in this standard way simplifies ad hoc extension at delegation time. As a concrete example, if a root UCAN caveat has a `tag` field but no (plural) `tags` field, it is still possible to express multiplicity by adding another `AND`ed caveat:
 
 ``` js
 // Original Caveat
@@ -427,7 +409,7 @@ This is also helpful if each object has a special meaning or sense:
 ]
 ```
 
-Note that while adding whole objects is useful in many situation as above, attenuation MAY also be achieved by adding fields to an object:
+Note that while adding whole objects is useful in many situations (as above), attenuation MAY also be achieved by adding fields to an object:
 
 ``` js
 // Original Caveat
@@ -448,16 +430,23 @@ Note that while adding whole objects is useful in many situation as above, atten
 ]
 ```
 
-# 5. Delegation (Envelope)
+### 4.4.1 The "True" Caveat
 
-Delegations MUST include a signature that validates against the `iss` DID. A Delegation Payload on its own MUST NOT be considered a valid Delegation.
+The "True" caveat MUST represent the lack of caveat. In predicate logic terms, it represents `true`. It SHOULD be represented as `[{}]`, but `[]` MAY be used equivalently ("without any caveats").
 
-| Field   | Type        | Required | Description                                  |
-|---------|-------------|----------|----------------------------------------------|
-| `ucd`   | `&Payload`  | Yes      | The CID of the [Delegation Payload][Payload] |
-| `sig`   | `Signature` | Yes      | The `iss`'s [Signature] over the `ucd` field |
+``` js
+{
+  "iff": [{}],
+  // ...
+}
 
-# 6 Validation
+{
+  "iff": [],
+  // ...
+}
+```
+
+# 5 Validation
 
 Validation of a UCAN chain MAY occur at any time, but MUST occur upon receipt of an [Invocation] prior to execution. While proof chains exist outside of a particular delegation (and are made concrete in [UCAN Invocation]s), each delegate MUST store one or more valid delegations chains for a particular claim.
 
@@ -465,7 +454,7 @@ Each capability has its own semantics, which needs to be interpretable by the [E
 
 If _any_ of the following criteria are not met, the UCAN MUST be considered invalid:
 
-## 6.1 Time Bounds
+## 5.1 Time Bounds
 
 A UCAN's time bounds MUST NOT be considered valid if the current system time is before the `nbf` field or after the `exp` field. This is called the "validity period." Proofs in a chain MAY have different validity periods, but MUST all be valid at execution-time. This has the effect of making a delegtaion chain valid between the latest `nbf` and earliest `exp`.
 
@@ -485,7 +474,7 @@ const ensureTime = (delegationChain, now) => {
 }
 ```
 
-## 6.2 Principal Alignment
+## 5.2 Principal Alignment
 
 In delegation, the `aud` field of every proof MUST match the `iss` field of the UCAN being delegated to. This alignment MUST form a chain back to the originating principal for each resource. 
 
@@ -550,7 +539,7 @@ In the above diagram, Alice has some storage. This storage may exist in one loca
 
 Alice delegates access to Bob. Bob then redelegates to Carol. Carol invokes the UCAN as part of a REST request to a compute service. To do this, she MUST both provide proof that she has access (the UCAN chain), and MUST delegate access to the invoking compute service. The invoking service MUST check that the root issuer (Alice) is in fact the owner (typically the creator) of the resource. This MAY be listed directly on the resource, as it is here. Once the UCAN chain and root ownership are validated, the storage service performs the write.
 
-### 6.2.1 Recipient Validation
+### 5.2.1 Recipient Validation
 
 An agent executing a capability MUST verify that the outermost `aud` field _matches its own DID._ The associated ability MUST NOT be performed if they do not match. Recipient validation is REQUIRED to prevent the misuse of UCANs in an unintended context.
 
@@ -566,14 +555,17 @@ The following UCAN fragment would be valid to invoke as `did:key:zH3C2AVvLMv6gmM
 
 A good litmus test for invocation validity by a invoking agent is to check if they would be able to create a valid delegation for that capability.
 
-## 6.3 Caveat Attenuation
+## 5.3 Caveat Attenuation
 
 The caveat array SHOULD NOT be empty, as an empty array means "in no case" (which is equivalent to not listing the ability). This follows from the rule that delegations MUST be of equal or lesser scope. When an array is given, an attenuated caveat MUST (syntactically) include all of the fields of the relevant proof caveat, plus the newly introduced caveats.
 
-Here are some abstract cases given in [normal form].
+Here are some abstract examples:
 
 | Proof Caveats        | Delegated Caveats  | Is Valid? | Comment                               |
 |----------------------|--------------------|-----------|---------------------------------------|
+| `[]`                 | `[]`               | Yes       | Equal                                 |
+| `[]`                 | `[{}]`             | Yes       | [True Caveat]                         |
+| `[{}]`               | `[]`               | Yes       | [True Caveat]                         |
 | `[{}]`               | `[{}]`             | Yes       | Equal                                 |
 | `[{a: 1}]`           | `[{a: 1}]`         | Yes       | Equal                                 |
 | `[{}]`               | `[{a: 1}]`         | Yes       | Attenuates `{}` by adding fields      |
@@ -582,11 +574,11 @@ Here are some abstract cases given in [normal form].
 | `[{a: 1}]`           | `[{}]]`            | No        | Escalation by removing fields         |
 | `[{a: 1}]`           | `[{b: 2}]`         | No        | Escalation by replacing fields        |
 
-## 6.4 Signature Validation
+## 5.4 Signature Validation
 
 The `sig` field MUST validate against the `iss` DID from the [Payload].
 
-# 7. Acknowledgments
+# 6. Acknowledgments
 
 Thank you to [Brendan O'Brien] for real-world feedback, technical collaboration, and implementing the first Golang UCAN library.
 
@@ -618,15 +610,14 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 
 <!-- Internal Links -->
 
-[Ability]: #33-ability
+[Ability]: #43-ability
 [Caveat]: #44-caveats
-[Envelope]: #5-delegation-envelope
-[Meta]: #25-meta
-[Payload]: #2-delegation-payload
+[Envelope]: #2-delegation-envelope
+[Meta]: #35-meta
+[Payload]: #3-delegation-payload
 [Subject]: #41-subject
+[True Caveat]: #441-the-true-caveat
 [Wildcard Ability]: #4312--aka-wildcard
-[compact form]: #4421-compact-form
-[normal form]: #4421-normal-form
  
 <!-- External Links -->
 
@@ -643,7 +634,6 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [DAG-CBOR]: https://ipld.io/specs/codecs/dag-cbor/spec/
 [DID fragment]: https://www.w3.org/TR/did-core/#terminology
 [DID]: https://www.w3.org/TR/did-core/
-[DNF]: https://en.wikipedia.org/wiki/Disjunctive_normal_form
 [Dan Finlay]: https://github.com/danfinlay
 [Daniel Holmgren]: https://github.com/dholms
 [ES256]: https://www.rfc-editor.org/rfc/rfc7518#section-3.4
