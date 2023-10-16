@@ -643,13 +643,14 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 
 <!-- Internal Links -->
 
+[Ability]: #33-abilities
 [Caveat]: #44-caveats
 [Meta]: #25-meta
 [Subject]: #41-subject
 [Wildcard Ability]: #4312--aka-wildcard
 [compact form]: #4421-compact-form
 [normal form]: #4421-normal-form
-
+ 
 <!-- External Links -->
 
 [Alan Karp]: https://github.com/alanhkarp
