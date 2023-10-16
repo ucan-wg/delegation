@@ -273,7 +273,7 @@ Abilities MUST be presented as a case-insensitive string. By convention, abiliti
 }
 ```
 
-Abilities MAY be organized in a hierarchy that abstract over many [Operation]s. A typical example is a superuser capability ("anything") on a file system. Another is command vs query access, such that in an HTTP context, `WRITE` implies `PUT`, `PATCH`, `DELETE`, and so on. [`*` gives full access][Wildcard Ability] to a Resource more in the vein of object capabilities. Organizing abilities this way allows Resources to evolve over time in a backward-compatible manner, avoiding the need to reissue UCANs with new resource semantics.
+Abilities MAY be organized in a hierarchy that abstract over many [Action]s. A typical example is a superuser capability ("anything") on a file system. Another is command vs query access, such that in an HTTP context, `WRITE` implies `PUT`, `PATCH`, `DELETE`, and so on. [`*` gives full access][Wildcard Ability] to a Resource more in the vein of object capabilities. Organizing abilities this way allows Resources to evolve over time in a backward-compatible manner, avoiding the need to reissue UCANs with new resource semantics.
 
 ### 4.3.1 Reserved Abilities
 
