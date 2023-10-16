@@ -2,20 +2,20 @@
 
 ## Editors
 
-* [Brooklyn Zelenka], [Fission]
+- [Brooklyn Zelenka], [Fission]
 
 ## Authors
 
-* [Brooklyn Zelenka], [Fission]
-* [Daniel Holmgren], [Bluesky]
-* [Irakli Gozalishvili], [Protocol Labs]
-* [Philipp Krüger], [Fission]
+- [Brooklyn Zelenka], [Fission]
+- [Daniel Holmgren], [Bluesky]
+- [Irakli Gozalishvili], [Protocol Labs]
+- [Philipp Krüger], [Fission]
 
 ## Dependencies
 
-* [UCAN]
-* [DID]
-* [DAG-CBOR]
+- [UCAN]
+- [DID]
+- [DAG-CBOR]
 
 ## Language
 
@@ -103,7 +103,7 @@ The `exp` field MUST be set. Following the [principle of least authority][PoLA],
 
 Keeping the window of validity as short as possible is RECOMMENDED. Limiting the time range can mitigate the risk of a malicious user abusing a UCAN. However, this is situationally dependent. It may be desirable to limit the frequency of forced reauthorizations for trusted devices. Due to clock drift, time bounds SHOULD NOT be considered exact. A buffer of ±60 seconds is RECOMMENDED.
 
-Several named points of time in the UCAN lifecycle [can be found in the high level spec].
+Several named points of time in the UCAN lifecycle can be found in the [high level spec][UCAN].
 
 [^js-num-size]: JavaScript has a single numeric type ([`Number`][JS Number]) for both integers and floats. This representation is defined as a [IEEE-754] double-precision floating point number, which has a 53-bit significand.
 
@@ -607,15 +607,7 @@ Here are some abstract cases given in [normal form].
 
 FIXME
 
-# 7. Content Identifiers
-
-FIXME move tro high level spec
-
-A UCAN token SHOULD be referenced as a [base32] [CIDv1]. [BLAKE3] is the RECOMMENDED hash algorithm. The [DAG-CBOR] codec MUST be supported, and [DAG-JSON] support is RECOMMENDED. 
-
-The resolution of these addresses is left to the implementation and end-user, and MAY (non-exclusively) include the following: local store, a distributed hash table (DHT), gossip network, or RESTful service.
-
-# 8. Acknowledgments
+# 7. Acknowledgments
 
 Thank you to [Brendan O'Brien] for real-world feedback, technical collaboration, and implementing the first Golang UCAN library.
 
