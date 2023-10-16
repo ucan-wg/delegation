@@ -103,6 +103,7 @@ baz
 bene
 blockchain
 cachability
+cacheability
 cid
 codec
 codecs
@@ -112,6 +113,7 @@ const
 const
 crudGraph
 crypto
+cryptographic
 cryptographically
 del
 delegable
