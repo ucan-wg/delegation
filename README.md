@@ -154,7 +154,9 @@ Here is a simple example.
 
 ## 3.5 Meta
 
-The OPTIONAL `mta` field contains a map of arbitrary metadata, facts, and proofs of knowledge. The enclosed data MUST be self-evident and externally verifiable. It MAY include information such as hash preimages, server challenges, a Merkle proof, dictionary data, etc. Facts themselves MUST NOT be semantically meaningful to delegation chains. 
+The OPTIONAL `mta` field contains a map of arbitrary metadata, facts, and proofs of knowledge. The enclosed data MUST be self-evident and externally verifiable. It MAY include information such as hash preimages, server challenges, a Merkle proof, dictionary data, etc.
+
+The data contained in this map MUST NOT be semantically meaningful to delegation chains.
 
 Below is an example:
 
