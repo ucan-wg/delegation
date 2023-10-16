@@ -53,7 +53,7 @@ The payload MUST describe the authorization claims, who is involved, and its val
 | `can` | `String`                                  | Yes      | [Ability]                                                 |
 | `iff` | `[Caveat]`                                | Yes      | Caveats                                                   |
 
-The payload MUST be serialized as IPLD and [signed over][Signature].
+The payload MUST be serialized as IPLD and [signed over][Envelope].
 
 ## 2.1 Version
 
@@ -104,8 +104,6 @@ The `exp` field MUST be set. Following the [principle of least authority][PoLA],
 Keeping the window of validity as short as possible is RECOMMENDED. Limiting the time range can mitigate the risk of a malicious user abusing a UCAN. However, this is situationally dependent. It may be desirable to limit the frequency of forced reauthorizations for trusted devices. Due to clock drift, time bounds SHOULD NOT be considered exact. A buffer of ±60 seconds is RECOMMENDED.
 
 Several named points of time in the UCAN lifecycle can be found in the [high level spec][UCAN].
-
-[^js-num-size]: JavaScript has a single numeric type ([`Number`][JS Number]) for both integers and floats. This representation is defined as a [IEEE-754] double-precision floating point number, which has a 53-bit significand.
 
 Below are a couple examples:
 
@@ -457,7 +455,7 @@ Note that while adding whole objects is useful in many situation as above, atten
 ]
 ```
 
-# 5. Signature
+# 5. Delegation (Envelope)
 
 | Field   | Type        | Required | Description                                  |
 |---------|-------------|----------|----------------------------------------------|
@@ -640,11 +638,17 @@ Many thanks to [Alan Karp] for sharing his vast experience with capability-based
 
 We want to especially recognize [Mark Miller] for his numerous contributions to the field of distributed auth, programming languages, and computer security writ large.
 
+<!-- Footnotes -->
+
+[^js-num-size]: JavaScript has a single numeric type ([`Number`][JS Number]) for both integers and floats. This representation is defined as a [IEEE-754] double-precision floating point number, which has a 53-bit significand.
+
 <!-- Internal Links -->
 
 [Ability]: #33-abilities
 [Caveat]: #44-caveats
+[Envelope]: #5-delegation-envelope
 [Meta]: #25-meta
+[Payload]: #2-delegation-payload
 [Subject]: #41-subject
 [Wildcard Ability]: #4312--aka-wildcard
 [compact form]: #4421-compact-form
