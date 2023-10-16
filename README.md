@@ -317,7 +317,7 @@ flowchart BT
 
 Caveats define a set of constraints on what can be re-delegated or invoked. Caveat semantics MUST be established by the Subject. They are openly extensible, but vocabularies may be reused across many Subjects.
 
-Caveats MAY be open ended. Caveats MUST be understood by the executor of the eventual [invocation][UCAN Invocation]. Caveats MUST be formatted as maps.
+Caveats MAY be open ended. Caveats MUST be Understood by the [Executor] of the eventual [Invocation][UCAN Invocation]. Caveats MUST be formatted as maps.
 
 On validation, the caveat array MUST be treated as a logically disjunct (`OR`). In other words: passing validation against _any_ caveat in the array MUST pass the check. For example, consider the following capabilities:
 
@@ -346,8 +346,6 @@ The above MUST be interpreted as the set of capabilities below in the following 
 | `did:web:example.com` | `crud/update` | Posts at `https://blog.example.com` with the `published` status and tagged with `news` and `breaking`  |
 
 When validating a delegation chain in the abstract, all caveats MUST be present in each successive delegation. At invocation time, only the capability being invoked MUST be match the delegation chain.
-
-Note that all caveats need to be understood by the Executor.
 
 ### 4.4.1 The "True" Caveat
 
