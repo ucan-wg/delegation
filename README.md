@@ -27,9 +27,9 @@ This specification describes the semantics and serialization format for [UCAN] d
   
 # 1. Introduction
 
-UCAN Delegation is a certificate capability system with runtime-extensiblity, ad hoc caveats, cachability, and focused on ease of use and interoperabilty. Delegations act as a proofs for [UCAN Invocation]s.
+UCAN Delegation is a certificate capability system with runtime-extensibility, ad hoc caveats, cacheability, and focused on ease of use and interoperability. Delegations act as a proofs for [UCAN Invocation]s.
 
-Delegation provides a way to "transfer authority without transferring cryptograhic keys". As an authorization system, it is more interested in "what" can be done than a list of "who can do what". For more on how Delegation fits into UCAN, please refer to the [high level spec][UCAN].
+Delegation provides a way to "transfer authority without transferring cryptographic keys". As an authorization system, it is more interested in "what" can be done than a list of "who can do what". For more on how Delegation fits into UCAN, please refer to the [high level spec][UCAN].
 
 # 2. Delegation (Envelope)
 
@@ -458,7 +458,7 @@ If _any_ of the following criteria are not met, the UCAN MUST be considered inva
 
 ## 5.1 Time Bounds
 
-A UCAN's time bounds MUST NOT be considered valid if the current system time is before the `nbf` field or after the `exp` field. This is called the "validity period." Proofs in a chain MAY have different validity periods, but MUST all be valid at execution-time. This has the effect of making a delegtaion chain valid between the latest `nbf` and earliest `exp`.
+A UCAN's time bounds MUST NOT be considered valid if the current system time is before the `nbf` field or after the `exp` field. This is called the "validity period." Proofs in a chain MAY have different validity periods, but MUST all be valid at execution-time. This has the effect of making a delegation chain valid between the latest `nbf` and earliest `exp`.
 
 ``` js
 // Pseudocode

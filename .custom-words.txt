@@ -1,7 +1,4 @@
 ACL
-CBOR
-IPLD
-iff
 ACLs
 AlicePhone
 AliceRoot
@@ -14,6 +11,7 @@ BCP
 BT
 Bluesky
 BxZ
+CBOR
 CIDs
 CIDv
 CNAME
@@ -42,6 +40,7 @@ HEHYSF
 HMACs
 Haus
 Holmgren
+IPLD
 Invoker's
 Irakli
 JSON
@@ -103,6 +102,7 @@ autonumber
 baz
 bene
 blockchain
+cachability
 cid
 codec
 codecs
@@ -115,6 +115,7 @@ crypto
 cryptographically
 del
 delegable
+delegationChain
 delegator
 dereference
 disambiguates
@@ -142,6 +143,7 @@ getUcan
 hawaii
 hoc
 https
+iff
 init
 inlining
 interconnectivity
