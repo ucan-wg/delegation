@@ -40,7 +40,6 @@ Delegations MUST include a signature that validates against the `iss` DID. A Del
 | `ucd`   | `&Payload`  | Yes      | The CID of the [Delegation Payload][Payload] |
 | `sig`   | `Signature` | Yes      | The `iss`'s [Signature] over the `ucd` field |
 
-
 # 3. Delegation Payload
 
 The payload MUST describe the authorization claims, who is involved, and its validity period.
@@ -52,11 +51,12 @@ The payload MUST describe the authorization claims, who is involved, and its val
 | `aud` | `DID`                                     | Yes      | Audience DID (receiver)                                     |
 | `nbf` | `Integer` (53-bits[^js-num-size])         | No       | "Not before" UTC Unix Timestamp in seconds (valid from)     |
 | `exp` | `Integer \| null` (53-bits[^js-num-size]) | Yes      | Expiration UTC Unix Timestamp in seconds (valid until)      |
-| `nnc` | `String`                                  | Yes      | Nonce                                                       |
+| `nnc` | `Bytes`                                   | Yes      | Nonce                                                       |
 | `mta` | `{String : Any}`                          | No       | [Meta] (asserted, signed data) — is not delegated authority |
 | `sub` | `DID`                                     | Yes      | Principal that the chain is about (the [Subject])           |
-| `can` | `String`                                  | Yes      | [Ability]                                                   |
-| `iff` | `[Caveat]`                                | Yes      | [Caveat]s                                                   |
+| `cmd` | `String`                                  | Yes      | The [Command] to eventually invoke                          |
+| `arg` | `{String : Any}`                          | Yes      | Any [Arguments] that MUST be present in the Invocation      |
+| `iff` | `[Caveat]`                                | Yes      | Any additional [Caveat]s                                    |
 
 The payload MUST be serialized as [IPLD] and [signed over][Envelope]. The RECOMMENDED IPLD codec is [DAG-CBOR].
 
@@ -148,7 +148,7 @@ Here is a simple example.
 ``` js
 {
   // ...
-  "nnc": "_NCC-1701-D_"
+  "nnc": {"/": {"bytes": "bGlnaHQgd29yay4"}}
 }
 ```
 
@@ -179,18 +179,12 @@ Below is an example:
 
 Capabilities are the semantically-relevant claims of a delegation. They MUST be presented as a map under the `cap` field as a map. This map is REQUIRED but MAY be empty. This MUST take the following form:
 
-```
-{ $SUBJECT: { $ABILITY: [$CAVEAT] } }
-```
-
-This map MUST contain some or none of the following:
-
-0. Nothing
-1. Capabilities unchanged from a previous delegation
-2. A strict subset (attenuation) of the capability authority from the next direct `prf` field
-3. Capabilities about a Subject that matches the Issuer (`iss`) DID
-
-The anatomy of a capability MUST be given as a mapping of resource URI to abilities to array of caveats.
+| Field | Type               | Required | Description                                                                                          |
+|-------|--------------------|----------|------------------------------------------------------------------------------------------------------|
+| `sub` | `URI`              | Yes      | The [Subject] that this Capability is about                                                          |
+| `cmd` | `Command`          | Yes      | The [Command] of this Capability                                                                     |
+| `arg` | `{String : Any}`   | Yes      | Any arguments that MUST be present _verbatim_ in the [Invocation]                                    |
+| `iff` | `[{String : Any}]` | Yes      | Any additional caveats, such as regex matchers, contextual information (e.g. day of week), and so on |
 
 Here is an illustrative example:
 
@@ -198,16 +192,12 @@ Here is an illustrative example:
 {
   // ...
   "sub": "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp"
-  "can": "msg/send",
-  "iff": [
-    {
-      "sender": "mailto:alice@example.com",
-      "day": "friday"
-    },
-    {
-      "subject": "Weekly Reports",
-    }
-  ]
+  "cmd": "msg/send",
+  "arg": {
+    "sender": "mailto:alice@example.com",
+    "subject": "Weekly Reports",
+  },
+  "iff": [{"day": "friday"}]
 }
 ```
 
@@ -226,15 +216,15 @@ For example:
 
 ## 4.2 Resource
 
-Unlike Subjects and Abilities, Resources are semantic rather than syntactic. The Resource is the "what" that a capability describes.
+Unlike Subjects and Commands, Resources are semantic rather than syntactic. The Resource is the "what" that a capability describes.
 
 By default, the Resource of a capability is the Subject. This makes the delegation chain self-certifying.
 
 ``` js
 {
   "sub": "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp", // Subject & Resource
-  "can": "crud/update",
-  "iff": [{status: "draft"}]
+  "cmd": "crud/update",
+  "arg": {"status": "draft"}
   // ...
 }
 ```
@@ -244,38 +234,34 @@ In the case where access to an [external resource] is delegated, the Subject MUS
 ``` js
 {
   "sub": "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp",
-  "can": "crud/create",
-  "iff": [
-    {
-      "uri": "https://example.com/blog/", // Resource
-      "status": "draft"
-    }
-  ],
+  "cmd": "crud/create",
+  "arg":{
+    "uri": "https://example.com/blog/", // Resource
+    "status": "draft"
+  },
   // ...
 }
 ```
 
-## 4.3 Ability
+## 4.3 Command
 
-Abilities MUST be presented as a case-insensitive string. By convention, abilities SHOULD be namespaced with a slash, such as `msg/send`. One or more abilities MUST be given for each resource.
+Commands MUST be presented as a case-insensitive string. By convention, Commands SHOULD be namespaced with a slash, such as `msg/send`.
 
 ``` js
 {
   "sub": "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp": {
-  "can": "msg/send",
-  "iff": [
-    {
-      "from": "mailto:alice@example.com",
-      "to": "mailto:bob@example.com"
-    }
-  ],
+  "cmd": "msg/send",
+  "arg": {
+    "from": "mailto:alice@example.com",
+    "to": "mailto:bob@example.com"
+  },
   // ...
 }
 ```
 
 Abilities MAY be organized in a hierarchy that abstract over many [Command]s. A typical example is a superuser capability ("anything") on a file system. Another is mutation vs read access, such that in an HTTP context, `write` implies `put`, `patch`, `delete`, and so on. [`*` gives full access][Wildcard Ability] to a Resource more in the vein of object capabilities. Organizing abilities this way allows Resources to evolve over time in a backward-compatible manner, avoiding the need to reissue UCANs with new resource semantics.
 
-### 4.3.1 Reserved Abilities
+### 4.3.1 Reserved Commands
 
 #### 4.3.1.1 `ucan` Namespace
 
@@ -291,7 +277,7 @@ The "wildcard" (or "any", or "top") ability MUST be denoted `*`. This can be tho
 
 ``` js
 {
-  "can": "*",
+  "cmd": "*",
   // ...
 }
 ```
@@ -332,7 +318,7 @@ Caveats define a set of constraints on what can be re-delegated or invoked. Cave
 ``` js
 {
   "sub": "did:web:example.com",
-  "can": "crud/update",
+  "cmd": "crud/update",
   "iff": [
      {                                    // ┐
        "uri": "https://blog.example.com", // │
