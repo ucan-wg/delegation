@@ -37,26 +37,26 @@ Delegations MUST include a signature that validates against the `iss` DID. A Del
 
 | Field   | Type        | Required | Description                                  |
 |---------|-------------|----------|----------------------------------------------|
-| `ucd`   | `&Payload`  | Yes      | The CID of the [Delegation Payload][Payload] |
+| `pld`   | `&Payload`  | Yes      | The CID of the [Delegation Payload][Payload] |
 | `sig`   | `Signature` | Yes      | The `iss`'s [Signature] over the `ucd` field |
 
 # 3. Delegation Payload
 
 The payload MUST describe the authorization claims, who is involved, and its validity period.
 
-| Field | Type                                      | Required | Description                                                 |
-|-------|-------------------------------------------|----------|-------------------------------------------------------------|
-| `udv` | `String`                                  | Yes      | UCAN Semantic Version (`1.0.0-rc.1`)                        |
-| `iss` | `DID`                                     | Yes      | Issuer DID (sender)                                         |
-| `aud` | `DID`                                     | Yes      | Audience DID (receiver)                                     |
-| `nbf` | `Integer` (53-bits[^js-num-size])         | No       | "Not before" UTC Unix Timestamp in seconds (valid from)     |
-| `exp` | `Integer \| null` (53-bits[^js-num-size]) | Yes      | Expiration UTC Unix Timestamp in seconds (valid until)      |
-| `nnc` | `Bytes`                                   | Yes      | Nonce                                                       |
-| `mta` | `{String : Any}`                          | No       | [Meta] (asserted, signed data) — is not delegated authority |
-| `sub` | `DID`                                     | Yes      | Principal that the chain is about (the [Subject])           |
-| `cmd` | `String`                                  | Yes      | The [Command] to eventually invoke                          |
-| `arg` | `{String : Any}`                          | Yes      | Any [Arguments] that MUST be present in the Invocation      |
-| `iff` | `[Caveat]`                                | Yes      | Any additional [Caveat]s                                    |
+| Field  | Type                                      | Required | Description                                                 |
+|--------|-------------------------------------------|----------|-------------------------------------------------------------|
+| `udv`  | `String`                                  | Yes      | UCAN Semantic Version (`1.0.0-rc.1`)                        |
+| `iss`  | `DID`                                     | Yes      | Issuer DID (sender)                                         |
+| `aud`  | `DID`                                     | Yes      | Audience DID (receiver)                                     |
+| `nbf`  | `Integer` (53-bits[^js-num-size])         | No       | "Not before" UTC Unix Timestamp in seconds (valid from)     |
+| `exp`  | `Integer \| null` (53-bits[^js-num-size]) | Yes      | Expiration UTC Unix Timestamp in seconds (valid until)      |
+| `nnc`  | `Bytes`                                   | Yes      | Nonce                                                       |
+| `mta`  | `{String : Any}`                          | No       | [Meta] (asserted, signed data) — is not delegated authority |
+| `sub`  | `DID`                                     | Yes      | Principal that the chain is about (the [Subject])           |
+| `can`  | `String`                                  | Yes      | The [Command] to eventually invoke                          |
+| `args` | `{String : Any}`                          | Yes      | Any [Arguments] that MUST be present in the Invocation      |
+| `if`   | `[Caveat]`                                | Yes      | Any additional [Caveat]s                                    |
 
 The payload MUST be serialized as [IPLD] and [signed over][Envelope]. The RECOMMENDED IPLD codec is [DAG-CBOR].
 
@@ -148,7 +148,7 @@ Here is a simple example.
 ``` js
 {
   // ...
-  "nnc": {"/": {"bytes": "bGlnaHQgd29yay4"}}
+  "nonce": {"/": {"bytes": "bGlnaHQgd29yay4"}}
 }
 ```
 
@@ -163,7 +163,7 @@ Below is an example:
 ``` js
 {
   // ...
-  "mta": {
+  "meta": {
     "challenges": {
       "example.com": "abcdef",
       "another.example.net": "12345"
@@ -179,12 +179,12 @@ Below is an example:
 
 Capabilities are the semantically-relevant claims of a delegation. They MUST be presented as a map under the `cap` field as a map. This map is REQUIRED but MAY be empty. This MUST take the following form:
 
-| Field | Type               | Required | Description                                                                                          |
-|-------|--------------------|----------|------------------------------------------------------------------------------------------------------|
-| `sub` | `URI`              | Yes      | The [Subject] that this Capability is about                                                          |
-| `cmd` | `Command`          | Yes      | The [Command] of this Capability                                                                     |
-| `arg` | `{String : Any}`   | Yes      | Any arguments that MUST be present _verbatim_ in the [Invocation]                                    |
-| `iff` | `[{String : Any}]` | Yes      | Any additional caveats, such as regex matchers, contextual information (e.g. day of week), and so on |
+| Field  | Type               | Required | Description                                                                                          |
+|--------|--------------------|----------|------------------------------------------------------------------------------------------------------|
+| `sub`  | `URI`              | Yes      | The [Subject] that this Capability is about                                                          |
+| `can`  | `Command`          | Yes      | The [Command] of this Capability                                                                     |
+| `args` | `{String : Any}`   | Yes      | Any arguments that MUST be present _verbatim_ in the [Invocation]                                    |
+| `if`   | `[{String : Any}]` | Yes      | Any additional caveats, such as regex matchers, contextual information (e.g. day of week), and so on |
 
 Here is an illustrative example:
 
@@ -192,12 +192,24 @@ Here is an illustrative example:
 {
   // ...
   "sub": "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp"
-  "cmd": "msg/send",
-  "arg": {
-    "sender": "mailto:alice@example.com",
-    "subject": "Weekly Reports",
+  "can": "blog/post/create",
+  "args": {
+    "tags": ["weekend", "news"],
+    "status": "draft",
   },
-  "iff": [{"day": "friday"}]
+  "if": [
+    {
+      "day": "friday"
+    },
+    {
+      "field": "title",
+      "match": "/^From the newsroom:/"
+    },
+    {
+      "field": "body",
+      "max-chars": 2000
+    }
+  ]
 }
 ```
 
@@ -223,8 +235,8 @@ By default, the Resource of a capability is the Subject. This makes the delegati
 ``` js
 {
   "sub": "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp", // Subject & Resource
-  "cmd": "crud/update",
-  "arg": {"status": "draft"}
+  "can": "crud/update",
+  "args": {"status": "draft"}
   // ...
 }
 ```
@@ -234,8 +246,8 @@ In the case where access to an [external resource] is delegated, the Subject MUS
 ``` js
 {
   "sub": "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp",
-  "cmd": "crud/create",
-  "arg":{
+  "can": "crud/create",
+  "args":{
     "uri": "https://example.com/blog/", // Resource
     "status": "draft"
   },
@@ -250,7 +262,7 @@ Commands MUST be presented as a case-insensitive string. By convention, Commands
 ``` js
 {
   "sub": "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp": {
-  "cmd": "msg/send",
+  "can": "msg/send",
   "arg": {
     "from": "mailto:alice@example.com",
     "to": "mailto:bob@example.com"
@@ -274,13 +286,6 @@ Support for the `ucan/*` delegated proof ability is RECOMMENDED.
 _"Wildcard" (`*`) is the most powerful ability, and as such it SHOULD be handled with care and used sparingly._
 
 The "wildcard" (or "any", or "top") ability MUST be denoted `*`. This can be thought of as something akin to a super user permission in RBAC. 
-
-``` js
-{
-  "cmd": "*",
-  // ...
-}
-```
 
 The wildcard ability grants access to all other capabilities for the specified resource, across all possible namespaces. The wildcard ability is useful when "linking" agents by delegating all access to another device controlled by the same user, and that should behave as the same agent. It is extremely powerful, and should be used with care. Among other things, it permits the delegate to update a Subject's mutable DID document (change their private keys), revoke UCAN delegations, and use any resources delegated to the Subject by others.
 
@@ -311,35 +316,124 @@ flowchart BT
   ... --> *
 ```
 
-## 4.4 Caveats
+Conceptually it has this shape:
 
-Caveats define a set of constraints on what can be re-delegated or invoked. Caveat semantics MUST be established by the Subject. They are openly extensible, but vocabularies may be reused across many Subjects. Caveats MUST be Understood by the [Executor] of the eventual [Invocation][UCAN Invocation]. Each caveats MUST be formatted as a map.
-
-``` js
+``` ts
 {
-  "sub": "did:web:example.com",
-  "cmd": "crud/update",
-  "iff": [
-     {                                    // ┐
-       "uri": "https://blog.example.com", // │
-       "status": "published"              // ├─ Caveat
-       "tag": "news",                     // │
-     },                                   // ┘
-     {                   // ┐
-       "tag": "breaking" // ├─ Caveat
-     }                   // ┘
-  ],
+  "can": "*",
+  "args": {
+    "can": string, // Some other command
+    "args": {[string]: any} // That commad's arguments
+  },
   // ...
 }
 ```
 
-The above MUST be interpreted as the set of capabilities below in the following table:
+Since the nesting is fully redundant and infinitely nestable, it is instead used only in proof chains, and SHOULD NOT be invoked directly.
 
-| Subject               | Ability       | Caveat                                                                                                 |
-|-----------------------|---------------|--------------------------------------------------------------------------------------------------------|
-| `did:web:example.com` | `crud/update` | Posts at `https://blog.example.com` with the `published` status and tagged with `news` and `breaking`  |
+## 4.4 Arguments
 
-The `iff` caveat set MUST take the following shape: `[{}]`. The arrays represents logical `all` (chained `AND`s). To represent logical `any` / `OR`, issue another delegation with that attenuation. For instance, the following represents `{a: 1, b:2} AND {c: 3} AND {d: 4}`:
+The `args` field MAY contain partially applied Arguments for the shape of data specified by the [Command]. For example, below is an example that constrains sending email from a particular address:
+
+``` js
+// Delegation
+{
+  "can": "msg/send",
+  "args": {
+    "from": "alice@example.com",
+    "subject": "Coffee"
+  },
+  // ...
+}
+
+// Valid invocation
+{
+  "do": "msg/send",
+  "args": {
+    "from": "alice@example.com", // Matches above
+    "to": ["bob@example.com", "carol@elsewhere.example.com"],
+    "subject": "Coffee",
+    "body": "Still on for coffee" // Matches above
+  },
+  // ...
+}
+```
+
+Any arguments MUST be taken verbatim and MUST NOT be further adjusted. For more flexible validation of Arguments, use [Caveats].
+
+Note that this also applies to arrays and objects. For example, the `to` array in this example is considered to be exact, so the Invocation fails validation in this case:
+
+``` js
+// Delegation
+{
+  "can": "msg/send",
+  "args": {
+    "from": "alice@example.com",
+    "to": ["bob@example.com"],
+  },
+  // ...
+}
+
+// INVALID Invocation
+{
+  "do": "msg/send",
+  "args": {
+    "from": "alice@example.com", // Matches above
+    "to": ["bob@example.com", "carol@elsewhere.example.com"], // Does not match exactly
+    "subject": "Coffee",
+    "body": "Still on for coffee"
+  },
+  // ...
+}
+```
+
+The indended logic is expressible with [Caveats].
+
+## 4.5 Caveats
+
+Caveats (the `if` field) constrain the capability in two ways:
+
+- Syntactic constraints on [Arguments] (length, regex, inclusion)
+- Environmental / contextual conditions (day of week)
+
+Caveat semantics MUST be established by the Subject. They are openly extensible, but vocabularies may be reused across many Subjects. Caveats MUST be Understood by the [Executor] of the eventual [Invocation][UCAN Invocation]. Each caveat MUST be formatted as a map.
+
+``` js
+// Delegation
+{
+  "sub": "did:web:example.com",
+  "can": "msg/send",
+  "args": {
+    "from": "alice@example.com"
+  }
+  "if": [
+     {                               // ┐
+       "day": "monday",              // ├─ Caveat
+     },                              // ┘
+     {                               // ┐
+       "field": "to",                // ├─ Caveat
+       "includes": "bob@exmaple.com" // │
+     }                               // ┘
+  ],
+  // ...
+}
+
+// Valid Invocation, if Monday
+{
+  "do": "msg/send",
+  "args": {
+    "from": "alice@example.com",
+    "to": ["bob@example.com", "carol@elsewhere.example.com"], // Matches criteria
+    "subject": "Coffee",
+    "body": "Still on for coffee"
+  },
+  // ...
+}
+```
+  
+The above Delegation MUST be interpreted as "may send email from `alice@example.com` on Mondays as long as `bob@exmaple.com` is among the recipients"
+
+The `if` field MUST take the following shape: `[{}]`. The array represents a logical `all` (chained `AND`s). To represent logical `OR`, issue another delegation with that attenuation. For instance, the following represents `{a: 1, b:2} AND {c: 3} AND {d: 4}`:
 
 ``` js
 [
@@ -356,80 +450,48 @@ The `iff` caveat set MUST take the following shape: `[{}]`. The arrays represent
 ]
 ```
 
-Expressing caveats in this standard way simplifies ad hoc extension at delegation time. As a concrete example, if a root UCAN caveat has a `tag` field but no (plural) `tags` field, it is still possible to express multiplicity by adding another `AND`ed caveat:
+Expressing caveats in this standard way simplifies ad hoc extension at delegation time. As a concrete example, below a caveat is added to the constraints on the `to` field.
 
 ``` js
 // Original Caveat
 [
   {
-    "uri": "https://blog.example.com/",
-    "tag": "news"
+    "field": "to",
+    "includes": "bob@example.com"
   }
 ]
 
 // Attenuated Caveat
 [
-  {
-    "uri": "https://blog.example.com/",
-    "tag": "news"
-  }, 
-  // AND
-  {
-    "tag": "breaking"
-  }
-]
-```
-
-In this example, the original caveat had not accounted for there being multiple tags at runtime. The attenuated capability grants access to blog posts at `https://blog.example.com/` that are tagged with both `news` and `breaking` due to the `AND` in the predicate.
-
-This is also helpful if each object has a special meaning or sense:
-
-``` js
-[
-  {
-    "type": "path",
-    "segments": ["blog", "october"]
+  { // Same as above
+    "field": "to",
+    "includes": "bob@example.com"
   },
-  {
-    "type": "market",
-    "segments": ["manufacturing", "healthcare", "service", "technology"]
+  { // Also must send to carol@example.com
+    "field": "to",
+    "includes": "carol@example.com"
+  },
+  { // Only send to @example.com addresses
+    "field": "to",
+    "elements": {
+      "match": "/.+@example.com/" 
+    }
   }
 ]
 ```
 
-Note that while adding whole objects is useful in many situations (as above), attenuation MAY also be achieved by adding fields to an object:
+### 4.4.1 The Empty Caveat
 
-``` js
-// Original Caveat
-[
-  {
-    "uri": "https://blog.example.com/",
-    "tag": "news"
-  }
-]
-
-// Attenuated Caveat
-[
-  {
-    "uri": "https://blog.example.com/",
-    "tag": "news",
-    "status": "draft" // New field
-  }
-]
-```
-
-### 4.4.1 The "True" Caveat
-
-The "True" caveat MUST represent the lack of caveat. In predicate logic terms, it represents `true`. It SHOULD be represented as `[{}]`, but `[]` MAY be used equivalently ("without any caveats").
+The "empty" caveat MUST represent the lack of caveats. This is equivalent to `true` in predicate terms. It SHOULD be represented as `[]`, but `[{}]` MAY be used equivalently ("without any caveats").
 
 ``` js
 {
-  "iff": [{}],
+  "if": [],
   // ...
 }
 
 {
-  "iff": [],
+  "if": [{}],
   // ...
 }
 ```
@@ -599,7 +661,7 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 <!-- Internal Links -->
 
 [Ability]: #43-ability
-[Caveat]: #44-caveats
+[Caveat]: #45-caveats
 [Envelope]: #2-delegation-envelope
 [Meta]: #35-meta
 [Payload]: #3-delegation-payload
