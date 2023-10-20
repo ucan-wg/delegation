@@ -275,9 +275,9 @@ Abilities MAY be organized in a hierarchy that abstract over many [Command]s. A 
 
 ### 4.3.1 Reserved Commands
 
-#### 4.3.1.1 `ucan` Namespace
+#### 4.3.1.1 `ucan/` Namespace
 
-The `ucan` ability namespace MUST be reserved. This MUST include any ability string matching the regex `/^ucan.*/`
+The `ucan/` ability namespace MUST be reserved. This MUST include any ability string matching the regex `/^ucan\/.*/`
 
 Support for the `ucan/*` delegated proof ability is RECOMMENDED.
 
