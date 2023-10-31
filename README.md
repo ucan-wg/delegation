@@ -23,11 +23,11 @@ The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "S
 
 # 0. Abstract
 
-This specification describes the semantics and serialization format for [UCAN] delegation between principals. UCAN Delegation provides a cryptographically verifiable container, batched capabilities, hierarchical authority, and extensible caveats.
+This specification describes the semantics and serialization format for [UCAN] delegation between principals. UCAN Delegation provides a cryptographically verifiable container, batched capabilities, hierarchical authority, and extensible conditions.
   
 # 1. Introduction
 
-UCAN Delegation is a certificate capability system with runtime-extensibility, ad hoc caveats, cacheability, and focused on ease of use and interoperability. Delegations act as a proofs for [UCAN Invocation]s.
+UCAN Delegation is a certificate capability system with runtime-extensibility, ad hoc conditions, cacheability, and focused on ease of use and interoperability. Delegations act as a proofs for [UCAN Invocation]s.
 
 Delegation provides a way to "transfer authority without transferring cryptographic keys". As an authorization system, it is more interested in "what" can be done than a list of "who can do what". For more on how Delegation fits into UCAN, please refer to the [high level spec][UCAN].
 
@@ -44,19 +44,19 @@ Delegations MUST include a signature that validates against the `iss` DID. A Del
 
 The payload MUST describe the authorization claims, who is involved, and its validity period.
 
-| Field  | Type                                      | Required | Description                                                 |
-|--------|-------------------------------------------|----------|-------------------------------------------------------------|
-| `udv`  | `String`                                  | Yes      | UCAN Semantic Version (`1.0.0-rc.1`)                        |
-| `iss`  | `DID`                                     | Yes      | Issuer DID (sender)                                         |
-| `aud`  | `DID`                                     | Yes      | Audience DID (receiver)                                     |
-| `nbf`  | `Integer` (53-bits[^js-num-size])         | No       | "Not before" UTC Unix Timestamp in seconds (valid from)     |
-| `exp`  | `Integer \| null` (53-bits[^js-num-size]) | Yes      | Expiration UTC Unix Timestamp in seconds (valid until)      |
-| `nnc`  | `Bytes`                                   | Yes      | Nonce                                                       |
-| `mta`  | `{String : Any}`                          | No       | [Meta] (asserted, signed data) — is not delegated authority |
-| `sub`  | `DID`                                     | Yes      | Principal that the chain is about (the [Subject])           |
-| `can`  | `String`                                  | Yes      | The [Command] to eventually invoke                          |
-| `args` | `{String : Any}`                          | Yes      | Any [Arguments] that MUST be present in the Invocation      |
-| `if`   | `[Caveat]`                                | Yes      | Any additional [Caveat]s                                    |
+| Field   | Type                              | Required | Description                                                 |
+|---------|-----------------------------------|----------|-------------------------------------------------------------|
+| `udv`   | `String`                          | Yes      | UCAN Semantic Version (`1.0.0-rc.1`)                        |
+| `iss`   | `DID`                             | Yes      | Issuer DID (sender)                                         |
+| `aud`   | `DID`                             | Yes      | Audience DID (receiver)                                     |
+| `nbf`   | `Integer` (53-bits[^js-num-size]) | No       | "Not before" UTC Unix Timestamp in seconds (valid from)     |
+| `exp`   | `Integer` (53-bits[^js-num-size]) | Yes      | Expiration UTC Unix Timestamp in seconds (valid until)      |
+| `nonce` | `Bytes`                           | Yes      | Nonce                                                       |
+| `meta`  | `{String : Any}`                  | No       | [Meta] (asserted, signed data) — is not delegated authority |
+| `sub`   | `DID`                             | Yes      | Principal that the chain is about (the [Subject])           |
+| `can`   | `String`                          | Yes      | The [Command] to eventually invoke                          |
+| `args`  | `{String : Any}`                  | Yes      | Any [Arguments] that MUST be present in the Invocation      |
+| `cond`  | `[Condition]`                     | Yes      | Any additional [Condition]s                                 |
 
 The payload MUST be serialized as [IPLD] and [signed over][Envelope]. The RECOMMENDED IPLD codec is [DAG-CBOR].
 
@@ -179,12 +179,12 @@ Below is an example:
 
 Capabilities are the semantically-relevant claims of a delegation. They MUST be presented as a map under the `cap` field as a map. This map is REQUIRED but MAY be empty. This MUST take the following form:
 
-| Field  | Type               | Required | Description                                                                                          |
-|--------|--------------------|----------|------------------------------------------------------------------------------------------------------|
-| `sub`  | `URI`              | Yes      | The [Subject] that this Capability is about                                                          |
-| `can`  | `Command`          | Yes      | The [Command] of this Capability                                                                     |
-| `args` | `{String : Any}`   | Yes      | Any arguments that MUST be present _verbatim_ in the [Invocation]                                    |
-| `if`   | `[{String : Any}]` | Yes      | Any additional caveats, such as regex matchers, contextual information (e.g. day of week), and so on |
+| Field  | Type               | Required | Description                                                                                             |
+|--------|--------------------|----------|---------------------------------------------------------------------------------------------------------|
+| `sub`  | `URI`              | Yes      | The [Subject] that this Capability is about                                                             |
+| `can`  | `Command`          | Yes      | The [Command] of this Capability                                                                        |
+| `args` | `{String : Any}`   | Yes      | Any arguments that MUST be present _verbatim_ in the [Invocation]                                       |
+| `cond` | `[{String : Any}]` | Yes      | Any additional conditions, such as regex matchers, contextual information (e.g. day of week), and so on |
 
 Here is an illustrative example:
 
@@ -197,7 +197,7 @@ Here is an illustrative example:
     "tags": ["weekend", "news"],
     "status": "draft",
   },
-  "if": [
+  "cond": [
     {
       "day": "friday"
     },
@@ -241,7 +241,7 @@ By default, the Resource of a capability is the Subject. This makes the delegati
 }
 ```
 
-In the case where access to an [external resource] is delegated, the Subject MUST own the relationship to the Resource. The Resource SHOULD be referenced by a `uri` key in the relevant [Caveat(s)][Caveat], except where it would be clearer to do otherwise. This MUST be defined by the Subject and understood by the executor.
+In the case where access to an [external resource] is delegated, the Subject MUST own the relationship to the Resource. The Resource SHOULD be referenced by a `uri` key in the relevant [Conditions], except where it would be clearer to do otherwise. This MUST be defined by the Subject and understood by the executor.
 
 ``` js
 {
@@ -359,7 +359,7 @@ The `args` field MAY contain partially applied Arguments for the shape of data s
 }
 ```
 
-Any arguments MUST be taken verbatim and MUST NOT be further adjusted. For more flexible validation of Arguments, use [Caveats].
+Any arguments MUST be taken verbatim and MUST NOT be further adjusted. For more flexible validation of Arguments, use [Conditions].
 
 Note that this also applies to arrays and objects. For example, the `to` array in this example is considered to be exact, so the Invocation fails validation in this case:
 
@@ -387,16 +387,16 @@ Note that this also applies to arrays and objects. For example, the `to` array i
 }
 ```
 
-The indended logic is expressible with [Caveats].
+The indended logic is expressible with [Conditions].
 
-## 4.5 Caveats
+## 4.5 Conditions
 
-Caveats (the `if` field) constrain the capability in two ways:
+The `cond` field MUST contain any additional conditions. This concept is sometimes called a "caveat". Conditions constrain the capability in two ways:
 
 - Syntactic constraints on [Arguments] (length, regex, inclusion)
 - Environmental / contextual conditions (day of week)
 
-Caveat semantics MUST be established by the Subject. They are openly extensible, but vocabularies may be reused across many Subjects. Caveats MUST be Understood by the [Executor] of the eventual [Invocation][UCAN Invocation]. Each caveat MUST be formatted as a map.
+Condition semantics MUST be established by the Subject. They are openly extensible, but vocabularies may be reused across many Subjects. Conditions MUST be Understood by the [Executor] of the eventual [Invocation][UCAN Invocation]. Each Condition MUST be formatted as a map.
 
 ``` js
 // Delegation
@@ -406,12 +406,12 @@ Caveat semantics MUST be established by the Subject. They are openly extensible,
   "args": {
     "from": "alice@example.com"
   }
-  "if": [
+  "cond": [
      {                               // ┐
-       "day": "monday",              // ├─ Caveat
+       "day": "monday",              // ├─ Condition
      },                              // ┘
      {                               // ┐
-       "field": "to",                // ├─ Caveat
+       "field": "to",                // ├─ Condition
        "includes": "bob@exmaple.com" // │
      }                               // ┘
   ],
@@ -438,22 +438,22 @@ The `if` field MUST take the following shape: `[{}]`. The array represents a log
 ``` js
 [
   {       // ┐
-    a: 1, // ├─ Caveat ─┐
-    b: 2  // │          │
-  },      // ┘          ├─ AND ─┐
-  {       // ┐          │       │
-    c: 3  // ├─ Caveat ─┘       │
-  },      // ┘                  ├─ AND
-  {       // ┐                  │
-    d: 4  // ├─ Caveat ─────────┘
+    a: 1, // ├─ Confition ─┐
+    b: 2  // │             │
+  },      // ┘             ├─ AND ─┐
+  {       // ┐             │       │
+    c: 3  // ├─ Condition ─┘       │
+  },      // ┘                     ├─ AND
+  {       // ┐                     │
+    d: 4  // ├─ Condition ─────────┘
   }       // ┘
 ]
 ```
 
-Expressing caveats in this standard way simplifies ad hoc extension at delegation time. As a concrete example, below a caveat is added to the constraints on the `to` field.
+Expressing Conditions in this standard way simplifies ad hoc extension at delegation time. As a concrete example, below a Condition is added to the constraints on the `to` field.
 
 ``` js
-// Original Caveat
+// Original Condition
 [
   {
     "field": "to",
@@ -461,7 +461,7 @@ Expressing caveats in this standard way simplifies ad hoc extension at delegatio
   }
 ]
 
-// Attenuated Caveat
+// Attenuated Conditions
 [
   { // Same as above
     "field": "to",
@@ -480,27 +480,15 @@ Expressing caveats in this standard way simplifies ad hoc extension at delegatio
 ]
 ```
 
-### 4.4.1 The Empty Caveat
+### 4.4.1 The True Condition
 
-The "empty" caveat MUST represent the lack of caveats. This is equivalent to `true` in predicate terms. It SHOULD be represented as `[]`, but `[{}]` MAY be used equivalently ("without any caveats").
-
-``` js
-{
-  "if": [],
-  // ...
-}
-
-{
-  "if": [{}],
-  // ...
-}
-```
+The "true condition" MUST (vacuously) represent the lack of Conditions: it is equivalent to `true` in predicate terms. It SHOULD be expressed simply by not including a Condition, but MAY be expressed as `{}`.
 
 # 5 Validation
 
 Validation of a UCAN chain MAY occur at any time, but MUST occur upon receipt of an [Invocation] prior to execution. While proof chains exist outside of a particular delegation (and are made concrete in [UCAN Invocation]s), each delegate MUST store one or more valid delegations chains for a particular claim.
 
-Each capability has its own semantics, which needs to be interpretable by the [Executor]. Therefore, a validator MUST NOT reject all capabilities when one that is not relevant to them is not understood. For example, if a caveat fails a delegation check at execution time, but is not relevant to the invocation, it MUST be ignored.
+Each capability has its own semantics, which needs to be interpretable by the [Executor]. Therefore, a validator MUST NOT reject all capabilities when one that is not relevant to them is not understood. For example, if a Condition fails a delegation check at execution time, but is not relevant to the invocation, it MUST be ignored.
 
 If _any_ of the following criteria are not met, the UCAN MUST be considered invalid:
 
@@ -605,24 +593,24 @@ The following UCAN fragment would be valid to invoke as `did:key:zH3C2AVvLMv6gmM
 
 A good litmus test for invocation validity by a invoking agent is to check if they would be able to create a valid delegation for that capability.
 
-## 5.3 Caveat Attenuation
+## 5.3 Condition Attenuation
 
-The caveat array SHOULD NOT be empty, as an empty array means "in no case" (which is equivalent to not listing the ability). This follows from the rule that delegations MUST be of equal or lesser scope. When an array is given, an attenuated caveat MUST (syntactically) include all of the fields of the relevant proof caveat, plus the newly introduced caveats.
+The Condition array MAY be empty (which is equivelant to saying "with no other conditions"). Delegations MUST otherwise only append more Conditions, and recapitulate the existing ones verbatim. Here are some abstract examples:
 
-Here are some abstract examples:
+| Proof Conditions     | Delegated Conditions | Is Valid? | Comment                                                    |
+|----------------------|----------------------|-----------|------------------------------------------------------------|
+| `[]`                 | `[]`                 | Yes       | Equal                                                      |
+| `[]`                 | `[{}]`               | Yes       | [True Condition]                                           |
+| `[{}]`               | `[]`                 | Yes       | [True Condition]                                           |
+| `[{}]`               | `[{}]`               | Yes       | Equal                                                      |
+| `[{a: 1}]`           | `[{a: 1}]`           | Yes       | Equal                                                      |
+| `[]`                 | `[{a: 1}]`           | Yes       | Adds a Condition                                           |
+| `[{a: 1}]`           | `[{a: 1}, {a: 2}]`   | Yes       | Adds new Condition                                         |
+| `[{a: 1}]`           | `[{}]`               | No        | Escalation by removing a Condition                         |
+| `[{a: 1}], [{b: 2}]` | `[{a: 1, b: 2}]`     | No        | Removes previous Conditions (despite having the same keys) |
+| `[{a: 1}]`           | `[{b: 2}]`           | No        | Removes original Condition                                 |
 
-| Proof Caveats        | Delegated Caveats  | Is Valid? | Comment                               |
-|----------------------|--------------------|-----------|---------------------------------------|
-| `[]`                 | `[]`               | Yes       | Equal                                 |
-| `[]`                 | `[{}]`             | Yes       | [True Caveat]                         |
-| `[{}]`               | `[]`               | Yes       | [True Caveat]                         |
-| `[{}]`               | `[{}]`             | Yes       | Equal                                 |
-| `[{a: 1}]`           | `[{a: 1}]`         | Yes       | Equal                                 |
-| `[{}]`               | `[{a: 1}]`         | Yes       | Attenuates `{}` by adding fields      |
-| `[{a: 1}], [{b: 2}]` | `[{a: 1, b: 2}]`   | Yes       | Attenuates existing caveat            |
-| `[{a: 1}]`           | `[{a: 1}, {a: 2}]` | Yes       | Adds new caveat inside an `AND` block |
-| `[{a: 1}]`           | `[{}]]`            | No        | Escalation by removing fields         |
-| `[{a: 1}]`           | `[{b: 2}]`         | No        | Escalation by replacing fields        |
+Conditions MAY be presented in any order, but merely appending to the array is RECOMMENDED.
 
 ## 5.4 Signature Validation
 
@@ -661,12 +649,12 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 <!-- Internal Links -->
 
 [Ability]: #43-ability
-[Caveat]: #45-caveats
+[Conditions]: #45-conditions
 [Envelope]: #2-delegation-envelope
 [Meta]: #35-meta
 [Payload]: #3-delegation-payload
 [Subject]: #41-subject
-[True Caveat]: #441-the-true-caveat
+[True Condition]: #441-the-true-condition
 [Wildcard Ability]: #4312--aka-wildcard
  
 <!-- External Links -->
