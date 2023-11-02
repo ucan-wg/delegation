@@ -387,7 +387,7 @@ Note that this also applies to arrays and objects. For example, the `to` array i
 }
 ```
 
-The indended logic is expressible with [Conditions].
+The intended logic is expressible with [Conditions].
 
 ## 4.5 Conditions
 
@@ -412,7 +412,7 @@ Condition semantics MUST be established by the Subject. They are openly extensib
      },                              // ┘
      {                               // ┐
        "field": "to",                // ├─ Condition
-       "includes": "bob@exmaple.com" // │
+       "includes": "bob@example.com" // │
      }                               // ┘
   ],
   // ...
@@ -591,7 +591,7 @@ A good litmus test for invocation validity by a invoking agent is to check if th
 
 ## 5.3 Condition Attenuation
 
-The Condition array MAY be empty (which is equivelant to saying "with no other conditions"). Delegations MUST otherwise only append more Conditions, and recapitulate the existing ones verbatim. Here are some abstract examples:
+The Condition array MAY be empty (which is equivalent to saying "with no other conditions"). Delegations MUST otherwise only append more Conditions, and recapitulate the existing ones verbatim. Here are some abstract examples:
 
 | Proof Conditions     | Delegated Conditions | Is Valid? | Comment                                                    |
 |----------------------|----------------------|-----------|------------------------------------------------------------|
