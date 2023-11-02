@@ -38,7 +38,7 @@ Delegations MUST include a signature that validates against the `iss` DID. A Del
 | Field   | Type        | Required | Description                                  |
 |---------|-------------|----------|----------------------------------------------|
 | `pld`   | `&Payload`  | Yes      | The CID of the [Delegation Payload][Payload] |
-| `sig`   | `Signature` | Yes      | The `iss`'s [Signature] over the `ucd` field |
+| `sig`   | `Signature` | Yes      | The `iss`'s [Signature] over the `pld` field |
 
 # 3. Delegation Payload
 
