@@ -328,7 +328,7 @@ Abilities MAY be organized in a hierarchy that abstract over many [Command]s. A 
 
 #### `ucan/` Namespace
 
-The `ucan/` ability namespace MUST be reserved. This MUST include any ability string matching the regex `/^ucan\/.*/`
+The `ucan/` ability namespace MUST be reserved. This MUST include any ability string matching the regex `/^ucan\/.*/`. This is important for keeping a space for community-blessed Commands in the future, such as standard library Commands.
 
 #### `*` AKA "Wildcard"
 
