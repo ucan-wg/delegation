@@ -1,20 +1,19 @@
 type Delegation struct {
-  dgn &DelegationPayload
-  sig &Signature
+  p SignaturePayload
+  s Signature
 }
 
 type DelegationPayload struct {
-  udv Semver
-
   iss DID
   aud DID
+  sub DID
 
   exp Integer
   nbf Integer
 
-  sub DID
-  can String
-  iff [{String : Any}]
+  can  String
+  args {String : Any}
+  cond [{String : Any}]
 }
 
 type Signature union {

@@ -16,6 +16,7 @@
 - [DID]
 - [IPLD]
 - [UCAN]
+- [Varsig]
 
 ## Language
 
@@ -695,6 +696,7 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [CIDv1]: https://github.com/multiformats/cid?tab=readme-ov-file#cidv1
 [Christine Lemmer-Webber]: https://github.com/cwebber
 [Christopher Joel]: https://github.com/cdata
+[Command]: https://github.com/ucan-wg/spec#33-command
 [DAG-CBOR]: https://ipld.io/specs/codecs/dag-cbor/spec/
 [DID fragment]: https://www.w3.org/TR/did-core/#terminology
 [DID]: https://www.w3.org/TR/did-core/
@@ -717,7 +719,6 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [Mikael Rogers]: https://github.com/mikeal/
 [OCAP]: https://en.wikipedia.org/wiki/Object-capability_model
 [OCapN]: https://github.com/ocapn/
-[Command]: https://github.com/ucan-wg/spec#33-command
 [Philipp Krüger]: https://github.com/matheus23
 [PoLA]: https://en.wikipedia.org/wiki/Principle_of_least_privilege 
 [Protocol Labs]: https://protocol.ai/
@@ -731,6 +732,7 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [Steven Vandevelde]: https://github.com/icidasset
 [UCAN Invocation]: https://github.com/ucan-wg/invocation
 [UCAN]: https://github.com/ucan-wg/spec
+[Varsig]: https://github.com/ChainAgnostic/varsig
 [W3C]: https://www.w3.org/
 [ZCAP-LD]: https://w3c-ccg.github.io/zcap-spec/
 [`did:key`]: https://w3c-ccg.github.io/did-method-key/
