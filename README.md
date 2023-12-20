@@ -21,50 +21,82 @@
 
 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in [RFC 2119].
 
-# 0. Abstract
+# Abstract
 
 This specification describes the semantics and serialization format for [UCAN] delegation between principals. UCAN Delegation provides a cryptographically verifiable container, batched capabilities, hierarchical authority, and extensible conditions.
   
-# 1. Introduction
+# Introduction
 
 UCAN Delegation is a certificate capability system with runtime-extensibility, ad hoc conditions, cacheability, and focused on ease of use and interoperability. Delegations act as a proofs for [UCAN Invocation]s.
 
 Delegation provides a way to "transfer authority without transferring cryptographic keys". As an authorization system, it is more interested in "what" can be done than a list of "who can do what". For more on how Delegation fits into UCAN, please refer to the [high level spec][UCAN].
 
-# 2. Delegation (Envelope)
+# Delegation (Envelope)
 
 Delegations MUST include a signature that validates against the `iss` DID. A Delegation Payload on its own MUST NOT be considered a valid Delegation.
 
-| Field   | Type        | Required | Description                                  |
-|---------|-------------|----------|----------------------------------------------|
-| `pld`   | `&Payload`  | Yes      | The CID of the [Delegation Payload][Payload] |
-| `sig`   | `Signature` | Yes      | The `iss`'s [Signature] over the `pld` field |
+``` mermaid
+flowchart TD
+    subgraph Delegation
+        SignatureBytes["Signature (raw bytes)"]
+      
+        subgraph SigPayload ["Signature Payload"]
+            VarsigHeader["Varsig Header"]
 
-# 3. Delegation Payload
+            subgraph DelegationPayload ["Delegation Payload"]
+                iss
+                sub
+                can
+                args
+                prf
+                etc["..."]
+            end
+        end
+    end
+```
 
-The payload MUST describe the authorization claims, who is involved, and its validity period.
+``` js
+{
+  "s": {"/": {"bytes": "7aEDQLYvb3lygk9yvAbk0OZD0q+iF9c3+wpZC4YlFThkiNShcVriobPFr/wl3akjM18VvIv/Zw2LtA4uUmB5m8PWEAU"}}
+  "p": {
+    "h": {"/": {"bytes": "NBIFEgEAcQ"}},
+    "ucan/d/1.0.0-rc.1": delegationPayload 
+  }
+}
+```
+
+| Field | Type               | Required | Description                                           |
+|-------|--------------------|----------|-------------------------------------------------------|
+| `s`   | `Signature`        | Yes      | A signature by the Payload's `iss` over the `p` field |
+| `p`   | `SignaturePayload` | Yes      | The content that was signed                           |
+
+## Signature Payload
+
+| Field               | Type                | Required | Description              |
+|---------------------|---------------------|----------|--------------------------|
+| `h`                 | `VarsigHeader`      | Yes      | The Varsig header        |
+| `ucan/d/1.0.0-rc.1` | `InvocationPayload` | Yes      | The [Invocation Payload] |
+
+## Delegation Payload
+
+The Delegation payload MUST describe the authorization claims, who is involved, and its validity period.
 
 | Field   | Type                              | Required | Description                                                 |
 |---------|-----------------------------------|----------|-------------------------------------------------------------|
-| `udv`   | `String`                          | Yes      | UCAN Semantic Version (`1.0.0-rc.1`)                        |
 | `iss`   | `DID`                             | Yes      | Issuer DID (sender)                                         |
 | `aud`   | `DID`                             | Yes      | Audience DID (receiver)                                     |
+| `sub`   | `DID`                             | Yes      | Principal that the chain is about (the [Subject])           |
 | `nbf`   | `Integer` (53-bits[^js-num-size]) | No       | "Not before" UTC Unix Timestamp in seconds (valid from)     |
 | `exp`   | `Integer` (53-bits[^js-num-size]) | Yes      | Expiration UTC Unix Timestamp in seconds (valid until)      |
 | `nonce` | `Bytes`                           | Yes      | Nonce                                                       |
 | `meta`  | `{String : Any}`                  | No       | [Meta] (asserted, signed data) — is not delegated authority |
-| `sub`   | `DID`                             | Yes      | Principal that the chain is about (the [Subject])           |
 | `can`   | `String`                          | Yes      | The [Command] to eventually invoke                          |
 | `args`  | `{String : Any}`                  | Yes      | Any [Arguments] that MUST be present in the Invocation      |
 | `cond`  | `[Condition]`                     | Yes      | Any additional [Condition]s                                 |
 
 The payload MUST be serialized as [IPLD] and [signed over][Envelope]. The RECOMMENDED IPLD codec is [DAG-CBOR].
 
-## 3.1 Version
-
-The `udv` field sets the version of the UCAN Delegation specification used in the payload.
-
-## 3.2 Principals
+## Principals
 
 The `iss` and `aud` fields describe the token's principals. They are distinguished by having DIDs. These can be conceptualized as the sender and receiver of a postal letter. The token MUST be signed with the private key associated with the DID in the `iss` field. Implementations MUST include the [`did:key`] method, and MAY be augmented with [additional DID methods][DID].
 
@@ -98,7 +130,7 @@ Below are a couple examples:
 "iss": "did:plc:ewvi7nxzyoun6zhxrhs64oiz",
 ```
 
-## 3.3 Time Bounds
+## Time Bounds
 
 `nbf` and `exp` stand for "not before" and "expires at," respectively. These MUST be expressed as seconds since the Unix epoch in UTC, without time zone or other offset. Taken together, they represent the time bounds for a token. These timestamps MUST be represented as the number of integer seconds since the Unix epoch. Due to limitations[^js-num-size] in numerics for certain common languages, timestamps outside of the range from $-2^{53} – 1$ to $2^{53} – 1$ MUST be rejected as invalid.
 
@@ -135,9 +167,9 @@ Below are a couple examples:
 }
 ```
 
-## 3.4 Nonce
+## Nonce
 
-The REQUIRED nonce parameter `nnc` MAY be any value. A randomly generated string is RECOMMENDED to provide a unique UCAN, though it MAY also be a monotonically increasing count of the number of links in the hash chain. This field helps prevent replay attacks and ensures a unique CID per delegation. The `iss`, `aud`, and `exp` fields together will often ensure that UCANs are unique, but adding the nonce ensures uniqueness.
+The REQUIRED nonce parameter `nonce` MAY be any value. A randomly generated string is RECOMMENDED to provide a unique UCAN, though it MAY also be a monotonically increasing count of the number of links in the hash chain. This field helps prevent replay attacks and ensures a unique CID per delegation. The `iss`, `aud`, and `exp` fields together will often ensure that UCANs are unique, but adding the nonce ensures uniqueness.
 
 The recommended size of the nonce differs by key type. In many cases, a random 12-byte nonce is sufficient. If uncertain, check the nonce in your DID's crypto suite.
 
@@ -152,7 +184,7 @@ Here is a simple example.
 }
 ```
 
-## 3.5 Meta
+## Meta
 
 The OPTIONAL `mta` field contains a map of arbitrary metadata, facts, and proofs of knowledge. The enclosed data MUST be self-evident and externally verifiable. It MAY include information such as hash preimages, server challenges, a Merkle proof, dictionary data, etc.
 
@@ -175,7 +207,7 @@ Below is an example:
 }
 ```
 
-# 4. Capability
+# Capability
 
 Capabilities are the semantically-relevant claims of a delegation. They MUST be presented as a map under the `cap` field as a map. This map is REQUIRED but MAY be empty. This MUST take the following form:
 
@@ -213,7 +245,7 @@ Here is an illustrative example:
 }
 ```
 
-## 4.1 Subject
+## Subject
 
 The Subject MUST be the DID that initiated the delegation chain.
 
@@ -226,7 +258,7 @@ For example:
 }
 ```
 
-## 4.2 Resource
+## Resource
 
 Unlike Subjects and Commands, Resources are semantic rather than syntactic. The Resource is the "what" that a capability describes.
 
@@ -255,7 +287,7 @@ In the case where access to an [external resource] is delegated, the Subject MUS
 }
 ```
 
-## 4.3 Command
+## Command
 
 Commands MUST be presented as a case-insensitive string. By convention, Commands SHOULD be namespaced with a slash, such as `msg/send`.
 
@@ -273,15 +305,13 @@ Commands MUST be presented as a case-insensitive string. By convention, Commands
 
 Abilities MAY be organized in a hierarchy that abstract over many [Command]s. A typical example is a superuser capability ("anything") on a file system. Another is mutation vs read access, such that in an HTTP context, `write` implies `put`, `patch`, `delete`, and so on. [`*` gives full access][Wildcard Ability] to a Resource more in the vein of object capabilities. Organizing abilities this way allows Resources to evolve over time in a backward-compatible manner, avoiding the need to reissue UCANs with new resource semantics.
 
-### 4.3.1 Reserved Commands
+### Reserved Commands
 
-#### 4.3.1.1 `ucan/` Namespace
+#### `ucan/` Namespace
 
 The `ucan/` ability namespace MUST be reserved. This MUST include any ability string matching the regex `/^ucan\/.*/`
 
-Support for the `ucan/*` delegated proof ability is RECOMMENDED.
-
-#### 4.3.1.2 `*` AKA "Wildcard"
+#### `*` AKA "Wildcard"
 
 _"Wildcard" (`*`) is the most powerful ability, and as such it SHOULD be handled with care and used sparingly._
 
@@ -331,7 +361,7 @@ Conceptually it has this shape:
 
 Since the nesting is fully redundant and infinitely nestable, it is instead used only in proof chains, and SHOULD NOT be invoked directly.
 
-## 4.4 Arguments
+## Arguments
 
 The `args` field MAY contain partially applied Arguments for the shape of data specified by the [Command]. For example, below is an example that constrains sending email from a particular address:
 
@@ -389,7 +419,7 @@ Note that this also applies to arrays and objects. For example, the `to` array i
 
 The intended logic is expressible with [Conditions].
 
-## 4.5 Conditions
+## Conditions
 
 The `cond` field MUST contain any additional conditions. This concept is sometimes called a "caveat". Conditions constrain the capability in two ways:
 
@@ -480,11 +510,11 @@ Expressing Conditions in this standard way simplifies ad hoc extension at delega
 ]
 ```
 
-### 4.4.1 The True Condition
+### The True Condition
 
 The "true condition" MUST (vacuously) represent the lack of Conditions: it is equivalent to `true` in predicate terms. It SHOULD be expressed simply by not including a Condition, but MAY be expressed as `{}`.
 
-# 5 Validation
+# Validation
 
 Validation of a UCAN chain MAY occur at any time, but MUST occur upon receipt of an [Invocation] prior to execution. While proof chains exist outside of a particular delegation (and are made concrete in [UCAN Invocation]s), each delegate MUST store one or more valid delegations chains for a particular claim.
 
@@ -492,7 +522,7 @@ Each capability has its own semantics, which needs to be interpretable by the [E
 
 If _any_ of the following criteria are not met, the UCAN MUST be considered invalid:
 
-## 5.1 Time Bounds
+## Time Bounds
 
 A UCAN's time bounds MUST NOT be considered valid if the current system time is before the `nbf` field or after the `exp` field. This is called the "validity period." Proofs in a chain MAY have different validity periods, but MUST all be valid at execution-time. This has the effect of making a delegation chain valid between the latest `nbf` and earliest `exp`.
 
@@ -512,7 +542,7 @@ const ensureTime = (delegationChain, now) => {
 }
 ```
 
-## 5.2 Principal Alignment
+## Principal Alignment
 
 In delegation, the `aud` field of every proof MUST match the `iss` field of the UCAN being delegated to. This alignment MUST form a chain back to the Subject for each resource. 
 
@@ -573,7 +603,7 @@ flowchart RL
     prf --> Delegations
 ```
 
-### 5.2.1 Recipient Validation
+### Recipient Validation
 
 An agent executing a capability MUST verify that the outermost `aud` field _matches its own DID._ The associated ability MUST NOT be performed if they do not match. Recipient validation is REQUIRED to prevent the misuse of UCANs in an unintended context.
 
@@ -589,7 +619,7 @@ The following UCAN fragment would be valid to invoke as `did:key:zH3C2AVvLMv6gmM
 
 A good litmus test for invocation validity by a invoking agent is to check if they would be able to create a valid delegation for that capability.
 
-## 5.3 Condition Attenuation
+## Condition Attenuation
 
 The Condition array MAY be empty (which is equivalent to saying "with no other conditions"). Delegations MUST otherwise only append more Conditions, and recapitulate the existing ones verbatim. Here are some abstract examples:
 
@@ -608,11 +638,11 @@ The Condition array MAY be empty (which is equivalent to saying "with no other c
 
 Conditions MAY be presented in any order, but merely appending to the array is RECOMMENDED.
 
-## 5.4 Signature Validation
+## Signature Validation
 
-The `sig` field MUST validate against the `iss` DID from the [Payload].
+The [Signature] field MUST validate against the `iss` DID from the [Payload].
 
-# 6. Acknowledgments
+# Acknowledgments
 
 Thank you to [Brendan O'Brien] for real-world feedback, technical collaboration, and implementing the first Golang UCAN library.
 
@@ -644,14 +674,14 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 
 <!-- Internal Links -->
 
-[Ability]: #43-ability
-[Conditions]: #45-conditions
-[Envelope]: #2-delegation-envelope
-[Meta]: #35-meta
-[Payload]: #3-delegation-payload
-[Subject]: #41-subject
-[True Condition]: #441-the-true-condition
-[Wildcard Ability]: #4312--aka-wildcard
+[Ability]: #ability
+[Conditions]: #conditions
+[Envelope]: #delegation-envelope
+[Meta]: #meta
+[Payload]: #delegation-payload
+[Subject]: #subject
+[True Condition]: #the-true-condition
+[Wildcard Ability]: #-aka-wildcard
  
 <!-- External Links -->
 
