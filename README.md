@@ -328,7 +328,7 @@ Abilities MAY be organized in a hierarchy that abstract over many [Command]s. A 
 
 #### `ucan/` Namespace
 
-The `ucan/` ability namespace MUST be reserved. This MUST include any ability string matching the regex `/^ucan\/.*/`. This is important for keeping a space for community-blessed Commands in the future, such as standard library Commands.
+The `ucan/` ability namespace MUST be reserved. This MUST include any ability string matching the regex `/^ucan\/.*/`. This is important for keeping a space for community-blessed Commands in the future, such as standard library Commands, such as [Revocation].
 
 #### `*` AKA "Wildcard"
 
@@ -744,6 +744,7 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [RFC 8037]: https://www.rfc-editor.org/rfc/rfc8037
 [RS256]: https://www.rfc-editor.org/rfc/rfc7518#section-3.3
 [Raw data multicodec]: https://github.com/multiformats/multicodec/blob/master/table.csv#L41
+[Revocation]: https://github.com/ucan-wg/revocation
 [SHA2-256]: https://github.com/multiformats/multicodec/blob/master/table.csv#L9
 [SPKI/SDSI]: https://datatracker.ietf.org/wg/spki/about/
 [SPKI]: https://theworld.com/~cme/html/spki.html
