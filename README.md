@@ -30,7 +30,7 @@ This specification describes the semantics and serialization format for [UCAN] d
 
 UCAN Delegation is a certificate capability system with runtime-extensibility, ad hoc conditions, cacheability, and focused on ease of use and interoperability. Delegations act as a proofs for [UCAN Invocation]s.
 
-Delegation provides a way to "transfer authority without transferring cryptographic keys". As an authorization system, it is more interested in "what" can be done than a list of "who can do what". For more on how Delegation fits into UCAN, please refer to the [high level spec][UCAN].
+Delegation provides a way to "transfer authority without transferring cryptographic keys". As an authorization system, it is more interested in "what can be done?" than a list of "who can do what?". For more on how Delegation fits into UCAN, please refer to the [high level spec][UCAN].
 
 # Delegation (Envelope)
 
@@ -61,7 +61,25 @@ flowchart TD
   "s": {"/": {"bytes": "7aEDQLYvb3lygk9yvAbk0OZD0q+iF9c3+wpZC4YlFThkiNShcVriobPFr/wl3akjM18VvIv/Zw2LtA4uUmB5m8PWEAU"}}
   "p": {
     "h": {"/": {"bytes": "NBIFEgEAcQ"}},
-    "ucan/d/1.0.0-rc.1": delegationPayload 
+    "ucan/d/1.0.0-rc.1": {
+      "iss": "did:plc:ewvi7nxzyoun6zhxrhs64oiz",
+      "sub": "did:key:z6MkrZ1r5XBFZjBU34qyD8fueMbMRkKw17BZaq2ivKFjnz2z",
+      "can": "crud/create",
+      "args": {
+        "uri": "https://example.com/blog/posts",
+        "headers": {
+          "content-type": "application/json"
+        },
+        "payload": {
+          "title": "UCAN for Fun an Profit",
+          "body": "UCAN is great!",
+          "topics": ["authz", "journal"],
+          "draft": true
+        }
+      },
+      "nonce": {"/": {"bytes": "TWFueSBopvcs"}},
+      "exp": 1697409438
+    }
   }
 }
 ```
@@ -87,13 +105,13 @@ The Delegation payload MUST describe the authorization claims, who is involved, 
 | `iss`   | `DID`                             | Yes      | Issuer DID (sender)                                         |
 | `aud`   | `DID`                             | Yes      | Audience DID (receiver)                                     |
 | `sub`   | `DID`                             | Yes      | Principal that the chain is about (the [Subject])           |
-| `nbf`   | `Integer` (53-bits[^js-num-size]) | No       | "Not before" UTC Unix Timestamp in seconds (valid from)     |
-| `exp`   | `Integer` (53-bits[^js-num-size]) | Yes      | Expiration UTC Unix Timestamp in seconds (valid until)      |
-| `nonce` | `Bytes`                           | Yes      | Nonce                                                       |
-| `meta`  | `{String : Any}`                  | No       | [Meta] (asserted, signed data) — is not delegated authority |
 | `can`   | `String`                          | Yes      | The [Command] to eventually invoke                          |
 | `args`  | `{String : Any}`                  | Yes      | Any [Arguments] that MUST be present in the Invocation      |
+| `nonce` | `Bytes`                           | Yes      | Nonce                                                       |
 | `cond`  | `[Condition]`                     | Yes      | Any additional [Condition]s                                 |
+| `nbf`   | `Integer` (53-bits[^js-num-size]) | No       | "Not before" UTC Unix Timestamp in seconds (valid from)     |
+| `exp`   | `Integer` (53-bits[^js-num-size]) | Yes      | Expiration UTC Unix Timestamp in seconds (valid until)      |
+| `meta`  | `{String : Any}`                  | No       | [Meta] (asserted, signed data) — is not delegated authority |
 
 The payload MUST be serialized as [IPLD] and [signed over][Envelope]. The RECOMMENDED IPLD codec is [DAG-CBOR].
 
