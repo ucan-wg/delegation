@@ -390,7 +390,7 @@ The `args` field MAY contain partially applied Arguments for the shape of data s
   "can": "msg/send",
   "args": {
     "from": "alice@example.com",
-    "subject": "Coffee"
+    "title": "Coffee"
   },
   // ...
 }
@@ -401,7 +401,7 @@ The `args` field MAY contain partially applied Arguments for the shape of data s
   "args": {
     "from": "alice@example.com", // Matches above
     "to": ["bob@example.com", "carol@elsewhere.example.com"],
-    "subject": "Coffee",
+    "title": "Coffee",
     "body": "Still on for coffee" // Matches above
   },
   // ...
@@ -429,7 +429,7 @@ Note that this also applies to arrays and objects. For example, the `to` array i
   "args": {
     "from": "alice@example.com", // Matches above
     "to": ["bob@example.com", "carol@elsewhere.example.com"], // Does not match exactly
-    "subject": "Coffee",
+    "title": "Coffee",
     "body": "Still on for coffee"
   },
   // ...
@@ -473,7 +473,7 @@ Condition semantics MUST be established by the Subject. They are openly extensib
   "args": {
     "from": "alice@example.com",
     "to": ["bob@example.com", "carol@elsewhere.example.com"], // Matches criteria
-    "subject": "Coffee",
+    "title": "Coffee",
     "body": "Still on for coffee"
   },
   // ...
