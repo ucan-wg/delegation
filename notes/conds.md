@@ -60,8 +60,8 @@ Here's a sketch that shows the features
       [["some", "match"], "?x", "*@example.com"],
       
       ["args", "foo.quux", "?y"],
-      [">", "?y", 42],
-      ["<", "?x", "?y"]
+      ["?y", ">", 42],
+      ["?x", "<", "?y"]
     ]
   ]
 }
