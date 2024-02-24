@@ -45,3 +45,40 @@ Delegates `email/send` command on `did:key:alice` with a following constraint: E
 ## logic programming language
 
 We are also considering logic programming alternative inspired by datomic query styntax.
+
+### concrete proposal for the inital release
+
+Here's a sketch that shows the features
+
+```js
+{
+  "iss": "did:key:alice",
+  // ...
+  "policy": [
+    ["var", ["?x", "?y"], // The `?` here is just by convention
+      ["args", "foo..bar.[].baz", "?x"],
+      [["some", "match"], "?x", "*@example.com"],
+      
+      ["args", "foo.quux", "?y"],
+      [">", "?y", 42],
+      ["<", "?x", "?y"]
+    ]
+  ]
+}
+```
+
+Of note:
+
+* Selector syntax based on JSONPath / JSON Poiniter / jQ
+  * `"foo..bar.[].baz"` ~ `foo.{*recursive descent*}.bar.{ALL}.baz`
+* `var` is like `fresh` in minikanren: introduces logic variables
+  * these give the ability to run predicate logic in the middle of a sector
+  * `[[<node>, <path>, "?x"], [<pred>, "?x", <expr>]`
+* Declarative matching from `args` onwards
+  * Anything of the form `[<node>, <selector>, <value or variable>]`
+  * Can avoid namespace conflicts because users define variable names locally
+  * Recurses if needed
+    * A trivial case: `[["args", "some.path", "?x"], ["?x", "more.path", 42]]`
+      * Matches `args.some.path.more.path == 42`
+  * Use of `args` to start the path allows us to open up the synatx over time if we want
+    * Plus it's very declarative
