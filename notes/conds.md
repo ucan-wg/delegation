@@ -54,15 +54,14 @@ Here's a sketch that shows the features
 {
   "iss": "did:key:alice",
   // ...
+  "var": ["?x", "?y"], // The `?`s here is just by convention
   "policy": [
-    ["var", ["?x", "?y"], // The `?` here is just by convention
-      ["args", "foo..bar.[].baz", "?x"],
-      [["some", "match"], "?x", "*@example.com"],
+     ["$", "foo..bar.[].baz", "?x"],
+     [["some", "match"], "?x", "*@example.com"],
       
-      ["args", "foo.quux", "?y"],
-      ["?y", ">", 42],
-      ["?x", "<", "?y"]
-    ]
+     ["$", "foo.quux", "?y"],
+     ["?y", ">", 42],
+     ["?x", "<", "?y"]
   ]
 }
 ```
