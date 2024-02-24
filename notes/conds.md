@@ -6,18 +6,20 @@ In 0.x verison of UCANs has an open-ended `nb` field that most users use to cons
 
 ### Operators
 
-| Operator     | Function Signature           | Description                                       | Example                                       |
-| ------------ | ---------------------------- | ------------------------------------------------- | --------------------------------------------- |
-| `/${string}` | `/${string} -> JSON`         | Selects value using JSON Pointer                  | `["/foo/0"]`                                  |
-|              | `[] -> JSON`                 | Selects whole value like "" in JSON Pointer       | `[]`                                          | 
-| `==`         | `Expr -> Expr -> Bool`       | Equality                                          | `["==", ["/size"], 1]`                        |
-| `<`          | `Expr -> Expr -> Bool`       | Less than                                         | `["<",  ["/size"], 1024]`                     |
-| `<=`         | `Expr -> Expr -> Bool`       | Less than or equal                                | `["<=", ["/size"], 1024]`                     |
-| `>`          | `Expr -> Expr -> Bool`       | Greater than                                      | `[">", ["@", "/size"], 0]`                    |
-| `>=`         | `Expr -> Expr -> Bool`       | Greater than or equal                             | `[">=", ["@", "/size"], 32]`                  |
-| `not`        | `Expr -> Bool`               | Negation                                          | `["not", ["<=", ["/size"], 128]`              |
-| `some`       | `Expr -> Expr -> Bool`       | Collection predicate                              | `["some", ["/to"], ["==", [], "hi@web.mail"]]`|
-| `match`      | `Expr -> Expr -> Bool`       | String wildcard                                   | `["match", ["/to"], "*@foo.com"]`             |
+| Operator     | Function Signature                | Description                                | Example                                        |
+| ------------ | --------------------------------- | ------------------------------------------ | ---------------------------------------------- |
+| `/${string}` |`[] -> Any`                        | Selects value using JSON Pointer            | `["/foo/0"]`                                  |
+| ``           |`[] -> Any`                        | Selects whole value like "" in JSON Pointer | `[]`                                          |
+| `==`         |`[Exp<Any>, Exp<Any>] -> Bool`     | Equality                                    | `["==", ["/size"], 1]`                        |
+| `<`          |`[Exp<Num>, Exp<Num>] -> Bool`     | Less than                                   | `["<",  ["/size"], 1024]`                     |
+| `<=`         |`[Exp<Num>, Exp<Num>] -> Bool`     | Less than or equal                          | `["<=", ["/size"], 1024]`                     |
+| `>`          |`[Exp<Num>, Exp<Num>] -> Bool`     | Greater than                                | `[">", ["@", "/size"], 0]`                    |
+| `>=`         |`[Exp<Num>, Exp<Num>] -> Bool`     | Greater than or equal                       | `[">=", ["@", "/size"], 32]`                  |
+| `not`        |`[Expr<Bool>] -> Bool`             | Negation                                    | `["not", ["<=", ["/size"], 128]`              |
+| `some`       |`[Expr<Any[]>, Expr<Bool>] -> Bool`| Collection predicate                        | `["some", ["/to"], ["==", [], "hi@web.mail"]]`|
+| `match`      |`[Expr<Str>, Exp<Str>] -> Bool`    | String wildcard                             | `["match", ["/to"], "*@foo.com"]`             |
+| `or`         |`Exp<Bool>[] -> Bool`              | Logical **or** combinator                   | `["or", [">", ["/n"], 0], ["==", ["/n"], 0]]  |
+| `and`        |`Exp<Bool>[] -> Bool`              | Logical **and** combinator                  | `["and", [">", ["/n"], 0], ["<", ["/n"], 10]] |
 
 ## Examples
 
