@@ -8,16 +8,16 @@ In 0.x verison of UCANs has an open-ended `nb` field that most users use to cons
 
 | Operator     | Function Signature           | Description                             | Example                            |
 | ------------ | ---------------------------- | --------------------------------------- | ---------------------------------- |
-| `["a", "b"]` | `[String] -> Path`           | Map key (or array index) selector chain | `["key", 2]`                       |
+| `@` | `String -> JSON`           | Selects invocation argument(s) using JSON Pointer | `["@", "/foo/0"]`                       |
 | `==`         | `Expr -> Expr -> Bool`       | Equality                                | `["==", ["key"], 1]`               |
-| `<`          | `Path -> Num -> Bool`        | Less than                               | `["<", ["key"], 2.3]`              |
-| `<=`         | `Path -> Num -> Bool`        | Less than or equal                      | `["<=", ["key"], 2.3]`             |
-| `>`          | `Path -> Num -> Bool`        | Greater than                            | `["<", ["key"], 2.3]`              |
-| `>=`         | `Path -> Num -> Bool`        | Greater than or equal                   | `["<=", ["key"], 2.3]`             |
-| `not`        | `Expr -> Bool`               | Negation                                | `["not", ["<=", ["key"], 2.3]`     |
-| `some`        | `Collection -> Expr -> Bool` | Collection predicate                    | `["some", ["==", ["key"], 42]]`     |
-| `every`        | `Collection -> Expr -> Bool` | Collection predicate                    | `["every", ["==", ["key"], 42]]`     |
-| `match`    | `Path -> Pattern -> Bool`    | String wildcard                         | `["match", ["key"], "*@foo.com"` |
+| `<`          | `Expr -> Expr -> Bool`        | Less than                               | `["<", ["@", "size"], 1024]`              |
+| `<=`         | `Expr -> Expr -> Bool`        | Less than or equal                      | `["<=", ["@", "/size"], 1024]`             |
+| `>`          | `Expr -> Expr -> Bool`        | Greater than                            | `[">", ["@", "/size"], 0]`              |
+| `>=`         | `Expr -> Expr -> Bool`        | Greater than or equal                   | `[">=", ["@", "/size"], 32]`             |
+| `not`        | `Expr -> Bool`               | Negation                                | `["not", ["<=", ["@", "size"], 128]`     |
+| `some`        | `Expr -> Expr -> Bool` | Collection predicate                    | `["some", ["@", "/to"] ["==", ["@"], "hi@fission.codes"]]`     |
+| `every`        | `Expr -> Expr -> Bool` | Collection predicate                    | ["every", ["@", "/to"] ["==", ["@"], "hi@fission.codes"]]     |
+| `match`    | `Expr -> Expr -> Bool`    | String wildcard                         | `["match", ["@", "/to"], "*@foo.com"]` |
 
 ## Examples
 
