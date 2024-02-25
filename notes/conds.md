@@ -55,10 +55,10 @@ Here's a sketch that shows the features
   "iss": "did:key:alice",
   // ...
   "policy": [
-     ["$args", "foo..bar.[].baz", "?x"],
+     ["$ARGS", "foo..bar.[].baz", "?x"],
      [["some", "match"], "?x", "*@example.com"],
       
-     ["$args", "foo.quux", "?y"],
+     ["$ARGS", "foo.quux", "?y"],
      ["?y", ">", 42],
      ["?x", "<", "?y"]
   ]
@@ -69,7 +69,8 @@ Of note:
 
 * Selector syntax based on JSONPath / JSON Poiniter / jQ
   * `"foo..bar.[].baz"` ~ `foo.{*recursive descent*}.bar.{ALL}.baz`
-* `var` is like `fresh` in minikanren: introduces logic variables
+* Variables look like `"?x"` for user defined, and `"$y"` for system/kernel
+  * If you have a string that matches these, you have to escape them
   * these give the ability to run predicate logic in the middle of a sector
   * `[[<node>, <path>, "?x"], [<pred>, "?x", <expr>]`
 * Declarative matching from `args` onwards
