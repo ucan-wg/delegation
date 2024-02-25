@@ -54,7 +54,6 @@ Here's a sketch that shows the features
 {
   "iss": "did:key:alice",
   // ...
-  "var": ["?x", "?y"], // The `?`s here is just by convention
   "policy": [
      ["$", "foo..bar.[].baz", "?x"],
      [["some", "match"], "?x", "*@example.com"],
