@@ -55,10 +55,10 @@ Here's a sketch that shows the features
   "iss": "did:key:alice",
   // ...
   "policy": [
-     ["$", "foo..bar.[].baz", "?x"],
+     ["$args", "foo..bar.[].baz", "?x"],
      [["some", "match"], "?x", "*@example.com"],
       
-     ["$", "foo.quux", "?y"],
+     ["$args", "foo.quux", "?y"],
      ["?y", ">", 42],
      ["?x", "<", "?y"]
   ]
