@@ -57,12 +57,12 @@ Here's a sketch that shows the features
   // ...
   "policy": [
      ["some", "?x"],
-     ["$args", "foo..bar.[].baz", "?x"],
+     [".foo..bar.[].baz", "$", "?x"],
      ["match", "?x", "*@example.com"],
       
-     ["$args", "foo.quux", "?y"],
-     ["?y", ">", 42],
-     ["?x", "<", "?y"]
+     [".foo.quux", "$", "?y"],
+     [">", "?y", 42],
+     ["<", "?x", "?y"]
   ]
 }
 ```
