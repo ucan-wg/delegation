@@ -1,6 +1,6 @@
 # delegation clause
 
-In 0.x verison of UCANs has an open-ended `nb` field that most users use to constraints delegated capabilities. Open ended nature makes interop very difficult as how to interpert those constraints are not covered by spec. In 1.0 we would like to define standard but extensible constarints language so that implementations can interop unless user space extensions are utilized. By allowing user space extensions of the constraint language we also allow user space to innovate at the cost of interop.
+In 0.x verison of UCANs has an open-ended `nb` field that most users use to constraints delegated capabilities. Open ended nature makes interop very difficult as how to interpert those constraints are not covered by spec. In 1.0 we would like to define standard but extensible constraints language so that implementations can interop unless user space extensions are utilized. By allowing user space extensions of the constraint language we also allow user space to innovate at the cost of interop.
 
 <!--
 ## s-expression based language
