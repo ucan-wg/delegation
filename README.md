@@ -231,13 +231,29 @@ For example, consider the following:
   </tr>
 
   <tr>
-    <td>`.title`</td>
-    <td>`"Meeting Confirmation"`</td>
+    <td>
+
+      `.title`
+
+    </td>
+    <td>
+
+      `"Meeting Confirmation"`
+      
+    </td>
   </tr>
   
   <tr>
-    <td>`.to[1]`</td>
-    <td>`"carol@elsewhere.example.com"`</td>
+    <td>
+    
+      `.to[1]`
+    
+    </td>
+    <td>
+    
+      `"carol@elsewhere.example.com"
+    
+    `</td>
   </tr>
 </table>
 
