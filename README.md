@@ -194,8 +194,7 @@ For example, consider the following `args` from an `Invocation`:
     "cc": ["fraud@example.com"],
     "title": "Meeting Confirmation",
     "body": "I'll see you on Tuesday"
-  },
-  // ...
+  }
 }
 ```
 
@@ -279,6 +278,7 @@ NOTE: You cannot add _any_ indentation to this table if you want
 <td>
 
 ``` json
+// FIXME double check with implementation
 null
 ```
 
@@ -289,31 +289,158 @@ null
 
 ### Validation
 
-## Examples
+Validation 
+
+Being tree structured, evaluation MAY proceed in any order. Here is one step-by-step example:
+
+<details>
+<summary>Example Context</summary>
 
 ``` js
-// Delegation
-{
-  "cmd": "/msg/send",
-  "pol": [
-    ["==", ".from", "alice@example.com"
-    ["==", ".title", "Coffee"]
-  ],
-  // ...
-}
-
-// Valid invocation
-{
+{ // Invocation
   "cmd": "/msg/send",
   "args": {
-    "from": "alice@example.com", // Matches above
+    "from": "alice@example.com",
     "to": ["bob@example.com", "carol@elsewhere.example.com"],
     "title": "Coffee",
-    "body": "Still on for coffee" // Matches above
+    "body": "Still on for coffee"
   },
   // ...
 }
+
+{ // Delegation
+  "cmd": "/msg",
+  "pol": [
+    ["==", ".from", "alice@example.com"],
+    ["some", ".to", ["match", ".", "*@example.com"]]
+  ],
+  // ...
+}
 ```
+
+</details>
+
+<details>
+<summary>Code Example</summary>
+
+``` js
+// Extract policy
+[
+  ["==", ".from", "alice@example.com"],
+  ["some", ".to", ["match", ".", "*@example.com"]]
+]
+
+// Resolve selectors
+[
+  ["==", "alice@example.com", "alice@example.com"],
+  ["some", ["bob@example.com", "carol@elsewhere.example.com"], ["match", ".", "*@example.com"]]
+]
+
+// Expand quantifier
+[
+  ["==", "alice@example.com", "alice@example.com"],
+  ["or", [
+    ["match", "bob@example.com", "*@example.com"]
+    ["match", "carol@elsewhere.example.com", "*@example.com"]]]
+]
+
+// Evaluate first clause
+[
+  true,
+  ["or", [
+    ["match", "bob@example.com", "*@example.com"]
+    ["match", "carol@elsewhere.example.com", "*@example.com"]]]
+]
+
+// Evaluate second clause's children
+[
+  true,
+  ["or", [true, false]]
+]
+
+// Evaluate second clause
+[true, true]
+
+// Implicit top-level `and`
+true
+```
+
+</details>
+
+<details>
+
+<summary>Graphical Example</summary>
+
+``` mermaid
+flowchart BT
+    policy
+    eq["=="] --> policy
+    from[".from"] --> eq
+    alice["alice@example.com"] --> eq
+
+    some --> policy
+    to[".to"] --> some
+    match --> some
+    this["."] --> match
+    pattern["*@example.com"] --> match
+```
+
+``` mermaid
+flowchart BT
+    policy
+    eq["=="] --> policy
+    from["alice@example.com"] --> eq
+    alice["alice@example.com"] --> eq
+
+    some --> policy
+    to["[]"] --> some
+    bob["bob@example.com"] --> to
+    carol["carol@not.example.com"] --> to
+    match --> some
+    this["."] --> match
+    pattern["*@example.com"] --> match
+```
+
+``` mermaid
+flowchart BT
+    policy
+    eq["=="] --> policy
+    from["alice@example.com"] --> eq
+    alice["alice@example.com"] --> eq
+
+    or --> policy
+    match_bob --> or
+    bob["bob@example.com"] --> match_bob
+    bob_pattern["*@example.com"] --> match_bob
+
+    match_carol --> or
+    carol["carol@not.example.com"] --> match_carol
+    carol_pattern["*@example.com"] --> match_carol
+```
+
+``` mermaid
+flowchart BT
+    policy
+    alice["true"] --> policy
+
+    or --> policy
+    match_bob["true"] --> or
+    match_carol["false"] --> or
+```
+
+``` mermaid
+flowchart BT
+    policy
+    alice["true"] --> policy
+    or["true"] --> policy
+```
+
+``` mermaid
+flowchart BT
+    true
+```
+
+</details>
 
 Any arguments MUST be taken verbatim and MUST NOT be further adjusted. For more flexible validation of Arguments, use [Conditions].
 
