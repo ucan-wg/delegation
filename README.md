@@ -2,21 +2,18 @@
 
 ## Editors
 
-- [Brooklyn Zelenka], [Fission]
+- [Brooklyn Zelenka], [Witchcraft Software]
 
 ## Authors
 
-- [Brooklyn Zelenka], [Fission]
+- [Brooklyn Zelenka], [Witchcraft Software]
 - [Daniel Holmgren], [Bluesky]
 - [Irakli Gozalishvili], [Protocol Labs]
-- [Philipp Krüger], [Fission]
+- [Philipp Krüger], [number zero]
 
 ## Dependencies
 
-- [DID]
-- [IPLD]
 - [UCAN]
-- [Varsig]
 
 ## Language
 
@@ -24,78 +21,20 @@ The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "S
 
 # Abstract
 
-This specification describes the semantics and serialization format for [UCAN] delegation between principals. UCAN Delegation provides a cryptographically verifiable container, batched capabilities, hierarchical authority, and extensible conditions.
-  
+This specification describes the representation and semantics for delegating attenuated authority between principals. UCAN Delegation provides a cryptographically verifiable container, batched capabilities, hierarchical authority, and a minimal syntatically-driven policy langauge.
+
 # Introduction
 
-UCAN Delegation is a certificate capability system with runtime-extensibility, ad hoc conditions, cacheability, and focused on ease of use and interoperability. Delegations act as a proofs for [UCAN Invocation]s.
+UCAN Delegation is a delegable certificate capability system with runtime-extensibility, ad hoc conditions, cacheability, and focused on ease of use and interoperability. Delegations act as a proofs for [UCAN Invocation]s.
 
-Delegation provides a way to "transfer authority without transferring cryptographic keys". As an authorization system, it is more interested in "what can be done?" than a list of "who can do what?". For more on how Delegation fits into UCAN, please refer to the [high level spec][UCAN].
+Delegation provides a way to "transfer authority without transferring cryptographic keys". As an authorization system, it is more interested in "what can be done" than a list of "who can do what". For more on how Delegation fits into UCAN, please refer to the [high level spec][UCAN].
 
-# Delegation (Envelope)
+# [UCAN Envelope] Configuration
 
-Delegations MUST include a signature that validates against the `iss` DID. A Delegation Payload on its own MUST NOT be considered a valid Delegation.
+## Type Tag
 
-``` mermaid
-flowchart TD
-    subgraph Delegation
-        SignatureBytes["Signature (raw bytes)"]
-      
-        subgraph SigPayload ["Signature Payload"]
-            VarsigHeader["Varsig Header"]
-
-            subgraph DelegationPayload ["Delegation Payload"]
-                iss
-                sub
-                can
-                args
-                prf
-                etc["..."]
-            end
-        end
-    end
-```
-
-``` js
-{
-  "s": {"/": {"bytes": "7aEDQLYvb3lygk9yvAbk0OZD0q+iF9c3+wpZC4YlFThkiNShcVriobPFr/wl3akjM18VvIv/Zw2LtA4uUmB5m8PWEAU"}}
-  "p": {
-    "h": {"/": {"bytes": "NBIFEgEAcQ"}},
-    "ucan/d/1.0.0-rc.1": {
-      "iss": "did:plc:ewvi7nxzyoun6zhxrhs64oiz",
-      "sub": "did:key:z6MkrZ1r5XBFZjBU34qyD8fueMbMRkKw17BZaq2ivKFjnz2z",
-      "can": "crud/create",
-      "args": {
-        "uri": "https://example.com/blog/posts",
-        "headers": {
-          "content-type": "application/json"
-        },
-        "payload": {
-          "title": "UCAN for Fun an Profit",
-          "body": "UCAN is great!",
-          "topics": ["authz", "journal"],
-          "draft": true
-        }
-      },
-      "nonce": {"/": {"bytes": "TWFueSBopvcs"}},
-      "exp": 1697409438
-    }
-  }
-}
-```
-
-| Field | Type               | Required | Description                                           |
-|-------|--------------------|----------|-------------------------------------------------------|
-| `s`   | `Signature`        | Yes      | A signature by the Payload's `iss` over the `p` field |
-| `p`   | `SignaturePayload` | Yes      | The content that was signed                           |
-
-## Signature Payload
-
-| Field               | Type                | Required | Description              |
-|---------------------|---------------------|----------|--------------------------|
-| `h`                 | `VarsigHeader`      | Yes      | The Varsig header        |
-| `ucan/d/1.0.0-rc.1` | `InvocationPayload` | Yes      | The [Invocation Payload] |
-
+The UCAN envelope tag for UCAN Delegation MUST be set to `ucan/dlg@1.0.0-rc.1`.
+ 
 ## Delegation Payload
 
 The Delegation payload MUST describe the authorization claims, who is involved, and its validity period.
@@ -105,126 +44,13 @@ The Delegation payload MUST describe the authorization claims, who is involved, 
 | `iss`   | `DID`                             | Yes      | Issuer DID (sender)                                         |
 | `aud`   | `DID`                             | Yes      | Audience DID (receiver)                                     |
 | `sub`   | `DID`                             | Yes      | Principal that the chain is about (the [Subject])           |
-| `can`   | `String`                          | Yes      | The [Command] to eventually invoke                          |
+| `cmd`   | `String`                          | Yes      | The [Command] to eventually invoke                          |
 | `args`  | `{String : Any}`                  | Yes      | Any [Arguments] that MUST be present in the Invocation      |
 | `nonce` | `Bytes`                           | Yes      | Nonce                                                       |
-| `cond`  | `[Condition]`                     | Yes      | Any additional [Condition]s                                 |
+| `pol`   | `[Policy]`                        | Yes      | [Policies][Policy]                                          |
+| `meta`  | `{String : Any}`                  | No       | [Meta] (asserted, signed data) — is not delegated authority |
 | `nbf`   | `Integer` (53-bits[^js-num-size]) | No       | "Not before" UTC Unix Timestamp in seconds (valid from)     |
 | `exp`   | `Integer` (53-bits[^js-num-size]) | Yes      | Expiration UTC Unix Timestamp in seconds (valid until)      |
-| `meta`  | `{String : Any}`                  | No       | [Meta] (asserted, signed data) — is not delegated authority |
-
-The payload MUST be serialized as [IPLD] and [signed over][Envelope]. The RECOMMENDED IPLD codec is [DAG-CBOR].
-
-## Principals
-
-The `iss` and `aud` fields describe the token's principals. They are distinguished by having DIDs. These can be conceptualized as the sender and receiver of a postal letter. The token MUST be signed with the private key associated with the DID in the `iss` field. Implementations MUST include the [`did:key`] method, and MAY be augmented with [additional DID methods][DID].
-
-The `iss` and `aud` fields MUST contain a single principal each.
-
-If an issuer's DID has multiple or mutable keys (e.g. [`did:plc`], [`did:web`]), the key used to sign the UCAN MUST be made explicit, using the [DID fragment] (the hash index) in the `iss` field. The `aud` field SHOULD NOT include a hash field, as this defeats the purpose of delegating to an identifier for multiple keys instead of an identity.
- 
-[EdDSA] `did:key`s MUST be supported, and their use is RECOMMENDED. [RSA][did:key RSA] and [P-256 ECDSA][did:key ECDSA] `did:key`s MUST be supported, but SHOULD NOT be used when other options are available.
-
-Note that every [Subject] MUST correspond to a root delegation issuer.
-
-Below are a couple examples:
-
-```json
-"aud": "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp",
-"iss": "did:key:zDnaerDaTF5BXEavCrfRZEk316dpbLsfPDZ3WJ5hRTPFU2169",
-```
-
-```json
-"aud": "did:web:example.com",
-"iss": "did:pkh:eth:0xb9c5714089478a327f09197987f16f9e5d936e8a",
-```
-
-```json
-"aud": "did:plc:ewvi7nxzyoun6zhxrhs64oiz",
-"iss": "did:web:example.com",
-```
-
-```json
-"aud": "did:pkh:eth:0xb9c5714089478a327f09197987f16f9e5d936e8a",
-"iss": "did:plc:ewvi7nxzyoun6zhxrhs64oiz",
-```
-
-## Time Bounds
-
-`nbf` and `exp` stand for "not before" and "expires at," respectively. These MUST be expressed as seconds since the Unix epoch in UTC, without time zone or other offset. Taken together, they represent the time bounds for a token. These timestamps MUST be represented as the number of integer seconds since the Unix epoch. Due to limitations[^js-num-size] in numerics for certain common languages, timestamps outside of the range from $-2^{53} – 1$ to $2^{53} – 1$ MUST be rejected as invalid.
-
-The `nbf` field is OPTIONAL. When omitted, the token MUST be treated as valid beginning from the Unix epoch. Setting the `nbf` field to a time in the future MUST delay invoking a UCAN. For example, pre-provisioning access to conference materials ahead of time but not allowing access until the day it starts is achievable with judicious use of `nbf`.
-
-The `exp` field MUST be set. Following the [principle of least authority][PoLA], it is RECOMMENDED to give a timestamp expiry for UCANs. If the token explicitly never expires, the `exp` field MUST be set to `null`. If the time is in the past at validation time, the token MUST be treated as expired and invalid.
-
-Keeping the window of validity as short as possible is RECOMMENDED. Limiting the time range can mitigate the risk of a malicious user abusing a UCAN. However, this is situationally dependent. It may be desirable to limit the frequency of forced reauthorizations for trusted devices. Due to clock drift, time bounds SHOULD NOT be considered exact. A buffer of ±60 seconds is RECOMMENDED.
-
-Several named points of time in the UCAN lifecycle can be found in the [high level spec][UCAN].
-
-Below are a couple examples:
-
-```js
-{
-  // ...
-  "nbf": 1529496683,
-  "exp": 1575606941
-}
-```
-
-```js
-{
-  // ...
-  "exp": 1575606941
-}
-```
-
-```js
-{
-  // ...
-  "nbf": 1529496683,
-  "exp": null
-}
-```
-
-## Nonce
-
-The REQUIRED nonce parameter `nonce` MAY be any value. A randomly generated string is RECOMMENDED to provide a unique UCAN, though it MAY also be a monotonically increasing count of the number of links in the hash chain. This field helps prevent replay attacks and ensures a unique CID per delegation. The `iss`, `aud`, and `exp` fields together will often ensure that UCANs are unique, but adding the nonce ensures uniqueness.
-
-The recommended size of the nonce differs by key type. In many cases, a random 12-byte nonce is sufficient. If uncertain, check the nonce in your DID's crypto suite.
-
-This field SHOULD NOT be used to sign arbitrary data, such as signature challenges. See the [`mta`][Meta] field for more.
-
-Here is a simple example.
-
-``` js
-{
-  // ...
-  "nonce": {"/": {"bytes": "bGlnaHQgd29yay4"}}
-}
-```
-
-## Meta
-
-The OPTIONAL `mta` field contains a map of arbitrary metadata, facts, and proofs of knowledge. The enclosed data MUST be self-evident and externally verifiable. It MAY include information such as hash preimages, server challenges, a Merkle proof, dictionary data, etc.
-
-The data contained in this map MUST NOT be semantically meaningful to delegation chains.
-
-Below is an example:
-
-``` js
-{
-  // ...
-  "meta": {
-    "challenges": {
-      "example.com": "abcdef",
-      "another.example.net": "12345"
-    },
-    "sha3_256": {
-      "B94D27B9934D3E08A52E52D7DA7DABFAC484EFE37A5380EE9088F7ACE2EFCDE9": "hello world"
-    }
-  }
-}
-```
 
 # Capability
 
@@ -233,9 +59,8 @@ Capabilities are the semantically-relevant claims of a delegation. They MUST be 
 | Field  | Type               | Required | Description                                                                                             |
 |--------|--------------------|----------|---------------------------------------------------------------------------------------------------------|
 | `sub`  | `URI`              | Yes      | The [Subject] that this Capability is about                                                             |
-| `can`  | `Command`          | Yes      | The [Command] of this Capability                                                                        |
-| `args` | `{String : Any}`   | Yes      | Any arguments that MUST be present _verbatim_ in the [Invocation]                                       |
-| `cond` | `[{String : Any}]` | Yes      | Any additional conditions, such as regex matchers, contextual information (e.g. day of week), and so on |
+| `cmd`  | `Command`          | Yes      | The [Command] of this Capability                                                                        |
+| `pol`  | `[Policy]`         | Yes      | Additional constraints on eventual Invocation arguments, expressed in the [UCAN Policy Language]        |
 
 Here is an illustrative example:
 
@@ -243,23 +68,14 @@ Here is an illustrative example:
 {
   // ...
   "sub": "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp"
-  "can": "blog/post/create",
-  "args": {
-    "tags": ["weekend", "news"],
-    "status": "draft",
-  },
-  "cond": [
-    {
-      "day": "friday"
-    },
-    {
-      "field": "title",
-      "match": "/^From the newsroom:/"
-    },
-    {
-      "field": "body",
-      "max-chars": 2000
-    }
+  "cmd": "/blog/post/create",
+  "pol": [
+    ["==", ".status", "draft"],
+    ["every", ".reviewer", ["match", ".", "*@example.com"]],
+    ["some", ".tags", 
+      ["or",
+        ["==", ".", "news"], 
+        ["==", ".", "press"]]]
   ]
 }
 ```
@@ -286,8 +102,7 @@ By default, the Resource of a capability is the Subject. This makes the delegati
 ``` js
 {
   "sub": "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp", // Subject & Resource
-  "can": "crud/update",
-  "args": {"status": "draft"}
+  "cmd": "/crud/update",
   // ...
 }
 ```
@@ -297,107 +112,84 @@ In the case where access to an [external resource] is delegated, the Subject MUS
 ``` js
 {
   "sub": "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp",
-  "can": "crud/create",
-  "args":{
-    "uri": "https://example.com/blog/", // Resource
-    "status": "draft"
-  },
+  "cmd": "/crud/create",
+  "pol": [
+    ["==", ".uri", "https://example.com/blog/"], // Resource
+    ["==", ".status", "draft"]
+  ],
   // ...
 }
 ```
 
-## Command
+# Policy Language
 
-Commands MUST be presented as a case-insensitive string. By convention, Commands SHOULD be namespaced with a slash, such as `msg/send`.
+UCAN Delegation uses a minimal predicate language as a policy language. Policies are syntactically driven, and MUST constrain the `args` field of an eventual [Invocation].
 
-``` js
-{
-  "sub": "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp": {
-  "can": "msg/send",
-  "arg": {
-    "from": "mailto:alice@example.com",
-    "to": "mailto:bob@example.com"
-  },
-  // ...
-}
+The grammar of the UCAN Policy Language is as follows:
+
+## Syntax
+
+``` abnf
+policy      = "[" *condition "]"
+condition   = equality 
+            / inequality 
+            / match
+            / connective 
+            / quantifier
+
+;; STRUCTURAL
+
+connective  = "['not', " policy "]" ; Negation
+            / "['and', " policy "]" ; Conjuction
+            / "['or',  " policy "]" ; Disjunction
+
+quanitifier = "['every', " selector ", " policy "]" ; Universal
+            / "['some', "  selector ", " policy "]" ; Existential
+
+;; COMPARISONS
+
+equality    = "['==', " selector ", " ipld   "]" ; Strict equality 
+inequality  = "['>', "  selector ", " number "]" ; Greater-than
+            / "['>=', " selector ", " number "]" ; Greater-than-or-equal-to
+            / "['<',  " selector ", " number "]" ; Lesser-than
+            / "['<=', " selector ", " number "]" ; Lesser-than-or-equal-to
+
+match       = "['match', " selector ", " pattern "]"
+
+;; LITERALS
+
+selector    = "."         ; "This"
+            / *(".") *subselector ; Lens
+
+subselector = "." 1*utf8       ; Dotted field selector
+            / "['" string "']" ; Explicit field selector
+            / "["  integer "]" ; Index selector
+
+pattern     = utf8
+number      = integer / float
 ```
 
-Abilities MAY be organized in a hierarchy that abstract over many [Command]s. A typical example is a superuser capability ("anything") on a file system. Another is mutation vs read access, such that in an HTTP context, `write` implies `put`, `patch`, `delete`, and so on. [`*` gives full access][Wildcard Ability] to a Resource more in the vein of object capabilities. Organizing abilities this way allows Resources to evolve over time in a backward-compatible manner, avoiding the need to reissue UCANs with new resource semantics.
+## Semantics
 
-### Reserved Commands
 
-#### `ucan/` Namespace
 
-The `ucan/` ability namespace MUST be reserved. This MUST include any ability string matching the regex `/^ucan\/.*/`. This is important for keeping a space for community-blessed Commands in the future, such as standard library Commands, such as [Revocation].
 
-#### `*` AKA "Wildcard"
 
-_"Wildcard" (`*`) is the most powerful ability, and as such it SHOULD be handled with care and used sparingly._
-
-The "wildcard" (or "any", or "top") ability MUST be denoted `*`. This can be thought of as something akin to a super user permission in RBAC. 
-
-The wildcard ability grants access to all other capabilities for the specified resource, across all possible namespaces. The wildcard ability is useful when "linking" agents by delegating all access to another device controlled by the same user, and that should behave as the same agent. It is extremely powerful, and should be used with care. Among other things, it permits the delegate to update a Subject's mutable DID document (change their private keys), revoke UCAN delegations, and use any resources delegated to the Subject by others.
-
-``` mermaid
-%%{ init: { 'flowchart': { 'curve': 'linear' } } }%%
-
-flowchart BT
-  *
-
-  msg/* --> *
-  subgraph msgGraph [ ]
-    msg/send --> msg/*
-    msg/receive --> msg/*
-  end
-
-  crud/* --> *
-  subgraph crudGraph [ ]
-    crud/read --> crud/*
-    crud/mutate --> crud/*
-
-    subgraph mutationGraph [ ]
-        crud/create --> crud/mutate
-        crud/update --> crud/mutate
-        crud/destroy --> crud/mutate
-    end
-  end
-
-  ... --> *
-```
-
-Conceptually it has this shape:
-
-``` ts
-{
-  "can": "*",
-  "args": {
-    "can": string, // Some other command
-    "args": {[string]: any} // That commad's arguments
-  },
-  // ...
-}
-```
-
-Since the nesting is fully redundant and infinitely nestable, it is instead used only in proof chains, and SHOULD NOT be invoked directly.
-
-## Arguments
-
-The `args` field MAY contain partially applied Arguments for the shape of data specified by the [Command]. For example, below is an example that constrains sending email from a particular address:
 
 ``` js
 // Delegation
 {
-  "can": "msg/send",
-  "args": {
-    "from": "alice@example.com",
-    "title": "Coffee"
-  },
+  "cmd": "/msg/send",
+  "pol": [
+    ["==", ".from", "alice@example.com"
+    ["==", ".title", "Coffee"]
+  ],
   // ...
 }
 
 // Valid invocation
 {
-  "do": "msg/send",
+  "cmd": "/msg/send",
   "args": {
     "from": "alice@example.com", // Matches above
     "to": ["bob@example.com", "carol@elsewhere.example.com"],
@@ -415,20 +207,32 @@ Note that this also applies to arrays and objects. For example, the `to` array i
 ``` js
 // Delegation
 {
-  "can": "msg/send",
+  "cmd": "/msg/send",
+  "pol": [
+    ["==", ".from", "alice@example.com"],
+    ["some", ".to", ["match", ".", "*@example.com"]]
+  ]
+  // ...
+}
+
+// VALID Invocation
+{
+  "cmd": "/msg/send",
   "args": {
     "from": "alice@example.com",
-    "to": ["bob@example.com"],
+    "to": ["bob@example.com", "carol@elsewhere.example.com"],
+    "title": "Coffee",
+    "body": "Still on for coffee"
   },
   // ...
 }
 
 // INVALID Invocation
 {
-  "do": "msg/send",
+  "cmd": "/msg/send",
   "args": {
-    "from": "alice@example.com", // Matches above
-    "to": ["bob@example.com", "carol@elsewhere.example.com"], // Does not match exactly
+    "from": "alice@example.com",
+    "to": ["carol@elsewhere.example.com"], // Missing `*@example.com`
     "title": "Coffee",
     "body": "Still on for coffee"
   },
@@ -440,6 +244,7 @@ The intended logic is expressible with [Conditions].
 
 ## Conditions
 
+// FIXME
 The `cond` field MUST contain any additional conditions. This concept is sometimes called a "caveat". Conditions constrain the capability in two ways:
 
 - Syntactic constraints on [Arguments] (length, regex, inclusion)
@@ -451,18 +256,16 @@ Condition semantics MUST be established by the Subject. They are openly extensib
 // Delegation
 {
   "sub": "did:web:example.com",
-  "can": "msg/send",
+  "cmd": "msg/send",
   "args": {
     "from": "alice@example.com"
   }
-  "cond": [
-     {                               // ┐
-       "day": "monday",              // ├─ Condition
-     },                              // ┘
-     {                               // ┐
-       "field": "to",                // ├─ Condition
-       "includes": "bob@example.com" // │
-     }                               // ┘
+  "pol": ["or",
+    // no recipient can have a `@gmail.com` email address
+    ["every", ".to", ["not", ["match", ".", "*@competitor.example.com"]]],
+
+    // or at least one `bcc` field must include @ourteam.example.com
+    ["some", ".bcc", ["match", ".", "*@ourteam.example.com"]]
   ],
   // ...
 }
@@ -528,10 +331,6 @@ Expressing Conditions in this standard way simplifies ad hoc extension at delega
   }
 ]
 ```
-
-### The True Condition
-
-The "true condition" MUST (vacuously) represent the lack of Conditions: it is equivalent to `true` in predicate terms. It SHOULD be expressed simply by not including a Condition, but MAY be expressed as `{}`.
 
 # Validation
 
@@ -640,20 +439,11 @@ A good litmus test for invocation validity by a invoking agent is to check if th
 
 ## Condition Attenuation
 
+FIXME
+
 The Condition array MAY be empty (which is equivalent to saying "with no other conditions"). Delegations MUST otherwise only append more Conditions, and recapitulate the existing ones verbatim. Here are some abstract examples:
 
-| Proof Conditions     | Delegated Conditions | Is Valid? | Comment                                                    |
-|----------------------|----------------------|-----------|------------------------------------------------------------|
-| `[]`                 | `[]`                 | Yes       | Equal                                                      |
-| `[]`                 | `[{}]`               | Yes       | [True Condition]                                           |
-| `[{}]`               | `[]`                 | Yes       | [True Condition]                                           |
-| `[{}]`               | `[{}]`               | Yes       | Equal                                                      |
-| `[{a: 1}]`           | `[{a: 1}]`           | Yes       | Equal                                                      |
-| `[]`                 | `[{a: 1}]`           | Yes       | Adds a Condition                                           |
-| `[{a: 1}]`           | `[{a: 1}, {a: 2}]`   | Yes       | Adds new Condition                                         |
-| `[{a: 1}]`           | `[{}]`               | No        | Escalation by removing a Condition                         |
-| `[{a: 1}], [{b: 2}]` | `[{a: 1, b: 2}]`     | No        | Removes previous Conditions (despite having the same keys) |
-| `[{a: 1}]`           | `[{b: 2}]`           | No        | Removes original Condition                                 |
+FIXME
 
 Conditions MAY be presented in any order, but merely appending to the array is RECOMMENDED.
 
@@ -694,13 +484,12 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 <!-- Internal Links -->
 
 [Ability]: #ability
-[Conditions]: #conditions
 [Envelope]: #delegation-envelope
 [Meta]: #meta
 [Payload]: #delegation-payload
 [Subject]: #subject
-[True Condition]: #the-true-condition
-[Wildcard Ability]: #-aka-wildcard
+[Policy]: #policy-language
+[Policy Language]: #policy-language
  
 <!-- External Links -->
 
@@ -753,6 +542,7 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [UCAN]: https://github.com/ucan-wg/spec
 [Varsig]: https://github.com/ChainAgnostic/varsig
 [W3C]: https://www.w3.org/
+[Witchcraft Software]: https://github.com/expede
 [ZCAP-LD]: https://w3c-ccg.github.io/zcap-spec/
 [`did:key`]: https://w3c-ccg.github.io/did-method-key/
 [`did:plc`]: https://github.com/did-method-plc/did-method-plc
@@ -763,5 +553,7 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [did:key EdDSA]: https://w3c-ccg.github.io/did-method-key/#ed25519-x25519
 [did:key RSA]: https://w3c-ccg.github.io/did-method-key/#rsa
 [external resource]: https://github.com/ucan-wg/spec#55-wrapping-existing-systems
+[number zero]: https://n0.computer/
 [revocation]: https://github.com/ucan-wg/revocation
 [ucan.xyz]: https://ucan.xyz
+[UCAN Envelope]: https://github.com/ucan-wg/spec/blob/high-level/README.md#envelope
