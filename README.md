@@ -210,19 +210,22 @@ For example, consider the following:
   
   <tr>
     <td>
+
       `.`
+
     </td>
+
     <td>
 
-      ```js
-        {
-          "from": "alice@example.com",
-          "to": ["bob@example.com", "carol@elsewhere.example.com"],
-          "cc": ["fraud@example.com"],
-          "title": "Meeting Confirmation",
-          "body": "I'll see you on Tuesday"
-        }
-      ```
+```js
+{
+  "from": "alice@example.com",
+  "to": ["bob@example.com", "carol@elsewhere.example.com"],
+  "cc": ["fraud@example.com"],
+  "title": "Meeting Confirmation",
+  "body": "I'll see you on Tuesday"
+}
+```
 
     </td>
   </tr>
