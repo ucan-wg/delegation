@@ -209,8 +209,11 @@ For example, consider the following:
   </thead>
   
   <tr>
-    <td>`.`</td>
     <td>
+      `.`
+    </td>
+    <td>
+
       ```js
         {
           "from": "alice@example.com",
@@ -220,6 +223,7 @@ For example, consider the following:
           "body": "I'll see you on Tuesday"
         }
       ```
+
     </td>
   </tr>
 
