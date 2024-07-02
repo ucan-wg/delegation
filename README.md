@@ -39,28 +39,27 @@ The UCAN envelope tag for UCAN Delegation MUST be set to `ucan/dlg@1.0.0-rc.1`.
 
 The Delegation payload MUST describe the authorization claims, who is involved, and its validity period.
 
-| Field   | Type                              | Required | Description                                                 |
-|---------|-----------------------------------|----------|-------------------------------------------------------------|
-| `iss`   | `DID`                             | Yes      | Issuer DID (sender)                                         |
-| `aud`   | `DID`                             | Yes      | Audience DID (receiver)                                     |
-| `sub`   | `DID`                             | Yes      | Principal that the chain is about (the [Subject])           |
-| `cmd`   | `String`                          | Yes      | The [Command] to eventually invoke                          |
-| `args`  | `{String : Any}`                  | Yes      | Any [Arguments] that MUST be present in the Invocation      |
-| `nonce` | `Bytes`                           | Yes      | Nonce                                                       |
-| `pol`   | `[Policy]`                        | Yes      | [Policies][Policy]                                          |
-| `meta`  | `{String : Any}`                  | No       | [Meta] (asserted, signed data) — is not delegated authority |
-| `nbf`   | `Integer` (53-bits[^js-num-size]) | No       | "Not before" UTC Unix Timestamp in seconds (valid from)     |
-| `exp`   | `Integer` (53-bits[^js-num-size]) | Yes      | Expiration UTC Unix Timestamp in seconds (valid until)      |
+| Field   | Type                                     | Required | Description                                                 |
+|---------|------------------------------------------|----------|-------------------------------------------------------------|
+| `iss`   | `DID`                                    | Yes      | Issuer DID (sender)                                         |
+| `aud`   | `DID`                                    | Yes      | Audience DID (receiver)                                     |
+| `sub`   | `DID`                                    | Yes      | Principal that the chain is about (the [Subject])           |
+| `cmd`   | `String`                                 | Yes      | The [Command] to eventually invoke                          |
+| `pol`   | `Policy`                                 | Yes      | [Policy]                                                    |
+| `nonce` | `Bytes`                                  | Yes      | Nonce                                                       |
+| `meta`  | `{String : Any}`                         | No       | [Meta] (asserted, signed data) — is not delegated authority |
+| `nbf`   | `Integer` (53-bits[^js-num-size])        | No       | "Not before" UTC Unix Timestamp in seconds (valid from)     |
+| `exp`   | `Integer \| nul` (53-bits[^js-num-size]) | Yes      | Expiration UTC Unix Timestamp in seconds (valid until)      |
 
 # Capability
 
 Capabilities are the semantically-relevant claims of a delegation. They MUST be presented as a map under the `cap` field as a map. This map is REQUIRED but MAY be empty. This MUST take the following form:
 
-| Field  | Type               | Required | Description                                                                                             |
-|--------|--------------------|----------|---------------------------------------------------------------------------------------------------------|
-| `sub`  | `URI`              | Yes      | The [Subject] that this Capability is about                                                             |
-| `cmd`  | `Command`          | Yes      | The [Command] of this Capability                                                                        |
-| `pol`  | `[Policy]`         | Yes      | Additional constraints on eventual Invocation arguments, expressed in the [UCAN Policy Language]        |
+| Field  | Type      | Required | Description                                                                                      |
+|--------|-----------|----------|--------------------------------------------------------------------------------------------------|
+| `sub`  | `DID`     | Yes      | The [Subject] that this Capability is about                                                      |
+| `cmd`  | `Command` | Yes      | The [Command] of this Capability                                                                 |
+| `pol`  | `Policy`  | Yes      | Additional constraints on eventual Invocation arguments, expressed in the [UCAN Policy Language] |
 
 Here is an illustrative example:
 
@@ -71,7 +70,7 @@ Here is an illustrative example:
   "cmd": "/blog/post/create",
   "pol": [
     ["==", ".status", "draft"],
-    ["every", ".reviewer", ["match", ".", "*@example.com"]],
+    ["every", ".reviewer", ["match", ".email", "*@example.com"]],
     ["some", ".tags", 
       ["or",
         ["==", ".", "news"], 
@@ -125,13 +124,15 @@ In the case where access to an [external resource] is delegated, the Subject MUS
 
 UCAN Delegation uses a minimal predicate language as a policy language. Policies are syntactically driven, and MUST constrain the `args` field of an eventual [Invocation].
 
+
 The grammar of the UCAN Policy Language is as follows:
 
 ## Syntax
 
+
 ``` abnf
-policy      = "[" *condition "]"
-condition   = equality 
+policy      = "[" *predicate "]"
+predicate   = equality 
             / inequality 
             / match
             / connective 
@@ -148,33 +149,94 @@ quanitifier = "['every', " selector ", " policy "]" ; Universal
 
 ;; COMPARISONS
 
-equality    = "['==', " selector ", " ipld   "]" ; Strict equality 
-inequality  = "['>', "  selector ", " number "]" ; Greater-than
-            / "['>=', " selector ", " number "]" ; Greater-than-or-equal-to
-            / "['<',  " selector ", " number "]" ; Lesser-than
-            / "['<=', " selector ", " number "]" ; Lesser-than-or-equal-to
+equality    = "['==', " selector ", " ipld   "]" ; Equality on IPLD literals
+inequality  = "['>', "  selector ", " number "]" ; Numeric greater-than
+            / "['>=', " selector ", " number "]" ; Numeric greater-than-or-equal
+            / "['<',  " selector ", " number "]" ; Numeric lesser-than
+            / "['<=', " selector ", " number "]" ; Numeric lesser-than-or-equal
 
-match       = "['match', " selector ", " pattern "]"
+match       = "['match', " selector ", " pattern "]" ; String wildcard matching
 
-;; LITERALS
+;; SELECTORS
 
-selector    = "."         ; "This"
-            / *(".") *subselector ; Lens
+selector    = "."                    ; Identity
+            / *(".") 1*(subselector) ; Nested subselectors
 
 subselector = "." 1*utf8       ; Dotted field selector
             / "['" string "']" ; Explicit field selector
             / "["  integer "]" ; Index selector
 
-pattern     = utf8
+;; SPECIAL LITERALS
+
+pattern     = *utf8
 number      = integer / float
 ```
 
+### Pattern 
+
 ## Semantics
 
+A Policy is always given as an array of predicates. This top-level array is implicitly treated as a logical `and`, where `args` MUST pass validation of every top-level predicate.
 
+Policies are structured as trees. With the exception of subtrees under `some`, `or`, and `not`, every leaf MUST evaluate to `true`. `some`, `or`, and `not` must 
 
+### Selectors
 
+Selector syntax is closely based on a subset of [jq]. They operate on an [Invocation]'s `args` object.
 
+For example, consider the following:
+
+``` js
+// Invocation
+{
+  "args": {
+    "from": "alice@example.com",
+    "to": ["bob@example.com", "carol@elsewhere.example.com"],
+    "cc": ["fraud@example.com"],
+    "title": "Meeting Confirmation",
+    "body": "I'll see you on Tuesday"
+  },
+  // ...
+}
+```
+
+<table>
+  <thead>
+    <tr>
+      <td>Selector</td>
+      <td>Value</td>
+    </tr>
+  </thead>
+  
+  <tr>
+    <td>`.`</td>
+    <td>
+      ```js
+        {
+          "from": "alice@example.com",
+          "to": ["bob@example.com", "carol@elsewhere.example.com"],
+          "cc": ["fraud@example.com"],
+          "title": "Meeting Confirmation",
+          "body": "I'll see you on Tuesday"
+        }
+      ```
+    </td>
+  </tr>
+
+  <tr>
+    <td>`.title`</td>
+    <td>`"Meeting Confirmation"`</td>
+  </tr>
+  
+  <tr>
+    <td>`.to[1]`</td>
+    <td>`"carol@elsewhere.example.com"`</td>
+  </tr>
+</table>
+
+### Validation
+
+## Examples
 
 ``` js
 // Delegation
@@ -538,6 +600,7 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [SPKI/SDSI]: https://datatracker.ietf.org/wg/spki/about/
 [SPKI]: https://theworld.com/~cme/html/spki.html
 [Steven Vandevelde]: https://github.com/icidasset
+[UCAN Envelope]: https://github.com/ucan-wg/spec/blob/high-level/README.md#envelope
 [UCAN Invocation]: https://github.com/ucan-wg/invocation
 [UCAN]: https://github.com/ucan-wg/spec
 [Varsig]: https://github.com/ChainAgnostic/varsig
@@ -553,7 +616,7 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [did:key EdDSA]: https://w3c-ccg.github.io/did-method-key/#ed25519-x25519
 [did:key RSA]: https://w3c-ccg.github.io/did-method-key/#rsa
 [external resource]: https://github.com/ucan-wg/spec#55-wrapping-existing-systems
+[jq]: https://jqlang.github.io/jq/
 [number zero]: https://n0.computer/
 [revocation]: https://github.com/ucan-wg/revocation
 [ucan.xyz]: https://ucan.xyz
-[UCAN Envelope]: https://github.com/ucan-wg/spec/blob/high-level/README.md#envelope
