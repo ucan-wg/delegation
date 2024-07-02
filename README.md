@@ -191,7 +191,7 @@ For example, consider the following:
 {
   "args": {
     "from": "alice@example.com",
-    "to": ["bob@example.com", "carol@elsewhere.example.com"],
+    "to": ["bob@example.com", "carol@not.example.com", "dan@example.com"],
     "cc": ["fraud@example.com"],
     "title": "Meeting Confirmation",
     "body": "I'll see you on Tuesday"
@@ -201,60 +201,114 @@ For example, consider the following:
 ```
 
 <table>
-  <thead>
-    <tr>
-      <td>Selector</td>
-      <td>Value</td>
-    </tr>
-  </thead>
+<!-- 
+NOTE: You cannot add _any_ indentation to this table if you want
+      GitHub to render that big multiline code block correctly 
+-->
+<thead>
+<tr>
+<td>Selector</td>
+<td>Returned Value</td>
+</tr>
+</thead>
   
-  <tr>
-    <td>
+<tbody>
+<tr>
+<td>
 
-      `.`
+``` json
+"."
+```
 
-    </td>
+</td>
+<td>
 
-    <td>
-
-```js
+```json
 {
   "from": "alice@example.com",
-  "to": ["bob@example.com", "carol@elsewhere.example.com"],
+  "to": ["bob@example.com", "carol@not.example.com", "dan@example.com"],
   "cc": ["fraud@example.com"],
   "title": "Meeting Confirmation",
   "body": "I'll see you on Tuesday"
 }
 ```
-
-    </td>
-  </tr>
-
-  <tr>
-    <td>
-
-      `.title`
-
-    </td>
-    <td>
-
-      `"Meeting Confirmation"`
-      
-    </td>
-  </tr>
   
-  <tr>
-    <td>
+</td>
+</tr>
+  
+<tr>
+<td>
+
+``` json
+".title"
+```
+
+</td>
+  
+<td>
+
+``` json
+"Meeting Confirmation"
+```
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+
+``` json
+".cc"
+```
+
+</td>
+  
+<td>
+
+``` json
+["fraud@example.com"]
+```
+
+</td>
+</tr>
     
-      `.to[1]`
-    
-    </td>
-    <td>
-    
-      `"carol@elsewhere.example.com"
-    
-    `</td>
-  </tr>
+<tr>
+<td>
+
+``` json
+".to[1]"
+```
+
+</td>
+<td>
+ 
+
+``` json
+"carol@not.example.com"
+```
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+``` json
+".to[-1]"
+```
+
+</td>
+<td>
+ 
+
+``` json
+"dan@example.com"
+```
+
+</td>
+</tr>
+</tbody>
 </table>
 
 ### Validation
