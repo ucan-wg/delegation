@@ -184,10 +184,9 @@ Policies are structured as trees. With the exception of subtrees under `some`, `
 
 Selector syntax is closely based on a subset of [jq]. They operate on an [Invocation]'s `args` object.
 
-For example, consider the following:
+For example, consider the following `args` from an `Invocation`:
 
-``` js
-// Invocation
+``` json
 {
   "args": {
     "from": "alice@example.com",
@@ -214,13 +213,7 @@ NOTE: You cannot add _any_ indentation to this table if you want
   
 <tbody>
 <tr>
-<td>
-
-``` json
-"."
-```
-
-</td>
+<td><pre>"."</pre></td>
 <td>
 
 ```json
@@ -237,13 +230,7 @@ NOTE: You cannot add _any_ indentation to this table if you want
 </tr>
   
 <tr>
-<td>
-
-``` json
-".title"
-```
-
-</td>
+<td><pre>".title"</pre></td>
   
 <td>
 
@@ -255,15 +242,7 @@ NOTE: You cannot add _any_ indentation to this table if you want
 </tr>
 
 <tr>
-<td>
-
-
-``` json
-".cc"
-```
-
-</td>
-  
+<td><pre>".cc"</pre></td>
 <td>
 
 ``` json
@@ -274,15 +253,8 @@ NOTE: You cannot add _any_ indentation to this table if you want
 </tr>
     
 <tr>
+<td><pre>".to[1]"</pre></td>
 <td>
-
-``` json
-".to[1]"
-```
-
-</td>
-<td>
- 
 
 ``` json
 "carol@not.example.com"
@@ -292,18 +264,22 @@ NOTE: You cannot add _any_ indentation to this table if you want
 </tr>
 
 <tr>
+<td><pre>".to[-1]"</pre></td>
 <td>
-
-``` json
-".to[-1]"
-```
-
-</td>
-<td>
- 
 
 ``` json
 "dan@example.com"
+```
+
+</td>
+</tr>
+
+<tr>
+<td><pre>".to[99]?"</pre></td>
+<td>
+
+``` json
+null
 ```
 
 </td>
