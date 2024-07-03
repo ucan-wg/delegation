@@ -1,4 +1,5 @@
-# UCAN Delegation Specification v1.0.0-rc.1
+# UCAN Delegation Specification
+## Version 1.0.0-rc.1
 
 ## Editors
 
@@ -113,7 +114,7 @@ In the case where access to an [external resource] is delegated, the Subject MUS
   "sub": "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp",
   "cmd": "/crud/create",
   "pol": [
-    ["==", ".uri", "https://example.com/blog/"], // Resource
+    ["==", ".url", "https://example.com/blog/"], // Resource managed by the Subject
     ["==", ".status", "draft"]
   ],
   // ...
@@ -122,17 +123,19 @@ In the case where access to an [external resource] is delegated, the Subject MUS
 
 # Policy Language
 
-UCAN Delegation uses a minimal predicate language as a policy language. Policies are syntactically driven, and MUST constrain the `args` field of an eventual [Invocation].
+UCAN Delegation uses predicate logic statements extended with [jq]-style selectors as a policy language. Policies are syntactically driven, and MUST constrain the `args` field of an eventual [Invocation].
 
+A Policy is always given as an array of predicates. This top-level array is implicitly treated as a logical `and`, where `args` MUST pass validation of every top-level predicate.
 
-The grammar of the UCAN Policy Language is as follows:
+Policies are structured as trees. With the exception of subtrees under `some`, `or`, and `not`, every leaf MUST evaluate to `true`. `some`, `or`, and `not` must 
 
-## Syntax
+A Policy is an array of statements. Every statement MUST take the form `[operator, selector, argument]` except for nergation which MUST take the form `["not", term]`.
 
+Below is a formal syntax for the UCAN Policy Language given in [ABNF] (for DAG-JSON):
 
 ``` abnf
-policy      = "[" *predicate "]"
-predicate   = equality 
+policy      = "[" *1(statement *(", " statement)) "]"
+statement   = equality 
             / inequality 
             / match
             / connective 
@@ -140,15 +143,16 @@ predicate   = equality
 
 ;; STRUCTURAL
 
-connective  = "['not', " policy "]" ; Negation
-            / "['and', " policy "]" ; Conjuction
-            / "['or',  " policy "]" ; Disjunction
+connective  = "['not', " statement "]" ; Negation
+            / "['and', [" statement *(", " statement) "]]" ; Conjuction
+            / "['or',  [" statement *(", " statement) "]]" ; Disjunction
 
 quanitifier = "['every', " selector ", " policy "]" ; Universal
             / "['some', "  selector ", " policy "]" ; Existential
 
 ;; COMPARISONS
 
+// FIXME DQUOTE
 equality    = "['==', " selector ", " ipld   "]" ; Equality on IPLD literals
 inequality  = "['>', "  selector ", " number "]" ; Numeric greater-than
             / "['>=', " selector ", " number "]" ; Numeric greater-than-or-equal
@@ -171,14 +175,123 @@ subselector = "." 1*utf8       ; Dotted field selector
 pattern     = *utf8
 number      = integer / float
 ```
+ 
+### Comparisons
 
-### Pattern 
+| Operator | Argument(s)                   | Example                          |
+|----------|-------------------------------|----------------------------------|
+| `==`     | `Selector, IPLD`              | `["==", ".a", [1, 2, {"b": 3}]]` |
+| `<`      | `Selector, (float | integer)` | `["<",  ".a", 1]`                |
+| `<=`     | `Selector, (float | integer)` | `["<=", ".a", 1]`                |
+| `>`      | `Selector, (float | integer)` | `[">",  ".a", 1]`                |
+| `>=`     | `Selector, (float | integer)` | `[">=", ".a", 1]`                |
 
-## Semantics
+Literal equality (`==`) MUST match the resolved selecor to entire IPLD argument. This is a "deep comparison".
 
-A Policy is always given as an array of predicates. This top-level array is implicitly treated as a logical `and`, where `args` MUST pass validation of every top-level predicate.
+Numeric inequalities MUST be agnostic to numeric type. In other words, the decimal representation is considered equivalent to an integer (`1 == 1.0 == 1.00`). Attempting to compare on a non-number MUST return false and MUST NOT throw an exception.
 
-Policies are structured as trees. With the exception of subtrees under `some`, `or`, and `not`, every leaf MUST evaluate to `true`. `some`, `or`, and `not` must 
+### Glob Matching
+
+| Operator | Argument(s)         | Example                               |
+|----------|---------------------|---------------------------------------|
+| `match`  | `Selector, Pattern` | `["==", ".email", "*@*.example.com"]` |
+
+Glob patterns MUST only include a specicial character: `*` ("wildcard"). There is no single character matcher. `*` literals MUST be escaped (`"\*"`). Attempting to match on a non-string MUST return false and MUST NOT throw an exception.
+
+The wildcard represents zero-or-more characters. The following string literals MUST pass validation for the pattern `"Alice\*, Bob*, Carol.`:
+
+* `"Alice*, Bob, Carol."`
+* `"Alice*, Bob, Dan, Erin, Carol."`
+* `"Alice*, Bob*, Carol."`
+
+The following MUST NOT pass validation for that same pattern:
+
+* `"Alice*, Bob, Carol"` (missing the final `.`)
+* `"Alice*, Bob*, Carol!"` (final `.` MUST NOT be treated as a wildcard)
+* `"Alice, Bob, Carol."` (missing the `*` after `Alice`)
+* `"Alice Cooper, Bob, Carol."` (the `*` after `Alice` is an escaped literal in the pattern)
+* `" Alice*, Bob, Carol. "` (whitespace in the pattern is significant)
+
+### Connectives
+
+Connectives add context to their enclosed statement(s).
+
+| Operator | Argument(s)   | Example                                    |
+|----------|---------------|--------------------------------------------|
+| `not`    | `Statement`   | `["not", [">", ".a", 1]]`                  |
+| `and`    | `[Statement]` | `["and", [[">", ".a", 1], [">", ".b", 2]]` |
+| `or`     | `[Statement]` | `["or",  [[">", ".a", 1], [">", ".b", 2]]` | 
+
+`not` MUST invert the truth value of the inner statement. For example, if `["==", ".a", 1]` were false (`.a` is not 1), then `["not", ["==", ".a", 1]]` would be true.
+
+`and` MUST take an arbitrarily long array of statements, and require that every inner statement be true. An empty array MUST be treated as vacuously true.
+
+`or` MUST take an arbitrarily long array of statements, and require that at least one inner statement be true. An empty array MUST be treated as vacuously true.
+
+### Quantification
+
+When a selector resolves to a collection (an array or map), quantifiers provide a way to extend `and` and `or` to their contents. Attempting to quantify over a non-collection MUST return false and MUST NOT throw an exception.
+
+Quantifying over an array is straightforward: it MUST apply the inner statement to each array value. Quantifying over a map MUST extract the values (discarding the keys), and then MUST proceed onthe values the same as if it were an array.
+
+| Operator | Argument(s)             | Example                          |
+|----------|-------------------------|----------------------------------|
+| `every`  | `Selector, [Statement]` | `["every", ".a" [">", ".b", 1]]` |
+| `some`   | `Selector, [Statement]` | `["some",  ".a" [">", ".b", 1]]` |
+
+`every` extends `and` over collections. `some` extends `or` over collections. For example:
+
+``` js
+const args = {"a": [{"b": 1}, {"b": 2}, {"z": [7, 8, 9]}]}
+const statement = ["every", ".a", [">", ".b", 0]]
+
+// Reduction
+["every", [{"b": 1}, {"b": 2}, {"z": [7, 8, 9]}], [">", ".b", 0]]
+
+["and", [
+  [
+    [">", 1, 0],
+    [">", 2, 0],
+    [">", null, 0]
+  ]
+]
+
+["and",
+  [ 
+    true,
+    true,
+    false // <-
+  ]
+]
+
+false // ❌
+```
+
+``` js
+const args = {"a": [{"b": 1}, {"b": 2}, {"z": [7, 8, 9]}]}
+const statement = ["some", ".a", ["==", ".b", 2]]
+
+// Reduction
+["some", [{"b": 1}, {"b": 2}, {"z": [7, 8, 9]}], ["==", ".b", 2]]
+
+["or", 
+  [
+    ["==", 1, 2],
+    ["==", 2, 2],
+    ["==", null, 2]
+  ]
+]
+
+["or", 
+  [
+    false,
+    true,
+    false
+  ]
+]
+
+true // ✅
+```
 
 ### Selectors
 
@@ -287,21 +400,40 @@ null
 </tbody>
 </table>
 
+### Selector Taxonomy
+
+jq is a much larger language, and includes things like pipes, arithmatic, regexes, assignment, recursive descent, and so on. The UCAN policy language MUST only include the following features:
+
+| Selector Name             | Examples                   | Notes                                                                                           |
+|---------------------------|----------------------------|-------------------------------------------------------------------------------------------------|
+| Identity                  | `.`                        | Take the entire argument                                                                        |
+| Dotted field name         | `.foo`, `.bar0_`           | Shorthand for selecting in a map by key (with exceptions, see below)                            |
+| Unambiguous field name    | `["."]`                    | Select in a map by arbitrary key                                                                |
+| Collection values         | `[]`                       | Expands out all of the children that match the remaining path FIXME double check with the code  |
+| Collection index          | `[0]`, `[42]`              | The element at an index. On a map, this is decided by IPLD's key sort order. FIXME double check |
+| Collection negative index | `[-1]`, `[-42]`            | The element by index from the end. `-1` is the index for the last element.                      |
+| Try                       | `.foo?`, `.?`, `["nope"]?` | Returns `null` on what would otherwise fail                                                     |
+
+Any selection MAY begin and/or end with a single dot. Multiple dots (e.g. `..`, `...`) MUST NOT be used anywhere in a selector.
+
+The try operator is idempotent, and repeated tries (`.foo???`) MUST be allowed.
+
 ### Validation
 
-Validation 
+Validation involves substituting the values from the `args` field into the Policy, and evaluating the predicate. Since Policies are tree structured, selector substitution and predicate evaluation MAY proceed in any order.
 
-Being tree structured, evaluation MAY proceed in any order. Here is one step-by-step example:
+If a selector cannot be resolved (there is no value at that path), 
 
-<details>
-<summary>Example Context</summary>
+#### Example Evaluation
+
+Below is a step-by-step evaluation example:
 
 ``` js
 { // Invocation
   "cmd": "/msg/send",
   "args": {
     "from": "alice@example.com",
-    "to": ["bob@example.com", "carol@elsewhere.example.com"],
+    "to": ["bob@example.com", "carol@not.example.com"],
     "title": "Coffee",
     "body": "Still on for coffee"
   },
@@ -318,129 +450,46 @@ Being tree structured, evaluation MAY proceed in any order. Here is one step-by-
 }
 ```
 
-</details>
-
-<details>
-<summary>Code Example</summary>
-
 ``` js
-// Extract policy
-[
+[ // Extract policy
   ["==", ".from", "alice@example.com"],
   ["some", ".to", ["match", ".", "*@example.com"]]
 ]
 
-// Resolve selectors
-[
+[ // Resolve selectors
   ["==", "alice@example.com", "alice@example.com"],
   ["some", ["bob@example.com", "carol@elsewhere.example.com"], ["match", ".", "*@example.com"]]
 ]
 
-// Expand quantifier
-[
+[ // Expand quantifier
   ["==", "alice@example.com", "alice@example.com"],
   ["or", [
     ["match", "bob@example.com", "*@example.com"]
-    ["match", "carol@elsewhere.example.com", "*@example.com"]]]
+    ["match", "carol@elsewhere.example.com", "*@example.com"]]
+  ]
 ]
 
-// Evaluate first clause
-[
+[ // Evaluate first predicate
   true,
   ["or", [
     ["match", "bob@example.com", "*@example.com"]
     ["match", "carol@elsewhere.example.com", "*@example.com"]]]
 ]
 
-// Evaluate second clause's children
-[
+[ // Evaluate second predicate's children
   true,
   ["or", [true, false]]
 ]
 
-// Evaluate second clause
-[true, true]
 
-// Implicit top-level `and`
+[ // Evaluate second predicate
+  true, 
+  true
+]
+
+// Evaluate top-level `and`
 true
 ```
-
-</details>
-
-<details>
-
-<summary>Graphical Example</summary>
-
-``` mermaid
-flowchart BT
-    policy
-    eq["=="] --> policy
-    from[".from"] --> eq
-    alice["alice@example.com"] --> eq
-
-    some --> policy
-    to[".to"] --> some
-    match --> some
-    this["."] --> match
-    pattern["*@example.com"] --> match
-```
-
-``` mermaid
-flowchart BT
-    policy
-    eq["=="] --> policy
-    from["alice@example.com"] --> eq
-    alice["alice@example.com"] --> eq
-
-    some --> policy
-    to["[]"] --> some
-    bob["bob@example.com"] --> to
-    carol["carol@not.example.com"] --> to
-    match --> some
-    this["."] --> match
-    pattern["*@example.com"] --> match
-```
-
-``` mermaid
-flowchart BT
-    policy
-    eq["=="] --> policy
-    from["alice@example.com"] --> eq
-    alice["alice@example.com"] --> eq
-
-    or --> policy
-    match_bob --> or
-    bob["bob@example.com"] --> match_bob
-    bob_pattern["*@example.com"] --> match_bob
-
-    match_carol --> or
-    carol["carol@not.example.com"] --> match_carol
-    carol_pattern["*@example.com"] --> match_carol
-```
-
-``` mermaid
-flowchart BT
-    policy
-    alice["true"] --> policy
-
-    or --> policy
-    match_bob["true"] --> or
-    match_carol["false"] --> or
-```
-
-``` mermaid
-flowchart BT
-    policy
-    alice["true"] --> policy
-    or["true"] --> policy
-```
-
-``` mermaid
-flowchart BT
-    true
-```
-
-</details>
 
 Any arguments MUST be taken verbatim and MUST NOT be further adjusted. For more flexible validation of Arguments, use [Conditions].
 
@@ -449,7 +498,7 @@ Note that this also applies to arrays and objects. For example, the `to` array i
 ``` js
 // Delegation
 {
-  "cmd": "/msg/send",
+  "cmd": "/email/send",
   "pol": [
     ["==", ".from", "alice@example.com"],
     ["some", ".to", ["match", ".", "*@example.com"]]
@@ -459,7 +508,7 @@ Note that this also applies to arrays and objects. For example, the `to` array i
 
 // VALID Invocation
 {
-  "cmd": "/msg/send",
+  "cmd": "/email/send",
   "args": {
     "from": "alice@example.com",
     "to": ["bob@example.com", "carol@elsewhere.example.com"],
@@ -471,10 +520,10 @@ Note that this also applies to arrays and objects. For example, the `to` array i
 
 // INVALID Invocation
 {
-  "cmd": "/msg/send",
+  "cmd": "/email/send",
   "args": {
     "from": "alice@example.com",
-    "to": ["carol@elsewhere.example.com"], // Missing `*@example.com`
+    "to": ["carol@elsewhere.example.com"], // No match for `*@example.com`
     "title": "Coffee",
     "body": "Still on for coffee"
   },
@@ -527,56 +576,9 @@ Condition semantics MUST be established by the Subject. They are openly extensib
   
 The above Delegation MUST be interpreted as "may send email from `alice@example.com` on Mondays as long as `bob@exmaple.com` is among the recipients"
 
-The `if` field MUST take the following shape: `[{}]`. The array represents a logical `all` (chained `AND`s). To represent logical `OR`, issue another delegation with that attenuation. For instance, the following represents `{a: 1, b:2} AND {c: 3} AND {d: 4}`:
-
-``` js
-[
-  {       // ┐
-    a: 1, // ├─ Confition ─┐
-    b: 2  // │             │
-  },      // ┘             ├─ AND ─┐
-  {       // ┐             │       │
-    c: 3  // ├─ Condition ─┘       │
-  },      // ┘                     ├─ AND
-  {       // ┐                     │
-    d: 4  // ├─ Condition ─────────┘
-  }       // ┘
-]
-```
-
-Expressing Conditions in this standard way simplifies ad hoc extension at delegation time. As a concrete example, below a Condition is added to the constraints on the `to` field.
-
-``` js
-// Original Condition
-[
-  {
-    "field": "to",
-    "includes": "bob@example.com"
-  }
-]
-
-// Attenuated Conditions
-[
-  { // Same as above
-    "field": "to",
-    "includes": "bob@example.com"
-  },
-  { // Also must send to carol@example.com
-    "field": "to",
-    "includes": "carol@example.com"
-  },
-  { // Only send to @example.com addresses
-    "field": "to",
-    "elements": {
-      "match": "/.+@example.com/" 
-    }
-  }
-]
-```
-
 # Validation
 
-Validation of a UCAN chain MAY occur at any time, but MUST occur upon receipt of an [Invocation] prior to execution. While proof chains exist outside of a particular delegation (and are made concrete in [UCAN Invocation]s), each delegate MUST store one or more valid delegations chains for a particular claim.
+Validation of a UCAN chain MAY occur at any time, but MUST occur upon receipt of an [Invocation] _prior to execution_. While proof chains exist outside of a particular delegation (and are made concrete in [UCAN Invocation]s), each delegate MUST store one or more valid delegations chains for a particular claim.
 
 Each capability has its own semantics, which needs to be interpretable by the [Executor]. Therefore, a validator MUST NOT reject all capabilities when one that is not relevant to them is not understood. For example, if a Condition fails a delegation check at execution time, but is not relevant to the invocation, it MUST be ignored.
 
