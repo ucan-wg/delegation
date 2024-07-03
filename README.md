@@ -163,16 +163,18 @@ match       = "['match', " selector ", " pattern "]" ; String wildcard matching
 
 ;; SELECTORS
 
-selector    = "."                    ; Identity
-            / *(".") 1*(subselector) ; Nested subselectors
+selector    = "."             ; Identity
+            / 1*(subselector) ; Nested subselectors
 
-subselector = "." 1*utf8       ; Dotted field selector
-            / "['" string "']" ; Explicit field selector
-            / "["  integer "]" ; Index selector
+subselector = "." CHAR string          ; Dotted field selector
+            / *1(".") "['" string "']" ; Explicit field selector
+            / *1(".") "["  integer "]" ; Index selector
+            / *1(".") "[]"             ; Collection values // FIXME doble check code
+            / *1(".") "?"              ; Try selector
 
 ;; SPECIAL LITERALS
 
-pattern     = *utf8
+pattern     = string ; Reminder: IPLD string are UTF-8
 number      = integer / float
 ```
  
