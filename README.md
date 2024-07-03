@@ -40,17 +40,17 @@ The UCAN envelope tag for UCAN Delegation MUST be set to `ucan/dlg@1.0.0-rc.1`.
 
 The Delegation payload MUST describe the authorization claims, who is involved, and its validity period.
 
-| Field   | Type                                     | Required | Description                                                 |
-|---------|------------------------------------------|----------|-------------------------------------------------------------|
-| `iss`   | `DID`                                    | Yes      | Issuer DID (sender)                                         |
-| `aud`   | `DID`                                    | Yes      | Audience DID (receiver)                                     |
-| `sub`   | `DID`                                    | Yes      | Principal that the chain is about (the [Subject])           |
-| `cmd`   | `String`                                 | Yes      | The [Command] to eventually invoke                          |
-| `pol`   | `Policy`                                 | Yes      | [Policy]                                                    |
-| `nonce` | `Bytes`                                  | Yes      | Nonce                                                       |
-| `meta`  | `{String : Any}`                         | No       | [Meta] (asserted, signed data) — is not delegated authority |
-| `nbf`   | `Integer` (53-bits[^js-num-size])        | No       | "Not before" UTC Unix Timestamp in seconds (valid from)     |
-| `exp`   | `Integer \| nul` (53-bits[^js-num-size]) | Yes      | Expiration UTC Unix Timestamp in seconds (valid until)      |
+| Field   | Type                                      | Required | Description                                                 |
+|---------|-------------------------------------------|----------|-------------------------------------------------------------|
+| `iss`   | `DID`                                     | Yes      | Issuer DID (sender)                                         |
+| `aud`   | `DID`                                     | Yes      | Audience DID (receiver)                                     |
+| `sub`   | `DID`                                     | Yes      | Principal that the chain is about (the [Subject])           |
+| `cmd`   | `String`                                  | Yes      | The [Command] to eventually invoke                          |
+| `pol`   | `Policy`                                  | Yes      | [Policy]                                                    |
+| `nonce` | `Bytes`                                   | Yes      | Nonce                                                       |
+| `meta`  | `{String : Any}`                          | No       | [Meta] (asserted, signed data) — is not delegated authority |
+| `nbf`   | `Integer` (53-bits[^js-num-size])         | No       | "Not before" UTC Unix Timestamp in seconds (valid from)     |
+| `exp`   | `Integer \| null` (53-bits[^js-num-size]) | Yes      | Expiration UTC Unix Timestamp in seconds (valid until)      |
 
 # Capability
 
@@ -88,7 +88,7 @@ For example:
 
 ``` js
 {
-  "sub": "did:web:example.com",
+  "sub": "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp",
   // ...
 }
 ```
@@ -101,8 +101,7 @@ By default, the Resource of a capability is the Subject. This makes the delegati
 
 ``` js
 {
-  "sub": "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp", // Subject & Resource
-  "cmd": "/crud/update",
+  "sub": "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp", // Subject
   // ...
 }
 ```
@@ -115,7 +114,7 @@ In the case where access to an [external resource] is delegated, the Subject MUS
   "cmd": "/crud/create",
   "pol": [
     ["==", ".url", "https://example.com/blog/"], // Resource managed by the Subject
-    ["==", ".status", "draft"]
+    // ...
   ],
   // ...
 }
@@ -134,7 +133,7 @@ A Policy is an array of statements. Every statement MUST take the form `[operato
 Below is a formal syntax for the UCAN Policy Language given in [ABNF] (for DAG-JSON):
 
 ``` abnf
-policy      = "[" *1(statement *(", " statement)) "]"
+policy      = "[" *1(statement *("," statement)) "]"
 statement   = equality 
             / inequality 
             / match
@@ -143,38 +142,36 @@ statement   = equality
 
 ;; STRUCTURAL
 
-connective  = "['not', " statement "]" ; Negation
-            / "['and', [" statement *(", " statement) "]]" ; Conjuction
-            / "['or',  [" statement *(", " statement) "]]" ; Disjunction
+connective  = "[" DQUOTE "not" DQUOTE ","  statement "]"                    ; Negation
+            / "[" DQUOTE "and" DQUOTE ",[" statement *("," statement) "]]" ; Conjuction
+            / "[" DQUOTE "or"  DQUOTE ",[" statement *("," statement) "]]" ; Disjunction
 
-quanitifier = "['every', " selector ", " policy "]" ; Universal
-            / "['some', "  selector ", " policy "]" ; Existential
+quanitifier = "[" DQUOTE "every" DQUOTE "," selector "," policy "]" ; Universal
+            / "[" DQUOTE "some"  DQUOTE "," selector "," policy "]" ; Existential
 
 ;; COMPARISONS
 
-// FIXME DQUOTE
-equality    = "['==', " selector ", " ipld   "]" ; Equality on IPLD literals
-inequality  = "['>', "  selector ", " number "]" ; Numeric greater-than
-            / "['>=', " selector ", " number "]" ; Numeric greater-than-or-equal
-            / "['<',  " selector ", " number "]" ; Numeric lesser-than
-            / "['<=', " selector ", " number "]" ; Numeric lesser-than-or-equal
+equality    = "[" DQUOTE "==" DQUOTE "," selector "," ipld   "]" ; Equality on IPLD literals
+inequality  = "[" DQUOTE ">"  DQUOTE "," selector "," number "]" ; Numeric greater-than
+            / "[" DQUOTE ">=" DQUOTE "," selector "," number "]" ; Numeric greater-than-or-equal
+            / "[" DQUOTE "<"  DQUOTE "," selector "," number "]" ; Numeric lesser-than
+            / "[" DQUOTE "<=" DQUOTE "," selector "," number "]" ; Numeric lesser-than-or-equal
 
-match       = "['match', " selector ", " pattern "]" ; String wildcard matching
+match       = "[" DQUOTE "match" DQUOTE "," selector "," pattern "]" ; String wildcard matching
 
 ;; SELECTORS
 
-selector    = "."             ; Identity
-            / 1*(subselector) ; Nested subselectors
+selector    = DQUOTE "." DQUOTE                     ; Identity
+            / DQUOTE 1*(subselector *1("?")) DQUOTE ; Nested subselectors with optional "try"
 
-subselector = "." CHAR string          ; Dotted field selector
-            / *1(".") "['" string "']" ; Explicit field selector
-            / *1(".") "["  integer "]" ; Index selector
-            / *1(".") "[]"             ; Collection values // FIXME doble check code
-            / *1(".") "?"              ; Try selector
+subselector = "." CHAR string                           ; Dotted field selector
+            / *1(".") "[\" DQUOTE string "\" DQUOTE "]" ; Explicit field selector
+            / *1(".") "[" integer "]"                   ; Index selector
+            / *1(".") "[]"                              ; Collection values // FIXME doble check code
 
 ;; SPECIAL LITERALS
 
-pattern     = string ; Reminder: IPLD string are UTF-8
+pattern     = DQUOTE string DQUOTE ; Reminder: IPLD strings are UTF-8
 number      = integer / float
 ```
  
@@ -183,27 +180,28 @@ number      = integer / float
 | Operator | Argument(s)                   | Example                          |
 |----------|-------------------------------|----------------------------------|
 | `==`     | `Selector, IPLD`              | `["==", ".a", [1, 2, {"b": 3}]]` |
-| `<`      | `Selector, (float | integer)` | `["<",  ".a", 1]`                |
-| `<=`     | `Selector, (float | integer)` | `["<=", ".a", 1]`                |
-| `>`      | `Selector, (float | integer)` | `[">",  ".a", 1]`                |
-| `>=`     | `Selector, (float | integer)` | `[">=", ".a", 1]`                |
+| `<`      | `Selector, (integer | float)` | `["<",  ".a", 1]`                |
+| `<=`     | `Selector, (integer | float)` | `["<=", ".a", 1]`                |
+| `>`      | `Selector, (integer | float)` | `[">",  ".a", 1]`                |
+| `>=`     | `Selector, (integer | float)` | `[">=", ".a", 1]`                |
 
 Literal equality (`==`) MUST match the resolved selecor to entire IPLD argument. This is a "deep comparison".
 
-Numeric inequalities MUST be agnostic to numeric type. In other words, the decimal representation is considered equivalent to an integer (`1 == 1.0 == 1.00`). Attempting to compare on a non-number MUST return false and MUST NOT throw an exception.
+Numeric inequalities MUST be agnostic to numeric type. In other words, the decimal representation is considered equivalent to an integer (`1 == 1.0 == 1.00`). Attempting to compare a non-numeric type MUST return false and MUST NOT throw an exception.
 
 ### Glob Matching
 
-| Operator | Argument(s)         | Example                               |
-|----------|---------------------|---------------------------------------|
-| `match`  | `Selector, Pattern` | `["==", ".email", "*@*.example.com"]` |
+| Operator | Argument(s)         | Example                             |
+|----------|---------------------|-------------------------------------|
+| `match`  | `Selector, Pattern` | `["==", ".email", "*@example.com"]` |
 
-Glob patterns MUST only include a specicial character: `*` ("wildcard"). There is no single character matcher. `*` literals MUST be escaped (`"\*"`). Attempting to match on a non-string MUST return false and MUST NOT throw an exception.
+Glob patterns MUST only include one specicial character: `*` ("wildcard"). There is no single character matcher. As many `*`s as desired MAY be used. Non-wildcard `*`-literals MUST be escaped (`"\*"`). Attempting to match on a non-string MUST return false and MUST NOT throw an exception.
 
 The wildcard represents zero-or-more characters. The following string literals MUST pass validation for the pattern `"Alice\*, Bob*, Carol.`:
 
 * `"Alice*, Bob, Carol."`
 * `"Alice*, Bob, Dan, Erin, Carol."`
+* `"Alice*, Bob  , Carol."`
 * `"Alice*, Bob*, Carol."`
 
 The following MUST NOT pass validation for that same pattern:
@@ -293,6 +291,16 @@ const statement = ["some", ".a", ["==", ".b", 2]]
 ]
 
 true // ✅
+```
+
+#### Nested Quantification
+
+Quantified statements MAY be nested. For example, the below states that someone with the email `fraud@example.com` is required to be among the receipts of every newsletter.
+
+``` js
+["every", ".newsletters",
+  ["some", ".recipients", 
+    ["==", ".email", "fraud@example.com"]]]
 ```
 
 ### Selectors
@@ -402,9 +410,9 @@ null
 </tbody>
 </table>
 
-### Selector Taxonomy
+### Taxonomy
 
-jq is a much larger language, and includes things like pipes, arithmatic, regexes, assignment, recursive descent, and so on. The UCAN policy language MUST only include the following features:
+The UCAN policy language MUST only include the following features:
 
 | Selector Name             | Examples                   | Notes                                                                                           |
 |---------------------------|----------------------------|-------------------------------------------------------------------------------------------------|
@@ -420,13 +428,13 @@ Any selection MAY begin and/or end with a single dot. Multiple dots (e.g. `..`, 
 
 The try operator is idempotent, and repeated tries (`.foo???`) MUST be allowed.
 
+[jq] is a much larger language, and includes things like pipes, arithmatic, regexes, assignment, recursive descent, and so on which MUST NOT be supported in the UCAN predicate language.
+
 ### Validation
 
 Validation involves substituting the values from the `args` field into the Policy, and evaluating the predicate. Since Policies are tree structured, selector substitution and predicate evaluation MAY proceed in any order.
 
-If a selector cannot be resolved (there is no value at that path), 
-
-#### Example Evaluation
+If a selector cannot be resolved (there is no value at that path), the associated statement MUST return false, and MUST NOT throw an exception. Note that for consistent semantics, selecting a missing keys on a map MUST return `null` (but nested selectors without a try MUST then fail the predicate).
 
 Below is a step-by-step evaluation example:
 
@@ -535,48 +543,9 @@ Note that this also applies to arrays and objects. For example, the `to` array i
 
 The intended logic is expressible with [Conditions].
 
-## Conditions
+## Semantic Conditions
 
-// FIXME
-The `cond` field MUST contain any additional conditions. This concept is sometimes called a "caveat". Conditions constrain the capability in two ways:
-
-- Syntactic constraints on [Arguments] (length, regex, inclusion)
-- Environmental / contextual conditions (day of week)
-
-Condition semantics MUST be established by the Subject. They are openly extensible, but vocabularies may be reused across many Subjects. Conditions MUST be Understood by the [Executor] of the eventual [Invocation][UCAN Invocation]. Each Condition MUST be formatted as a map.
-
-``` js
-// Delegation
-{
-  "sub": "did:web:example.com",
-  "cmd": "msg/send",
-  "args": {
-    "from": "alice@example.com"
-  }
-  "pol": ["or",
-    // no recipient can have a `@gmail.com` email address
-    ["every", ".to", ["not", ["match", ".", "*@competitor.example.com"]]],
-
-    // or at least one `bcc` field must include @ourteam.example.com
-    ["some", ".bcc", ["match", ".", "*@ourteam.example.com"]]
-  ],
-  // ...
-}
-
-// Valid Invocation, if Monday
-{
-  "do": "msg/send",
-  "args": {
-    "from": "alice@example.com",
-    "to": ["bob@example.com", "carol@elsewhere.example.com"], // Matches criteria
-    "title": "Coffee",
-    "body": "Still on for coffee"
-  },
-  // ...
-}
-```
-  
-The above Delegation MUST be interpreted as "may send email from `alice@example.com` on Mondays as long as `bob@exmaple.com` is among the recipients"
+Other semantic conditions that are not expressable syntactically (e.g. current day of week) MUST be handled as part of Invocation execution. This is considered out of scope of the UCAN Policy language. The RECOMMENDED strategy to express constrains that involve side effects (like day of week) is to include that infromation in the argument shape for that Command (i.e. have a `"day_of_week": "friday"` field).
 
 # Validation
 
@@ -584,7 +553,13 @@ Validation of a UCAN chain MAY occur at any time, but MUST occur upon receipt of
 
 Each capability has its own semantics, which needs to be interpretable by the [Executor]. Therefore, a validator MUST NOT reject all capabilities when one that is not relevant to them is not understood. For example, if a Condition fails a delegation check at execution time, but is not relevant to the invocation, it MUST be ignored.
 
-If _any_ of the following criteria are not met, the UCAN MUST be considered invalid:
+If _any_ of the following criteria are not met, the UCAN Delegation MUST be considered invalid:
+
+1. [Time Bounds]
+2. [Principal Alignment]
+3. [Signature Validation]
+
+Additional constraints MAY be placed on Delegations by specs that use them (notably [UCAN Invocation]).
 
 ## Time Bounds
 
@@ -666,32 +641,6 @@ flowchart RL
     rootSub --> subject
     prf --> Delegations
 ```
-
-### Recipient Validation
-
-An agent executing a capability MUST verify that the outermost `aud` field _matches its own DID._ The associated ability MUST NOT be performed if they do not match. Recipient validation is REQUIRED to prevent the misuse of UCANs in an unintended context.
-
-The following UCAN fragment would be valid to invoke as `did:key:zH3C2AVvLMv6gmMNam3uVAjZpfkcJCwDwnZn6z3wXmqPV`. Any other agent MUST NOT accept this UCAN. For example, `did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp` MUST NOT run the ability associated with that capability.
-
-``` js
-{
-  "aud": "did:key:zH3C2AVvLMv6gmMNam3uVAjZpfkcJCwDwnZn6z3wXmqPV",
-  "iss": "did:key:zAKJP3f7BD6W4iWEQ9jwndVTCBq8ua2Utt8EEjJ6Vxsf",
-  // ...
-}
-```
-
-A good litmus test for invocation validity by a invoking agent is to check if they would be able to create a valid delegation for that capability.
-
-## Condition Attenuation
-
-FIXME
-
-The Condition array MAY be empty (which is equivalent to saying "with no other conditions"). Delegations MUST otherwise only append more Conditions, and recapitulate the existing ones verbatim. Here are some abstract examples:
-
-FIXME
-
-Conditions MAY be presented in any order, but merely appending to the array is RECOMMENDED.
 
 ## Signature Validation
 
