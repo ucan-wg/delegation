@@ -128,7 +128,7 @@ A Policy is always given as an array of predicates. This top-level array is impl
 
 Policies are structured as trees. With the exception of subtrees under `some`, `or`, and `not`, every leaf MUST evaluate to `true`. `some`, `or`, and `not` must 
 
-A Policy is an array of statements. Every statement MUST take the form `[operator, selector, argument]` except for nergation which MUST take the form `["not", term]`.
+A Policy is an array of statements. Every statement MUST take the form `[operator, selector, argument]` except for negation which MUST take the form `["not", statement]`.
 
 Below is a formal syntax for the UCAN Policy Language given in [ABNF] (for DAG-JSON):
 
@@ -175,21 +175,21 @@ pattern     = DQUOTE string DQUOTE ; Reminder: IPLD strings are UTF-8
 number      = integer / float
 ```
  
-### Comparisons
+## Comparisons
 
-| Operator | Argument(s)                   | Example                          |
-|----------|-------------------------------|----------------------------------|
-| `==`     | `Selector, IPLD`              | `["==", ".a", [1, 2, {"b": 3}]]` |
-| `<`      | `Selector, (integer | float)` | `["<",  ".a", 1]`                |
-| `<=`     | `Selector, (integer | float)` | `["<=", ".a", 1]`                |
-| `>`      | `Selector, (integer | float)` | `[">",  ".a", 1]`                |
-| `>=`     | `Selector, (integer | float)` | `[">=", ".a", 1]`                |
+| Operator | Argument(s)                    | Example                          |
+|----------|--------------------------------|----------------------------------|
+| `==`     | `Selector, IPLD`               | `["==", ".a", [1, 2, {"b": 3}]]` |
+| `<`      | `Selector, (integer \| float)` | `["<",  ".a", 1]`                |
+| `<=`     | `Selector, (integer \| float)` | `["<=", ".a", 1]`                |
+| `>`      | `Selector, (integer \| float)` | `[">",  ".a", 1]`                |
+| `>=`     | `Selector, (integer \| float)` | `[">=", ".a", 1]`                |
 
 Literal equality (`==`) MUST match the resolved selecor to entire IPLD argument. This is a "deep comparison".
 
 Numeric inequalities MUST be agnostic to numeric type. In other words, the decimal representation is considered equivalent to an integer (`1 == 1.0 == 1.00`). Attempting to compare a non-numeric type MUST return false and MUST NOT throw an exception.
 
-### Glob Matching
+## Glob Matching
 
 | Operator | Argument(s)         | Example                             |
 |----------|---------------------|-------------------------------------|
@@ -212,7 +212,7 @@ The following MUST NOT pass validation for that same pattern:
 * `"Alice Cooper, Bob, Carol."` (the `*` after `Alice` is an escaped literal in the pattern)
 * `" Alice*, Bob, Carol. "` (whitespace in the pattern is significant)
 
-### Connectives
+## Connectives
 
 Connectives add context to their enclosed statement(s).
 
@@ -228,7 +228,7 @@ Connectives add context to their enclosed statement(s).
 
 `or` MUST take an arbitrarily long array of statements, and require that at least one inner statement be true. An empty array MUST be treated as vacuously true.
 
-### Quantification
+## Quantification
 
 When a selector resolves to a collection (an array or map), quantifiers provide a way to extend `and` and `or` to their contents. Attempting to quantify over a non-collection MUST return false and MUST NOT throw an exception.
 
@@ -260,7 +260,7 @@ const statement = ["every", ".a", [">", ".b", 0]]
   [ 
     true,
     true,
-    false // <-
+    false // ⬅️
   ]
 ]
 
@@ -285,7 +285,7 @@ const statement = ["some", ".a", ["==", ".b", 2]]
 ["or", 
   [
     false,
-    true,
+    true, // ⬅️
     false
   ]
 ]
@@ -293,7 +293,7 @@ const statement = ["some", ".a", ["==", ".b", 2]]
 true // ✅
 ```
 
-#### Nested Quantification
+### Nested Quantification
 
 Quantified statements MAY be nested. For example, the below states that someone with the email `fraud@example.com` is required to be among the receipts of every newsletter.
 
@@ -303,9 +303,27 @@ Quantified statements MAY be nested. For example, the below states that someone 
     ["==", ".email", "fraud@example.com"]]]
 ```
 
-### Selectors
+## Selectors
 
-Selector syntax is closely based on a subset of [jq]. They operate on an [Invocation]'s `args` object.
+Selector syntax is closely based on [jq]'s "filters". They operate on an [Invocation]'s `args` object.
+
+Selectors MUST only include the following features:
+
+| Selector Name             | Examples                   | Notes                                                                                           |
+|---------------------------|----------------------------|-------------------------------------------------------------------------------------------------|
+| Identity                  | `.`                        | Take the entire argument                                                                        |
+| Dotted field name         | `.foo`, `.bar0_`           | Shorthand for selecting in a map by key (with exceptions, see below)                            |
+| Unambiguous field name    | `["."]`, `["$_*"]`         | Select in a map by arbitrary key                                                                |
+| Collection values         | `[]`                       | Expands out all of the children that match the remaining path FIXME double check with the code  |
+| Collection index          | `[0]`, `[42]`              | The element at an index. On a map, this is decided by IPLD's key sort order. FIXME double check |
+| Collection negative index | `[-1]`, `[-42]`            | The element by index from the end. `-1` is the index for the last element.                      |
+| Try                       | `.foo?`, `["nope"]?` | Returns `null` on what would otherwise fail                                                     |
+
+Any selection MAY begin and/or end with a single dot. Multiple dots (e.g. `..`, `...`) MUST NOT be used anywhere in a selector.
+
+The try operator is idempotent, and repeated tries (`.foo???`) MUST be treated as a single one.
+
+[jq] is a much larger language, and includes additional features like pipes, arithmatic, regexes, assignment, recursive descent, and so on which MUST NOT be supported in the UCAN Policy language.
 
 For example, consider the following `args` from an `Invocation`:
 
@@ -401,7 +419,6 @@ NOTE: You cannot add _any_ indentation to this table if you want
 <td>
 
 ``` json
-// FIXME double check with implementation
 null
 ```
 
@@ -410,27 +427,7 @@ null
 </tbody>
 </table>
 
-### Taxonomy
-
-The UCAN policy language MUST only include the following features:
-
-| Selector Name             | Examples                   | Notes                                                                                           |
-|---------------------------|----------------------------|-------------------------------------------------------------------------------------------------|
-| Identity                  | `.`                        | Take the entire argument                                                                        |
-| Dotted field name         | `.foo`, `.bar0_`           | Shorthand for selecting in a map by key (with exceptions, see below)                            |
-| Unambiguous field name    | `["."]`                    | Select in a map by arbitrary key                                                                |
-| Collection values         | `[]`                       | Expands out all of the children that match the remaining path FIXME double check with the code  |
-| Collection index          | `[0]`, `[42]`              | The element at an index. On a map, this is decided by IPLD's key sort order. FIXME double check |
-| Collection negative index | `[-1]`, `[-42]`            | The element by index from the end. `-1` is the index for the last element.                      |
-| Try                       | `.foo?`, `.?`, `["nope"]?` | Returns `null` on what would otherwise fail                                                     |
-
-Any selection MAY begin and/or end with a single dot. Multiple dots (e.g. `..`, `...`) MUST NOT be used anywhere in a selector.
-
-The try operator is idempotent, and repeated tries (`.foo???`) MUST be allowed.
-
-[jq] is a much larger language, and includes things like pipes, arithmatic, regexes, assignment, recursive descent, and so on which MUST NOT be supported in the UCAN predicate language.
-
-### Validation
+## Validation
 
 Validation involves substituting the values from the `args` field into the Policy, and evaluating the predicate. Since Policies are tree structured, selector substitution and predicate evaluation MAY proceed in any order.
 
@@ -541,11 +538,9 @@ Note that this also applies to arrays and objects. For example, the `to` array i
 }
 ```
 
-The intended logic is expressible with [Conditions].
-
 ## Semantic Conditions
 
-Other semantic conditions that are not expressable syntactically (e.g. current day of week) MUST be handled as part of Invocation execution. This is considered out of scope of the UCAN Policy language. The RECOMMENDED strategy to express constrains that involve side effects (like day of week) is to include that infromation in the argument shape for that Command (i.e. have a `"day_of_week": "friday"` field).
+Other semantic conditions that are not possible to fully express syntactically (e.g. current day of week) MUST be handled as part of Invocation execution. This is considered out of scope of the UCAN Policy language. The RECOMMENDED strategy to express constrains that involve side effects (like day of week) is to include that infromation in the argument shape for that Command (i.e. have a `"day_of_week": "friday"` field).
 
 # Validation
 
