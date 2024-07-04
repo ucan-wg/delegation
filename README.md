@@ -323,8 +323,6 @@ Any selection MAY begin and/or end with a single dot. Multiple dots (e.g. `..`, 
 
 The try operator is idempotent, and repeated tries (`.foo???`) MUST be treated as a single one.
 
-[jq] is a much larger language, and includes additional features like pipes, arithmatic, regexes, assignment, recursive descent, and so on which MUST NOT be supported in the UCAN Policy language.
-
 For example, consider the following `args` from an `Invocation`:
 
 ``` json
@@ -426,6 +424,12 @@ null
 </tr>
 </tbody>
 </table>
+
+### Differences from jq
+
+[jq] is a much larger language than UCAN's selectors. jq includes features like pipes, arithmatic, regexes, assignment, recursive descent, and so on which MUST NOT be supported in the UCAN Policy language.
+
+jq produces streams of values, in contract to UCAN argument selectors which return an IPLD value. This introduces the primary difference between jq and UCAN argument selectors is how to treat output of the try (`?`) operator: UCAN's `try` selector operator MUST return `null` for the failure case.
 
 ## Validation
 
