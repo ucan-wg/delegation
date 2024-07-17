@@ -172,7 +172,7 @@ subselector = "." CHAR string                           ; Dotted field selector
 ;; SPECIAL LITERALS
 
 pattern     = DQUOTE string DQUOTE ; Reminder: IPLD strings are UTF-8
-number      = integer / float
+number      = integer / float ;
 ```
  
 ## Comparisons
