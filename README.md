@@ -146,7 +146,7 @@ connective  = "[" DQUOTE "not" DQUOTE ","  statement "]"                    ; Ne
             / "[" DQUOTE "and" DQUOTE ",[" statement *("," statement) "]]" ; Conjuction
             / "[" DQUOTE "or"  DQUOTE ",[" statement *("," statement) "]]" ; Disjunction
 
-quanitifier = "[" DQUOTE "every" DQUOTE "," selector "," policy "]" ; Universal
+quantifier  = "[" DQUOTE "every" DQUOTE "," selector "," policy "]" ; Universal
             / "[" DQUOTE "some"  DQUOTE "," selector "," policy "]" ; Existential
 
 ;; COMPARISONS
