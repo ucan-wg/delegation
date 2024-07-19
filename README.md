@@ -429,7 +429,7 @@ null
 
 [jq] is a much larger language than UCAN's selectors. jq includes features like pipes, arithmatic, regexes, assignment, recursive descent, and so on which MUST NOT be supported in the UCAN Policy language.
 
-jq produces streams of values, in contract to UCAN argument selectors which return an IPLD value. This introduces the primary difference between jq and UCAN argument selectors is how to treat output of the try (`?`) operator: UCAN's `try` selector operator MUST return `null` for the failure case.
+jq produces streams of values, in contrast to UCAN argument selectors which return an IPLD value. This introduces the primary difference between jq and UCAN argument selectors is how to treat output of the try (`?`) operator: UCAN's `try` selector operator MUST return `null` for the failure case.
 
 ## Validation
 
