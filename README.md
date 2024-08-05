@@ -60,7 +60,7 @@ Capabilities are the semantically-relevant claims of a delegation. They MUST be 
 |--------|-----------|----------|--------------------------------------------------------------------------------------------------|
 | `sub`  | `DID`     | Yes      | The [Subject] that this Capability is about                                                      |
 | `cmd`  | `Command` | Yes      | The [Command] of this Capability                                                                 |
-| `pol`  | `Policy`  | Yes      | Additional constraints on eventual Invocation arguments, expressed in the [UCAN Policy Language] |
+| `pol`  | `Policy`  | Yes      | Additional constraints on eventual Invocation arguments, expressed in the [UCAN Policy Language][Policy] |
 
 Here is an illustrative example:
 
