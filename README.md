@@ -71,7 +71,7 @@ Here is an illustrative example:
   "cmd": "/blog/post/create",
   "pol": [
     ["==", ".status", "draft"],
-    ["every", ".reviewer", ["match", ".email", "*@example.com"]],
+    ["every", ".reviewer", ["like", ".email", "*@example.com"]],
     ["some", ".tags", 
       ["or",
         ["==", ".", "news"], 
@@ -136,7 +136,7 @@ Below is a formal syntax for the UCAN Policy Language given in [ABNF] (for DAG-J
 policy      = "[" *1(statement *("," statement)) "]"
 statement   = equality 
             / inequality 
-            / match
+            / like
             / connective 
             / quantifier
 
@@ -157,7 +157,7 @@ inequality  = "[" DQUOTE ">"  DQUOTE "," selector "," number "]" ; Numeric great
             / "[" DQUOTE "<"  DQUOTE "," selector "," number "]" ; Numeric lesser-than
             / "[" DQUOTE "<=" DQUOTE "," selector "," number "]" ; Numeric lesser-than-or-equal
 
-match       = "[" DQUOTE "match" DQUOTE "," selector "," pattern "]" ; String wildcard matching
+like        = "[" DQUOTE "like" DQUOTE "," selector "," pattern "]" ; String wildcard matching
 
 ;; SELECTORS
 
@@ -191,9 +191,9 @@ Numeric inequalities MUST be agnostic to numeric type. In other words, the decim
 
 ## Glob Matching
 
-| Operator | Argument(s)         | Example                             |
-|----------|---------------------|-------------------------------------|
-| `match`  | `Selector, Pattern` | `["==", ".email", "*@example.com"]` |
+| Operator | Argument(s)         | Example                               |
+|----------|---------------------|---------------------------------------|
+| `like`   | `Selector, Pattern` | `["like", ".email", "*@example.com"]` |
 
 Glob patterns MUST only include one specicial character: `*` ("wildcard"). There is no single character matcher. As many `*`s as desired MAY be used. Non-wildcard `*`-literals MUST be escaped (`"\*"`). Attempting to match on a non-string MUST return false and MUST NOT throw an exception.
 
@@ -455,7 +455,7 @@ Below is a step-by-step evaluation example:
   "cmd": "/msg",
   "pol": [
     ["==", ".from", "alice@example.com"],
-    ["some", ".to", ["match", ".", "*@example.com"]]
+    ["some", ".to", ["like", ".", "*@example.com"]]
   ],
   // ...
 }
@@ -464,27 +464,27 @@ Below is a step-by-step evaluation example:
 ``` js
 [ // Extract policy
   ["==", ".from", "alice@example.com"],
-  ["some", ".to", ["match", ".", "*@example.com"]]
+  ["some", ".to", ["like", ".", "*@example.com"]]
 ]
 
 [ // Resolve selectors
   ["==", "alice@example.com", "alice@example.com"],
-  ["some", ["bob@example.com", "carol@elsewhere.example.com"], ["match", ".", "*@example.com"]]
+  ["some", ["bob@example.com", "carol@elsewhere.example.com"], ["like", ".", "*@example.com"]]
 ]
 
 [ // Expand quantifier
   ["==", "alice@example.com", "alice@example.com"],
   ["or", [
-    ["match", "bob@example.com", "*@example.com"]
-    ["match", "carol@elsewhere.example.com", "*@example.com"]]
+    ["like", "bob@example.com", "*@example.com"]
+    ["like", "carol@elsewhere.example.com", "*@example.com"]]
   ]
 ]
 
 [ // Evaluate first predicate
   true,
   ["or", [
-    ["match", "bob@example.com", "*@example.com"]
-    ["match", "carol@elsewhere.example.com", "*@example.com"]]]
+    ["like", "bob@example.com", "*@example.com"]
+    ["like", "carol@elsewhere.example.com", "*@example.com"]]]
 ]
 
 [ // Evaluate second predicate's children
@@ -512,7 +512,7 @@ Note that this also applies to arrays and objects. For example, the `to` array i
   "cmd": "/email/send",
   "pol": [
     ["==", ".from", "alice@example.com"],
-    ["some", ".to", ["match", ".", "*@example.com"]]
+    ["some", ".to", ["like", ".", "*@example.com"]]
   ]
   // ...
 }
