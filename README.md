@@ -190,8 +190,8 @@ Delegation covers exact [Command] specified and all the commands described by a 
 > [!WARNING]
 > By definition `"/"` implies all of the commands available on a resource, and SHOULD be used with great care.
 
-# Policy Language
-[Policy Language]: #policy-language
+# Policy
+[Policy]: #policy
 
 UCAN Delegation uses predicate logic statements extended with [jq]-style selectors as a policy language. Policies are syntactically driven, and MUST constrain the `args` field of an eventual [Invocation].
 
