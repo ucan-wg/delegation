@@ -66,7 +66,7 @@ The Delegation payload MUST describe the authorization claims, who is involved, 
 # Capability
 [Capability]: #capability
 
-A capability is the semantically-relevant claim of a delegation. They MUST be presented as a map under the `cap` field as a map. This map is REQUIRED but MAY be empty. This MUST take the following form:
+A capability is the semantically-relevant claim of a delegation. They MUST take the following form:
 
 | Field  | Type          | Required | Description                                                                                              |
 |--------|---------------|----------|----------------------------------------------------------------------------------------------------------|
@@ -83,8 +83,8 @@ Here is an illustrative example:
   "cmd": "/blog/post/create",
   "pol": [
     ["==", ".status", "draft"],
-    ["every", ".reviewer", ["like", ".email", "*@example.com"]],
-    ["some", ".tags", 
+    ["all", ".reviewer", ["like", ".email", "*@example.com"]],
+    ["any", ".tags", 
       ["or",
         ["==", ".", "news"], 
         ["==", ".", "press"]]]
@@ -193,11 +193,11 @@ Delegation covers exact [Command] specified and all the commands described by a 
 # Policy
 [Policy]: #policy
 
-UCAN Delegation uses predicate logic statements extended with [jq]-style selectors as a policy language. Policies are syntactically driven, and MUST constrain the `args` field of an eventual [Invocation].
+UCAN Delegation uses predicate logic statements extended with [jq]-inspired selectors as a policy language. Policies are syntactically driven, and MUST constrain the `args` field of an eventual [Invocation].
 
 A Policy is always given as an array of predicates. This top-level array is implicitly treated as a logical `and`, where `args` MUST pass validation of every top-level predicate.
 
-Policies are structured as trees. With the exception of subtrees under `some`, `or`, and `not`, every leaf MUST evaluate to `true`. `some`, `or`, and `not` must 
+Policies are structured as trees. With the exception of subtrees under `any`, `or`, and `not`, every leaf MUST evaluate to `true`. 
 
 A Policy is an array of statements. Every statement MUST take the form `[operator, selector, argument]` except for negation which MUST take the form `["not", statement]`.
 
@@ -217,8 +217,8 @@ connective  = "[" DQUOTE "not" DQUOTE ","  statement "]"                   ; Neg
             / "[" DQUOTE "and" DQUOTE ",[" statement *("," statement) "]]" ; Conjuction
             / "[" DQUOTE "or"  DQUOTE ",[" statement *("," statement) "]]" ; Disjunction
 
-quantifier  = "[" DQUOTE "every" DQUOTE "," selector "," policy "]" ; Universal
-            / "[" DQUOTE "some"  DQUOTE "," selector "," policy "]" ; Existential
+quantifier  = "[" DQUOTE "all" DQUOTE "," selector "," policy "]" ; Universal
+            / "[" DQUOTE "any" DQUOTE "," selector "," policy "]" ; Existential
 
 ;; COMPARISONS
 
@@ -365,19 +365,19 @@ When a selector resolves to a collection (an array or map), quantifiers provide 
 
 Quantifying over an array is straightforward: it MUST apply the inner statement to each array value. Quantifying over a map MUST extract the values (discarding the keys), and then MUST proceed onthe values the same as if it were an array.
 
-| Operator | Argument(s)             | Example                          |
-|----------|-------------------------|----------------------------------|
-| `every`  | `Selector, [Statement]` | `["every", ".a" [">", ".b", 1]]` |
-| `some`   | `Selector, [Statement]` | `["some",  ".a" [">", ".b", 1]]` |
+| Operator | Argument(s)             | Example                         |
+|----------|-------------------------|---------------------------------|
+| `all`    | `Selector, [Statement]` | `["all", ".a" [">", ".b", 1]]`  |
+| `any`    | `Selector, [Statement]` | `["any",  ".a" [">", ".b", 1]]` |
 
-`every` extends `and` over collections. `some` extends `or` over collections. For example:
+`all` extends `and` over collections. `any` extends `or` over collections. For example:
 
 ``` js
 const args = {"a": [{"b": 1}, {"b": 2}, {"z": [7, 8, 9]}]}
-const statement = ["every", ".a", [">", ".b", 0]]
+const statement = ["all", ".a", [">", ".b", 0]]
 
 // Outer Selector Substitution
-["every", [{"b": 1}, {"b": 2}, {"z": [7, 8, 9]}], [">", ".b", 0]]
+["all", [{"b": 1}, {"b": 2}, {"z": [7, 8, 9]}], [">", ".b", 0]]
 
 // Predicate Reduction
 ["and", [
@@ -397,10 +397,10 @@ false // ❌
 
 ``` js
 const args = {"a": [{"b": 1}, {"b": 2}, {"z": [7, 8, 9]}]}
-const statement = ["some", ".a", ["==", ".b", 2]]
+const statement = ["any", ".a", ["==", ".b", 2]]
 
 // Reduction
-["some", [{"b": 1}, {"b": 2}, {"z": [7, 8, 9]}], ["==", ".b", 2]]
+["any", [{"b": 1}, {"b": 2}, {"z": [7, 8, 9]}], ["==", ".b", 2]]
 
 ["or", [
   ["==", 1, 2],
@@ -423,8 +423,8 @@ true // ✅
 Quantified statements MAY be nested. For example, the below states that someone with the email `fraud@example.com` is required to be among the receipts of every newsletter.
 
 ``` js
-["every", ".newsletters",
-  ["some", ".recipients", 
+["all", ".newsletters",
+  ["any", ".recipients", 
     ["==", ".email", "fraud@example.com"]]]
 ```
 
@@ -575,6 +575,8 @@ Bytes MAY be selected into. When doing so, they MUST be treated as a byte array 
 
 jq produces streams of values, in contrast to UCAN argument selectors which return an IPLD value. This introduces the primary difference between jq and UCAN argument selectors is how to treat output of the optional (`?`) operator: UCAN's optional selector operator MUST return `null` for the failure case.
 
+There are 
+
 ## Validation
 [Validation]: #validation
 
@@ -600,7 +602,7 @@ Below is a step-by-step evaluation example:
   "cmd": "/msg",
   "pol": [
     ["==", ".from", "alice@example.com"],
-    ["some", ".to", ["like", ".", "*@example.com"]]
+    ["any", ".to", ["like", ".", "*@example.com"]]
   ],
   // ...
 }
@@ -609,12 +611,12 @@ Below is a step-by-step evaluation example:
 ``` js
 [ // Extract policy
   ["==", ".from", "alice@example.com"],
-  ["some", ".to", ["like", ".", "*@example.com"]]
+  ["any", ".to", ["like", ".", "*@example.com"]]
 ]
 
 [ // Resolve selectors
   ["==", "alice@example.com", "alice@example.com"],
-  ["some", ["bob@example.com", "carol@elsewhere.example.com"], ["like", ".", "*@example.com"]]
+  ["any", ["bob@example.com", "carol@elsewhere.example.com"], ["like", ".", "*@example.com"]]
 ]
 
 [ // Expand quantifier
@@ -657,7 +659,7 @@ Note that this also applies to arrays and objects. For example, the `to` array i
   "cmd": "/email/send",
   "pol": [
     ["==", ".from", "alice@example.com"],
-    ["some", ".to", ["like", ".", "*@example.com"]]
+    ["any", ".to", ["like", ".", "*@example.com"]]
   ]
   // ...
 }
