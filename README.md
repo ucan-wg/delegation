@@ -801,6 +801,8 @@ Many thanks to [Christine Lemmer-Webber] for her handwritten(!) feedback on the 
 
 Thanks to [Benjamin Goering] for the many community threads and connections to [W3C] standards.
 
+Thanks to [Steve Moyer] for his detailed feedback on the selector design and thoughts on ANBF generation.
+
 Thanks to [Juan Caballero] for the numerous questions, clarifications, and general advice on putting together a comprehensible spec.
 
 Thank you [Dan Finlay] for being sufficiently passionate about [OCAP] that we realized that capability systems had a real chance of adoption in an ACL-dominated world.
@@ -813,6 +815,7 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 
 <!-- External Links -->
 
+[Steve Moyer]: https://github.com/smoyer64
 [ABNF]: https://datatracker.ietf.org/doc/html/rfc5234
 [Alan Karp]: https://github.com/alanhkarp
 [Benjamin Goering]: https://github.com/gobengo
