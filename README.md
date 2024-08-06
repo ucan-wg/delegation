@@ -38,7 +38,7 @@ Delegation provides a way to "transfer authority without transferring cryptograp
 
 # [UCAN Envelope] Configuration
 [UCAN Envelope Configuration]: #ucan-envelope-configuration
-
+ 
 ## Type Tag
 [Type Tag]: #type-tag
 
@@ -53,7 +53,7 @@ The Delegation payload MUST describe the authorization claims, who is involved, 
 |---------|-------------------------------------------|----------|-------------------------------------------------------------|
 | `iss`   | `DID`                                     | Yes      | Issuer DID (sender)                                         |
 | `aud`   | `DID`                                     | Yes      | Audience DID (receiver)                                     |
-| `sub`   | `DID`                                     | Yes      | Principal that the chain is about (the [Subject])           |
+| `sub`   | `DID \| null`                             | Yes      | Principal that the chain is about (the [Subject])           |
 | `cmd`   | `String`                                  | Yes      | The [Command] to eventually invoke                          |
 | `pol`   | `Policy`                                  | Yes      | [Policy]                                                    |
 | `nonce` | `Bytes`                                   | Yes      | Nonce                                                       |
@@ -68,10 +68,10 @@ The Delegation payload MUST describe the authorization claims, who is involved, 
 
 Capabilities are the semantically-relevant claims of a delegation. They MUST be presented as a map under the `cap` field as a map. This map is REQUIRED but MAY be empty. This MUST take the following form:
 
-| Field  | Type          | Required | Description                                                                                      |
-|--------|---------------|----------|--------------------------------------------------------------------------------------------------|
-| `sub`  | `DID \| null` | Yes      | The [Subject] that this Capability is about                                                      |
-| `cmd`  | `Command`     | Yes      | The [Command] of this Capability                                                                 |
+| Field  | Type          | Required | Description                                                                                              |
+|--------|---------------|----------|----------------------------------------------------------------------------------------------------------|
+| `sub`  | `DID \| null` | Yes      | The [Subject] that this Capability is about                                                              |
+| `cmd`  | `Command`     | Yes      | The [Command] of this Capability                                                                         |
 | `pol`  | `Policy`      | Yes      | Additional constraints on eventual Invocation arguments, expressed in the [UCAN Policy Language][Policy] |
 
 Here is an illustrative example:
@@ -95,9 +95,7 @@ Here is an illustrative example:
 ## Subject
 [Subject]: #subject
 
-The Subject MUST be the DID that initiated the delegation chain, or an explicit `null`. For more on the `null`, please see the [Powerline] section.
-
-For example:
+The Subject MUST be the DID that initiated the delegation chain, or an explicit `null`. Declaring a DID is RECOMMENDED. For more on the `null`, please see the [Powerline] section.
 
 ``` js
 {
@@ -157,7 +155,7 @@ statement   = equality
 
 ;; STRUCTURAL
 
-connective  = "[" DQUOTE "not" DQUOTE ","  statement "]"                    ; Negation
+connective  = "[" DQUOTE "not" DQUOTE ","  statement "]"                   ; Negation
             / "[" DQUOTE "and" DQUOTE ",[" statement *("," statement) "]]" ; Conjuction
             / "[" DQUOTE "or"  DQUOTE ",[" statement *("," statement) "]]" ; Disjunction
 
@@ -236,15 +234,80 @@ Connectives add context to their enclosed statement(s).
 
 | Operator | Argument(s)   | Example                                    |
 |----------|---------------|--------------------------------------------|
-| `not`    | `Statement`   | `["not", [">", ".a", 1]]`                  |
 | `and`    | `[Statement]` | `["and", [[">", ".a", 1], [">", ".b", 2]]` |
 | `or`     | `[Statement]` | `["or",  [[">", ".a", 1], [">", ".b", 2]]` | 
+| `not`    | `Statement`   | `["not", [">", ".a", 1]]`                  |
+
+### And
+[And]: #and
+
+`and` MUST take an arbitrarily long array of statements, and require that every inner statement be true. An empty array MUST be treated as true.
+
+```js
+// Data
+{ "name": "Katie", "age": 35, nationality: ["Canadian", "South African"] }
+
+["and", []]
+// ☝️  true
+
+["and", [
+  ["==", ".name", "Katie"], 
+  [">=", ".age", 21]
+]]
+// ☝️  true
+
+["and", [
+  ["==", ".name", "Katie"], 
+  [">=", ".age", 21], 
+  ["==", ".nationality", ["American"]] // ️👈 false
+]]
+// ☝️  false
+```
+
+### Or
+[Or]: #or
+
+`or` MUST take an arbitrarily long array of statements, and require that at least one inner statement be true. An empty array MUST be treated as true.
+
+```js
+// Data
+{ "name": "Katie", "age": 35, nationality: ["Canadian", "South African"] }
+
+["or", []]
+// ☝️  true
+
+["or", [
+  ["==", ".name", "Katie"], // ️👈 true
+  [">", ".age", 45] 
+]]
+// ☝️  true
+```
+
+### Not
+[Not]: #not
 
 `not` MUST invert the truth value of the inner statement. For example, if `["==", ".a", 1]` were false (`.a` is not 1), then `["not", ["==", ".a", 1]]` would be true.
 
-`and` MUST take an arbitrarily long array of statements, and require that every inner statement be true. An empty array MUST be treated as vacuously true.
+```js
+// Data
+{ "name": "Katie", "age": 35, nationality: ["Canadian", "South African"] }
 
-`or` MUST take an arbitrarily long array of statements, and require that at least one inner statement be true. An empty array MUST be treated as vacuously true.
+["and", []]
+// ☝️  true
+
+["and", [
+  ["==", ".name", "Katie"], 
+  [">=", ".age", 21]
+]]
+// ☝️  true
+
+["not", 
+  ["and", [ // ️👈 false
+    ["==", ".name", "Katie"], 
+    ["==", ".nationality", ["American"]] // ️👈 false
+]]
+// ☝️  true
+```
 
 ## Quantification
 [Quantification]: #quantification
@@ -293,21 +356,17 @@ const statement = ["some", ".a", ["==", ".b", 2]]
 // Reduction
 ["some", [{"b": 1}, {"b": 2}, {"z": [7, 8, 9]}], ["==", ".b", 2]]
 
-["or", 
-  [
-    ["==", 1, 2],
-    ["==", 2, 2],
-    ["==", null, 2]
-  ]
-]
+["or", [
+  ["==", 1, 2],
+  ["==", 2, 2],
+  ["==", null, 2]
+]]
 
-["or", 
-  [
-    false,
-    true, // ⬅️
-    false
-  ]
-]
+["or", [
+  false,
+  true, // ⬅️
+  false
+]]
 
 true // ✅
 ```
@@ -452,6 +511,9 @@ null
 [jq] is a much larger language than UCAN's selectors. jq includes features like pipes, arithmatic, regexes, assignment, recursive descent, and so on which MUST NOT be supported in the UCAN Policy language.
 
 jq produces streams of values, in contrast to UCAN argument selectors which return an IPLD value. This introduces the primary difference between jq and UCAN argument selectors is how to treat output of the try (`?`) operator: UCAN's `try` selector operator MUST return `null` for the failure case.
+
+## Powerlines
+[Powerlines]: #powerlines
 
 ## Validation
 [Validation]: #validation
