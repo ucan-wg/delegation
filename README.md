@@ -178,6 +178,18 @@ Powerlines MAY include other restrictions, such as [time bounds][Time Bounds], [
 }
 ```
 
+## Command
+[Command]: #command
+
+The [Command][High Level Command] MUST be a `/` delimited path describing set of commands delegated.
+Delegation covers exact [Command] specified and all the commands described by a paths nested under that specified command. 
+
+> [!NOTE]
+> The command path syntax is designed to support forward compatible protocol extensions. Backwards-compatibl️️️️️️️️️️e capabilities MAY be introduced as command subpaths.
+
+> [!WARNINIG]
+> By definition `"/"` implies all of the commands available on a resource, and SHOULD be used with great care.
+
 # Policy Language
 [Policy Language]: #policy-language
 
@@ -801,7 +813,7 @@ Many thanks to [Christine Lemmer-Webber] for her handwritten(!) feedback on the 
 
 Thanks to [Benjamin Goering] for the many community threads and connections to [W3C] standards.
 
-Thanks to [Steve Moyer] for his detailed feedback on the selector design and thoughts on ANBF generation.
+Thanks to [Steve Moyer] for his detailed feedback on the selector design and thoughts on ANBF codegen.
 
 Thanks to [Juan Caballero] for the numerous questions, clarifications, and general advice on putting together a comprehensible spec.
 
@@ -815,7 +827,6 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 
 <!-- External Links -->
 
-[Steve Moyer]: https://github.com/smoyer64
 [ABNF]: https://datatracker.ietf.org/doc/html/rfc5234
 [Alan Karp]: https://github.com/alanhkarp
 [Benjamin Goering]: https://github.com/gobengo
@@ -827,7 +838,6 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [CIDv1]: https://github.com/multiformats/cid?tab=readme-ov-file#cidv1
 [Christine Lemmer-Webber]: https://github.com/cwebber
 [Christopher Joel]: https://github.com/cdata
-[Command]: https://github.com/ucan-wg/spec#33-command
 [DAG-CBOR]: https://ipld.io/specs/codecs/dag-cbor/spec/
 [DAG-JSON]: https://ipld.io/specs/codecs/dag-json/spec/
 [DID fragment]: https://www.w3.org/TR/did-core/#terminology
@@ -838,6 +848,7 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [EdDSA]: https://en.wikipedia.org/wiki/EdDSA 
 [Executor]: https://github.com/ucan-wg/spec#31-roles
 [Fission]: https://fission.codes
+[High Level Command]: https://github.com/ucan-wg/spec#33-command
 [Hugo Dias]: https://github.com/hugomrdias
 [IEEE-754]: https://ieeexplore.ieee.org/document/8766229
 [IPLD]: https://ipld.io/
@@ -863,6 +874,7 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [SHA2-256]: https://github.com/multiformats/multicodec/blob/master/table.csv#L9
 [SPKI/SDSI]: https://datatracker.ietf.org/wg/spki/about/
 [SPKI]: https://theworld.com/~cme/html/spki.html
+[Steve Moyer]: https://github.com/smoyer64
 [Steven Vandevelde]: https://github.com/icidasset
 [UCAN Envelope]: https://github.com/ucan-wg/spec/blob/high-level/README.md#envelope
 [UCAN Invocation]: https://github.com/ucan-wg/invocation
