@@ -136,7 +136,7 @@ In the case where access to an [external resource] is delegated, the Subject MUS
 [Powerline]: #powerline
 
 > [!WARNING]
-> Similar to `cmd: "/"` and `pol: []`, this feature (`sub: null`) is a very powerful feature. Use with care.
+> Similar to `cmd: "/"` and `pol: []`, this feature (`sub: null`) is very powerful. Use with care.
 
 A "Powerline"[^powerbox] is a pattern for automatically delegating _all_ future delegations to another agent regardless of [Subject]. This is achieved by explicitly setting the [Subject] (`sub`) field to `null`. At [Validation] time, the [Subject] MUST be substituted for the directly prior Subject given in the delegation chain. All other fields MUST continue to validate as normal (e.g. [principal alignment][Principal Alignment], [time bounds][Time Bounds], and so on).
 
