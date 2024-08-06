@@ -66,7 +66,7 @@ The Delegation payload MUST describe the authorization claims, who is involved, 
 # Capability
 [Capability]: #capability
 
-Capabilities are the semantically-relevant claims of a delegation. They MUST be presented as a map under the `cap` field as a map. This map is REQUIRED but MAY be empty. This MUST take the following form:
+A capability is the semantically-relevant claim of a delegation. They MUST be presented as a map under the `cap` field as a map. This map is REQUIRED but MAY be empty. This MUST take the following form:
 
 | Field  | Type          | Required | Description                                                                                              |
 |--------|---------------|----------|----------------------------------------------------------------------------------------------------------|
@@ -291,7 +291,7 @@ Connectives add context to their enclosed statement(s).
 
 ```js
 // Data
-{ "name": "Katie", "age": 35, nationalities: ["Canadian", "South African"] }
+{ name: "Katie", age: 35, nationalities: ["Canadian", "South African"] }
 
 ["and", []]
 // ⬆️  true
@@ -317,7 +317,7 @@ Connectives add context to their enclosed statement(s).
 
 ```js
 // Data
-{ "name": "Katie", "age": 35, nationalities: ["Canadian", "South African"] }
+{ name: "Katie", age: 35, nationalities: ["Canadian", "South African"] }
 
 ["or", []]
 // ⬆️  true
@@ -336,7 +336,7 @@ Connectives add context to their enclosed statement(s).
 
 ```js
 // Data
-{ "name": "Katie", nationalities: ["Canadian", "South African"] }
+{ name: "Katie", nationalities: ["Canadian", "South African"] }
 
 ["not", 
   ["and", [
@@ -364,24 +364,21 @@ Quantifying over an array is straightforward: it MUST apply the inner statement 
 const args = {"a": [{"b": 1}, {"b": 2}, {"z": [7, 8, 9]}]}
 const statement = ["every", ".a", [">", ".b", 0]]
 
-// Reduction
+// Outer Selector Substitution
 ["every", [{"b": 1}, {"b": 2}, {"z": [7, 8, 9]}], [">", ".b", 0]]
 
+// Predicate Reduction
 ["and", [
-  [
-    [">", 1, 0],
-    [">", 2, 0],
-    [">", null, 0]
-  ]
-]
+  [">", 1, 0],
+  [">", 2, 0],
+  [">", null, 0]
+]]
 
-["and",
-  [ 
-    true,
-    true,
-    false // ⬅️
-  ]
-]
+["and", [ 
+  true,
+  true,
+  false // ⬅️
+]]
 
 false // ❌
 ```
@@ -541,6 +538,22 @@ null
 </tr>
 </tbody>
 </table>
+
+### Selecting on Bytes
+
+Bytes MAY be selected into. When doing so, they MUST be treated as a byte array (`[u8]`), and MUST NOT be treated as a Base64 string or any other representation.
+
+``` js
+// DAG-JSON
+{ "/": { "bytes": "1qnBjPjE" } }
+
+// Hexadecimal
+0xd6 0xa9 0xc1 0x8c 0xf8 0xc4
+
+// Selector
+".[3]"
+// ⬆️  0x8c = 140
+```
 
 ### Differences from jq
 [Differences from jq]: #differences-from-jq
