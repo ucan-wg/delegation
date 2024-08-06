@@ -221,7 +221,7 @@ wildcard    = "[" DQUOTE "like" DQUOTE "," selector "," pattern "]" ; String wil
 ;; SELECTORS
 
 selector    = DQUOTE "." DQUOTE                     ; Identity
-            / DQUOTE 1*(subselector *1("?")) DQUOTE ; Nested subselectors with optional "try"
+            / DQUOTE 1*(subselector *1("?")) DQUOTE ; Nested subselectors with possible optionals
 
 subselector = "." CHAR string                           ; Dotted field selector
             / *1(".") "[\" DQUOTE string "\" DQUOTE "]" ; Explicit field selector
@@ -436,7 +436,7 @@ Selectors MUST only include the following features:
 
 Any selection MAY begin and/or end with a single dot. Multiple dots (e.g. `..`, `...`) MUST NOT be used anywhere in a selector.
 
-The try operator is idempotent, and repeated tries (`.foo???`) MUST be treated as a single one.
+The optional operator is idempotent, and repeated optionals (`.foo???`) MUST be treated as a single one.
 
 For example, consider the following `args` from an `Invocation`:
 
@@ -561,14 +561,14 @@ Bytes MAY be selected into. When doing so, they MUST be treated as a byte array 
 
 [jq] is a much larger language than UCAN's selectors. jq includes features like pipes, arithmatic, regexes, assignment, recursive descent, and so on which MUST NOT be supported in the UCAN Policy language.
 
-jq produces streams of values, in contrast to UCAN argument selectors which return an IPLD value. This introduces the primary difference between jq and UCAN argument selectors is how to treat output of the try (`?`) operator: UCAN's `try` selector operator MUST return `null` for the failure case.
+jq produces streams of values, in contrast to UCAN argument selectors which return an IPLD value. This introduces the primary difference between jq and UCAN argument selectors is how to treat output of the optional (`?`) operator: UCAN's optional selector operator MUST return `null` for the failure case.
 
 ## Validation
 [Validation]: #validation
 
 Validation involves substituting the values from the `args` field into the Policy, and evaluating the predicate. Since Policies are tree structured, selector substitution and predicate evaluation MAY proceed in any order.
 
-If a selector cannot be resolved (there is no value at that path), the associated statement MUST return false, and MUST NOT throw an exception. Note that for consistent semantics, selecting a missing keys on a map MUST return `null` (but nested selectors without a try MUST then fail the predicate).
+If a selector cannot be resolved (there is no value at that path), the associated statement MUST return false, and MUST NOT throw an exception. Note that for consistent semantics, selecting a missing keys on a map MUST return `null` (but nested selectors without an optional MUST then fail the predicate).
 
 Below is a step-by-step evaluation example:
 
