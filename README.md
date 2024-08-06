@@ -291,23 +291,23 @@ Connectives add context to their enclosed statement(s).
 
 ```js
 // Data
-{ "name": "Katie", "age": 35, nationality: ["Canadian", "South African"] }
+{ "name": "Katie", "age": 35, nationalities: ["Canadian", "South African"] }
 
 ["and", []]
-// ☝️  true
+// ⬆️  true
 
 ["and", [
   ["==", ".name", "Katie"], 
   [">=", ".age", 21]
 ]]
-// ☝️  true
+// ⬆️  true
 
 ["and", [
   ["==", ".name", "Katie"], 
   [">=", ".age", 21], 
-  ["==", ".nationality", ["American"]] // ️👈 false
+  ["==", ".nationalities", ["American"]] // ️⬅️  false
 ]]
-// ☝️  false
+// ⬆️  false
 ```
 
 ### Or
@@ -317,16 +317,16 @@ Connectives add context to their enclosed statement(s).
 
 ```js
 // Data
-{ "name": "Katie", "age": 35, nationality: ["Canadian", "South African"] }
+{ "name": "Katie", "age": 35, nationalities: ["Canadian", "South African"] }
 
 ["or", []]
-// ☝️  true
+// ⬆️  true
 
 ["or", [
-  ["==", ".name", "Katie"], // ️👈 true
+  ["==", ".name", "Katie"], // ⬅️  true
   [">", ".age", 45] 
 ]]
-// ☝️  true
+// ⬆️  true
 ```
 
 ### Not
@@ -336,23 +336,14 @@ Connectives add context to their enclosed statement(s).
 
 ```js
 // Data
-{ "name": "Katie", "age": 35, nationality: ["Canadian", "South African"] }
-
-["and", []]
-// ☝️  true
-
-["and", [
-  ["==", ".name", "Katie"], 
-  [">=", ".age", 21]
-]]
-// ☝️  true
+{ "name": "Katie", nationalities: ["Canadian", "South African"] }
 
 ["not", 
-  ["and", [ // ️👈 false
+  ["and", [
     ["==", ".name", "Katie"], 
-    ["==", ".nationality", ["American"]] // ️👈 false
+    ["==", ".nationalities", ["American"]] // ⬅️  false
 ]]
-// ☝️  true
+// ⬆️  true
 ```
 
 ## Quantification
