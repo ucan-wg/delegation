@@ -187,7 +187,7 @@ Delegation covers exact [Command] specified and all the commands described by a 
 > [!NOTE]
 > The command path syntax is designed to support forward compatible protocol extensions. Backwards-compatibl️️️️️️️️️️e capabilities MAY be introduced as command subpaths.
 
-> [!WARNINIG]
+> [!WARNING]
 > By definition `"/"` implies all of the commands available on a resource, and SHOULD be used with great care.
 
 # Policy Language
