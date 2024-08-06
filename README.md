@@ -165,13 +165,13 @@ sequenceDiagram
     Alice's Tablet -->> Email Server: INVOKE! {sub: "did:example:email", cmd: "/msg/send", proofs: [❹,❷]}
 ```
 
-Powerlines MAY include other restrictions, such as [time bounds][Time Bounds], [Commands][Command], and [Policies][Policy]. For example, the ability to automatically redelegate read-only access to arbitrary resources could be expressed as:
+Powerlines MAY include other restrictions, such as [time bounds][Time Bounds], [Commands][Command], and [Policies][Policy]. For example, the ability to automatically redelegate read-only access to arbitrary CRUD resources could be expressed as:
 
 ``` js
 {
   "iss": "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp",
   "aud": "did:key:zQ3shokFTS3brHcDQrn82RUDfCZESWL1ZdCEJwekUDPQiYBme",
-  "sub": null, // ⚡Powerline
+  "sub": null, // 👈 ⚡ Powerline
   "cmd": "/crud/read",
   "pol": [],
   // ...
