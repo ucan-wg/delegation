@@ -2,10 +2,12 @@
 ## Version 1.0.0-rc.1
 
 ## Editors
+[Editors]: #editors
 
 - [Brooklyn Zelenka], [Witchcraft Software]
 
 ## Authors
+[Authors]: #authors
 
 - [Brooklyn Zelenka], [Witchcraft Software]
 - [Daniel Holmgren], [Bluesky]
@@ -13,30 +15,37 @@
 - [Philipp Krüger], [number zero]
 
 ## Dependencies
+[Dependencies]: #dependencies
 
 - [UCAN]
 
 ## Language
+[Language]: #language
 
 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in [RFC 2119].
 
 # Abstract
+[Abstract]: #abstract
 
 This specification describes the representation and semantics for delegating attenuated authority between principals. UCAN Delegation provides a cryptographically verifiable container, batched capabilities, hierarchical authority, and a minimal syntatically-driven policy langauge.
 
 # Introduction
+[Introduction]: #introduction
 
 UCAN Delegation is a delegable certificate capability system with runtime-extensibility, ad hoc conditions, cacheability, and focused on ease of use and interoperability. Delegations act as a proofs for [UCAN Invocation]s.
 
 Delegation provides a way to "transfer authority without transferring cryptographic keys". As an authorization system, it is more interested in "what can be done" than a list of "who can do what". For more on how Delegation fits into UCAN, please refer to the [high level spec][UCAN].
 
 # [UCAN Envelope] Configuration
+[UCAN Envelope Configuration]: #ucan-envelope-configuration
 
 ## Type Tag
+[Type Tag]: #type-tag
 
 The UCAN envelope tag for UCAN Delegation MUST be set to `ucan/dlg@1.0.0-rc.1`.
  
 ## Delegation Payload
+[Delegation Payload]: #delegation-payload
 
 The Delegation payload MUST describe the authorization claims, who is involved, and its validity period.
 
@@ -52,15 +61,18 @@ The Delegation payload MUST describe the authorization claims, who is involved, 
 | `nbf`   | `Integer` (53-bits[^js-num-size])         | No       | "Not before" UTC Unix Timestamp in seconds (valid from)     |
 | `exp`   | `Integer \| null` (53-bits[^js-num-size]) | Yes      | Expiration UTC Unix Timestamp in seconds (valid until)      |
 
+[^js-num-size]: JavaScript has a single numeric type ([`Number`][JS Number]) for both integers and floats. This representation is defined as a [IEEE-754] double-precision floating point number, which has a 53-bit significand.
+
 # Capability
+[Capability]: #capability
 
 Capabilities are the semantically-relevant claims of a delegation. They MUST be presented as a map under the `cap` field as a map. This map is REQUIRED but MAY be empty. This MUST take the following form:
 
-| Field  | Type      | Required | Description                                                                                      |
-|--------|-----------|----------|--------------------------------------------------------------------------------------------------|
-| `sub`  | `DID`     | Yes      | The [Subject] that this Capability is about                                                      |
-| `cmd`  | `Command` | Yes      | The [Command] of this Capability                                                                 |
-| `pol`  | `Policy`  | Yes      | Additional constraints on eventual Invocation arguments, expressed in the [UCAN Policy Language][Policy] |
+| Field  | Type          | Required | Description                                                                                      |
+|--------|---------------|----------|--------------------------------------------------------------------------------------------------|
+| `sub`  | `DID \| null` | Yes      | The [Subject] that this Capability is about                                                      |
+| `cmd`  | `Command`     | Yes      | The [Command] of this Capability                                                                 |
+| `pol`  | `Policy`      | Yes      | Additional constraints on eventual Invocation arguments, expressed in the [UCAN Policy Language][Policy] |
 
 Here is an illustrative example:
 
@@ -81,8 +93,9 @@ Here is an illustrative example:
 ```
 
 ## Subject
+[Subject]: #subject
 
-The Subject MUST be the DID that initiated the delegation chain.
+The Subject MUST be the DID that initiated the delegation chain, or an explicit `null`. For more on the `null`, please see the [Powerline] section.
 
 For example:
 
@@ -94,6 +107,7 @@ For example:
 ```
 
 ## Resource
+[Resource]: #resource
 
 Unlike Subjects and Commands, Resources are semantic rather than syntactic. The Resource is the "what" that a capability describes.
 
@@ -121,6 +135,7 @@ In the case where access to an [external resource] is delegated, the Subject MUS
 ```
 
 # Policy Language
+[Policy Language]: #policy-language
 
 UCAN Delegation uses predicate logic statements extended with [jq]-style selectors as a policy language. Policies are syntactically driven, and MUST constrain the `args` field of an eventual [Invocation].
 
@@ -176,6 +191,7 @@ number      = integer / float
 ```
  
 ## Comparisons
+[Comparisons]: #comparisons
 
 | Operator | Argument(s)                    | Example                          |
 |----------|--------------------------------|----------------------------------|
@@ -190,6 +206,7 @@ Literal equality (`==`) MUST match the resolved selecor to entire IPLD argument.
 Numeric inequalities MUST be agnostic to numeric type. In other words, the decimal representation is considered equivalent to an integer (`1 == 1.0 == 1.00`). Attempting to compare a non-numeric type MUST return false and MUST NOT throw an exception.
 
 ## Glob Matching
+[Glob Matching]: #glob-matching
 
 | Operator | Argument(s)         | Example                               |
 |----------|---------------------|---------------------------------------|
@@ -213,6 +230,7 @@ The following MUST NOT pass validation for that same pattern:
 * `" Alice*, Bob, Carol. "` (whitespace in the pattern is significant)
 
 ## Connectives
+[Connectives]: #connectives
 
 Connectives add context to their enclosed statement(s).
 
@@ -229,6 +247,7 @@ Connectives add context to their enclosed statement(s).
 `or` MUST take an arbitrarily long array of statements, and require that at least one inner statement be true. An empty array MUST be treated as vacuously true.
 
 ## Quantification
+[Quantification]: #quantification
 
 When a selector resolves to a collection (an array or map), quantifiers provide a way to extend `and` and `or` to their contents. Attempting to quantify over a non-collection MUST return false and MUST NOT throw an exception.
 
@@ -294,6 +313,7 @@ true // ✅
 ```
 
 ### Nested Quantification
+[Nested Quantification]: #nested-quantification
 
 Quantified statements MAY be nested. For example, the below states that someone with the email `fraud@example.com` is required to be among the receipts of every newsletter.
 
@@ -304,6 +324,7 @@ Quantified statements MAY be nested. For example, the below states that someone 
 ```
 
 ## Selectors
+[Selectors]: #selectors
 
 Selector syntax is closely based on [jq]'s "filters". They operate on an [Invocation]'s `args` object.
 
@@ -426,12 +447,14 @@ null
 </table>
 
 ### Differences from jq
+[Differences from jq]: #differences-from-jq
 
 [jq] is a much larger language than UCAN's selectors. jq includes features like pipes, arithmatic, regexes, assignment, recursive descent, and so on which MUST NOT be supported in the UCAN Policy language.
 
 jq produces streams of values, in contrast to UCAN argument selectors which return an IPLD value. This introduces the primary difference between jq and UCAN argument selectors is how to treat output of the try (`?`) operator: UCAN's `try` selector operator MUST return `null` for the failure case.
 
 ## Validation
+[Validation]: #validation
 
 Validation involves substituting the values from the `args` field into the Policy, and evaluating the predicate. Since Policies are tree structured, selector substitution and predicate evaluation MAY proceed in any order.
 
@@ -543,10 +566,13 @@ Note that this also applies to arrays and objects. For example, the `to` array i
 ```
 
 ## Semantic Conditions
+[Semantics Conditions]: #semantic-conditions
 
 Other semantic conditions that are not possible to fully express syntactically (e.g. current day of week) MUST be handled as part of Invocation execution. This is considered out of scope of the UCAN Policy language. The RECOMMENDED strategy to express constrains that involve side effects (like day of week) is to include that infromation in the argument shape for that Command (i.e. have a `"day_of_week": "friday"` field).
 
+// FIXME duplicate header
 # Validation
+[Validation]: #validation
 
 Validation of a UCAN chain MAY occur at any time, but MUST occur upon receipt of an [Invocation] _prior to execution_. While proof chains exist outside of a particular delegation (and are made concrete in [UCAN Invocation]s), each delegate MUST store one or more valid delegations chains for a particular claim.
 
@@ -561,6 +587,7 @@ If _any_ of the following criteria are not met, the UCAN Delegation MUST be cons
 Additional constraints MAY be placed on Delegations by specs that use them (notably [UCAN Invocation]).
 
 ## Time Bounds
+[Time Bounds]: #time-bounds
 
 A UCAN's time bounds MUST NOT be considered valid if the current system time is before the `nbf` field or after the `exp` field. This is called the "validity period." Proofs in a chain MAY have different validity periods, but MUST all be valid at execution-time. This has the effect of making a delegation chain valid between the latest `nbf` and earliest `exp`.
 
@@ -581,6 +608,7 @@ const ensureTime = (delegationChain, now) => {
 ```
 
 ## Principal Alignment
+[Principal Alignment]: #principal-alignment
 
 In delegation, the `aud` field of every proof MUST match the `iss` field of the UCAN being delegated to. This alignment MUST form a chain back to the Subject for each resource. 
 
@@ -642,10 +670,12 @@ flowchart RL
 ```
 
 ## Signature Validation
+[Signature Validation]: #signature-validation
 
 The [Signature] field MUST validate against the `iss` DID from the [Payload].
 
 # Acknowledgments
+[Acknowledgments]: #acknowledgments
 
 Thank you to [Brendan O'Brien] for real-world feedback, technical collaboration, and implementing the first Golang UCAN library.
 
@@ -671,20 +701,6 @@ Many thanks to [Alan Karp] for sharing his vast experience with capability-based
 
 We want to especially recognize [Mark Miller] for his numerous contributions to the field of distributed auth, programming languages, and computer security writ large.
 
-<!-- Footnotes -->
-
-[^js-num-size]: JavaScript has a single numeric type ([`Number`][JS Number]) for both integers and floats. This representation is defined as a [IEEE-754] double-precision floating point number, which has a 53-bit significand.
-
-<!-- Internal Links -->
-
-[Ability]: #ability
-[Envelope]: #delegation-envelope
-[Meta]: #meta
-[Payload]: #delegation-payload
-[Subject]: #subject
-[Policy]: #policy-language
-[Policy Language]: #policy-language
- 
 <!-- External Links -->
 
 [Alan Karp]: https://github.com/alanhkarp
