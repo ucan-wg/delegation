@@ -136,13 +136,13 @@ In the case where access to an [external resource] is delegated, the Subject MUS
 [Powerline]: #powerline
 
 > [!WARNING]
-> Just like `cmd: "/"` and `pol: []`, this feature (`sub: null`) is a very powerful feature. Use with care.
+> Similar to `cmd: "/"` and `pol: []`, this feature (`sub: null`) is a very powerful feature. Use with care.
 
-A "Powerline"[^powerbox] is a pattern for automatically delegating _all_ future delegations to another agent regardless of [Subject]. This is achieved by explicitly setting the [Subject] (`sub`) field to `null`. At [Validation] time, the [Subject] MUST be substituted for the directly prior Subject given in the delegation chain.
+A "Powerline"[^powerbox] is a pattern for automatically delegating _all_ future delegations to another agent regardless of [Subject]. This is achieved by explicitly setting the [Subject] (`sub`) field to `null`. At [Validation] time, the [Subject] MUST be substituted for the directly prior Subject given in the delegation chain. All other fields MUST continue to validate as normal (e.g. [principal alignment][Principal Alignment], [time bounds][Time Bounds], and so on).
 
 [^powerbox]: For those familiar with design patterns for object capabilities, a "Powerline" is like a [Powerbox] but adapted for the partition-tolerant, static token context of UCAN.
 
-Powerline delegations MUST NOT be used as the root delegation to a resource. A priori there is no such thing as a `null` resource.
+Powerline delegations MUST NOT be used as the root delegation to a resource. A priori there is no such thing as a `null` subject a prior.
  
 A very common use case for Powerlines is providing a stable DID across multiple agents (e.g. representing a user with multiple devices). This enables the automatic sharing of authority across their devices without needing to share keys or set up a threshold scheme. It is also flexible, since a Powerline delegation MAY be [revoked][revocation].
 
