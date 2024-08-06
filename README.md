@@ -446,7 +446,7 @@ Selectors MUST only include the following features:
 | Collection slices         | `[7:11]`, `[2:]`, `[:42]`, `[0:-2]` | The range of elements by their indices.                                                         |
 | Optional                  | `.foo?`, `["nope"]?`                | Returns `null` on what would otherwise fail                                                     |
 
-Any selection MAY begin and/or end with a single dot. Multiple dots (e.g. `..`, `...`) MUST NOT be used anywhere in a selector.
+Every selection MUST begin and/or end with a single dot. Multiple dots (e.g. `..`, `...`) MUST NOT be used anywhere in a selector.
 
 The optional operator is idempotent, and repeated optionals (`.foo???`) MUST be treated as a single one.
 
