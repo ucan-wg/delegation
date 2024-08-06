@@ -104,10 +104,10 @@ The Subject MUST be the DID that initiated the delegation chain, or an explicit 
 }
 ```
 
-## Resource
+### Resource
 [Resource]: #resource
 
-Unlike Subjects and Commands, Resources are semantic rather than syntactic. The Resource is the "what" that a capability describes.
+Unlike [Subjects][Subject] and [Commands][Command], Resources are _semantic_ rather than syntactic. The Resource is the "what" that a capability describes.
 
 By default, the Resource of a capability is the Subject. This makes the delegation chain self-certifying.
 
@@ -132,6 +132,52 @@ In the case where access to an [external resource] is delegated, the Subject MUS
 }
 ```
 
+### Powerline
+[Powerline]: #powerline
+
+> [!WARNING]
+> Just like `cmd: "/"` and `pol: []`, this feature (`sub: null`) is a very feature. Use with care.
+
+A "Powerline"[^powerbox] is a pattern for automatically delegating _all_ future delegations to another agent regardless of [Subject]. This is achieved by explicitly setting the [Subject] (`sub`) field to `null`. At [Validation] time, the [Subject] MUST be substituted for the directly prior Subject given in the delegation chain.
+
+[^powerbox]: For those familiar with design patterns for object capabilities, a "Powerline" is like a [Powerbox] but adapted for the partition-tolerant, static token context of UCAN.
+
+Powerline delegations MUST NOT be used as the root delegation to a resource. A priori there is no such thing as a `null` resource.
+ 
+A very common use case for Powerlines is providing a stable DID across multiple agents (e.g. representing a user with multiple devices). This enables the automatic sharing of authority across their devices without needing to share keys or set up a threshold scheme. It is also flexible, since a Powerline delegation MAY be [revoked][revocation].
+
+``` mermaid
+sequenceDiagram
+    autonumber
+
+    participant Email Server
+    participant Alice Root
+    participant Alice's Phone
+    participant Alice's Tablet
+    participant Alice's Laptop
+
+    Alice Root ->> Alice's Phone: Delegate {sub: null, cmd: "/"}
+    Alice Root ->> Alice's Tablet: Delegate {sub: null, cmd: "/"}
+    Alice Root ->> Alice's Laptop: Delegate {sub: null, cmd: "/"}
+
+    Email Server ->> Alice Root: Delegate {sub: "did:example:email", cmd: "/msg/send"}
+
+    Alice's Tablet -->> Email Server: INVOKE! {sub: "did:example:email", cmd: "/msg/send", proofs: [❹,❷]}
+```
+
+Powerlines MAY include other restrictions, such as [time bounds][Time Bounds], [Commands][Command], and [Policies][Policy]. For example, the ability to automatically redelegate read-only access to arbitrary resources could be expressed as:
+
+``` js
+{
+  "iss": "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp",
+  "aud": "did:key:zQ3shokFTS3brHcDQrn82RUDfCZESWL1ZdCEJwekUDPQiYBme",
+  "sub": null, // ⚡Powerline
+  "cmd": "/crud/read",
+  "pol": [],
+  // ...
+}
+```
+
 # Policy Language
 [Policy Language]: #policy-language
 
@@ -143,13 +189,13 @@ Policies are structured as trees. With the exception of subtrees under `some`, `
 
 A Policy is an array of statements. Every statement MUST take the form `[operator, selector, argument]` except for negation which MUST take the form `["not", statement]`.
 
-Below is a formal syntax for the UCAN Policy Language given in [ABNF] (for DAG-JSON):
+Below is a formal syntax for the UCAN Policy Language given in [ABNF] (representing IPLD as [DAG-JSON]):
 
 ``` abnf
 policy      = "[" *1(statement *("," statement)) "]"
 statement   = equality 
             / inequality 
-            / like
+            / wildcard
             / connective 
             / quantifier
 
@@ -170,7 +216,7 @@ inequality  = "[" DQUOTE ">"  DQUOTE "," selector "," number "]" ; Numeric great
             / "[" DQUOTE "<"  DQUOTE "," selector "," number "]" ; Numeric lesser-than
             / "[" DQUOTE "<=" DQUOTE "," selector "," number "]" ; Numeric lesser-than-or-equal
 
-like        = "[" DQUOTE "like" DQUOTE "," selector "," pattern "]" ; String wildcard matching
+wildcard    = "[" DQUOTE "like" DQUOTE "," selector "," pattern "]" ; String wildcard matching
 
 ;; SELECTORS
 
@@ -512,9 +558,6 @@ null
 
 jq produces streams of values, in contrast to UCAN argument selectors which return an IPLD value. This introduces the primary difference between jq and UCAN argument selectors is how to treat output of the try (`?`) operator: UCAN's `try` selector operator MUST return `null` for the failure case.
 
-## Powerlines
-[Powerlines]: #powerlines
-
 ## Validation
 [Validation]: #validation
 
@@ -765,6 +808,7 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 
 <!-- External Links -->
 
+[ABNF]: https://datatracker.ietf.org/doc/html/rfc5234
 [Alan Karp]: https://github.com/alanhkarp
 [Benjamin Goering]: https://github.com/gobengo
 [Blaine Cook]: https://github.com/blaine
@@ -777,6 +821,7 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [Christopher Joel]: https://github.com/cdata
 [Command]: https://github.com/ucan-wg/spec#33-command
 [DAG-CBOR]: https://ipld.io/specs/codecs/dag-cbor/spec/
+[DAG-JSON]: https://ipld.io/specs/codecs/dag-json/spec/
 [DID fragment]: https://www.w3.org/TR/did-core/#terminology
 [DID]: https://www.w3.org/TR/did-core/
 [Dan Finlay]: https://github.com/danfinlay
@@ -800,6 +845,7 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [OCapN]: https://github.com/ocapn/
 [Philipp Krüger]: https://github.com/matheus23
 [PoLA]: https://en.wikipedia.org/wiki/Principle_of_least_privilege 
+[Powerbox]: https://sandstorm.io/how-it-works#powerbox
 [Protocol Labs]: https://protocol.ai/
 [RFC 3339]: https://www.rfc-editor.org/rfc/rfc3339
 [RFC 8037]: https://www.rfc-editor.org/rfc/rfc8037
