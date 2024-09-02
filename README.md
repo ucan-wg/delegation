@@ -204,34 +204,6 @@ A Policy is an array of statements. Every statement MUST take the form `[operato
 Below is a formal syntax for the UCAN Policy Language given in [ABNF] (representing IPLD as [DAG-JSON]):
 
 ``` abnf
-policy      = "[" *1(statement *("," statement)) "]"
-statement   = equality 
-            / inequality 
-            / wildcard
-            / connective 
-            / quantifier
-
-;; STRUCTURAL
-
-connective  = "[" DQUOTE "not" DQUOTE ","  statement "]"                   ; Negation
-            / "[" DQUOTE "and" DQUOTE ",[" statement *("," statement) "]]" ; Conjuction
-            / "[" DQUOTE "or"  DQUOTE ",[" statement *("," statement) "]]" ; Disjunction
-
-quantifier  = "[" DQUOTE "all" DQUOTE "," selector "," policy "]" ; Universal
-            / "[" DQUOTE "any" DQUOTE "," selector "," policy "]" ; Existential
-
-;; COMPARISONS
-
-equality    = "[" DQUOTE "==" DQUOTE "," selector "," ipld   "]" ; Equality on IPLD literals
-inequality  = "[" DQUOTE ">"  DQUOTE "," selector "," number "]" ; Numeric greater-than
-            / "[" DQUOTE ">=" DQUOTE "," selector "," number "]" ; Numeric greater-than-or-equal
-            / "[" DQUOTE "<"  DQUOTE "," selector "," number "]" ; Numeric lesser-than
-            / "[" DQUOTE "<=" DQUOTE "," selector "," number "]" ; Numeric lesser-than-or-equal
-
-wildcard    = "[" DQUOTE "like" DQUOTE "," selector "," pattern "]" ; String wildcard matching
-
-;; SELECTORS
-
 selector    = DQUOTE "." DQUOTE                     ; Identity
             / DQUOTE 1*(subselector *1("?")) DQUOTE ; Nested subselectors with possible optionals
 
@@ -239,11 +211,103 @@ subselector = "." CHAR string                           ; Dotted field selector
             / *1(".") "[\" DQUOTE string "\" DQUOTE "]" ; Explicit field selector
             / *1(".") "[" integer "]"                   ; Index selector
             / *1(".") "[]"                              ; Collection values // FIXME doble check code
+```
 
-;; SPECIAL LITERALS
 
-pattern     = DQUOTE string DQUOTE ; Reminder: IPLD strings are UTF-8
-number      = integer / float
+
+``` ipldsch
+-- Statements
+
+type Statement union {
+  | Equality
+  | Inequality
+  | Connective
+  | Negation
+  | Quantifier
+}
+
+-- Equality
+
+type EqOp enum {
+  | Eq ("==")
+  | Neq ("!=")
+}
+
+type Equality struct {
+  op EqOp
+  sel Selector
+  val Any
+} representation tuple
+
+type LikeOp enum {
+  | Like ("like")
+}
+
+type Like struct {
+  op LikeOp
+  sel Selector
+  str Wildcard
+} representation tuple
+
+-- Inequality
+
+type IneqOp enum {
+  | GT  (">")
+  | GTE (">=")
+  | LT  ("<")
+  | LTE ("<=")
+}
+
+type Inequality struct {
+  op IneqOp
+  sel Selector
+  val Number
+} representation tuple
+
+-- Connectives
+
+type NegateOp {
+  | Not ("not")
+}
+
+type Negation struct {
+  op   NegateOp
+  smts [Statement]
+} representation tuple
+
+type ConnectiveOp enum {
+  | And ("and")
+  | Or  ("or")
+}
+
+type Connective struct {
+  op   ConnectiveOp
+  smts [Statement]
+} representation tuple
+
+-- Quantification
+
+type QuantifierOp enum {
+  | All ("all")
+  | Any ("any")
+}
+
+type Quantifier struct {
+  op  QuantiefierOp
+  sel Selector
+  smt Statement
+} representation tuple
+
+-- Primitives
+
+type Selector = string
+
+type Number union {
+  | NumInt   int
+  | NumFloat float
+} representation kinded
+
+type Wildcard = string
 ```
  
 ## Comparisons
