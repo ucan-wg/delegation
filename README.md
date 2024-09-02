@@ -49,17 +49,17 @@ The UCAN envelope tag for UCAN Delegation MUST be set to `ucan/dlg@1.0.0-rc.1`.
 
 The Delegation payload MUST describe the authorization claims, who is involved, and its validity period.
 
-| Field   | Type                                      | Required | Description                                                 |
-|---------|-------------------------------------------|----------|-------------------------------------------------------------|
-| `iss`   | `DID`                                     | Yes      | Issuer DID (sender)                                         |
-| `aud`   | `DID`                                     | Yes      | Audience DID (receiver)                                     |
-| `sub`   | `DID \| null`                             | Yes      | Principal that the chain is about (the [Subject])           |
-| `cmd`   | `String`                                  | Yes      | The [Command] to eventually invoke                          |
-| `pol`   | `Policy`                                  | Yes      | [Policy]                                                    |
-| `nonce` | `Bytes`                                   | Yes      | Nonce                                                       |
-| `meta`  | `{String : Any}`                          | No       | [Meta] (asserted, signed data) — is not delegated authority |
-| `nbf`   | `Integer` (53-bits[^js-num-size])         | No       | "Not before" UTC Unix Timestamp in seconds (valid from)     |
-| `exp`   | `Integer \| null` (53-bits[^js-num-size]) | Yes      | Expiration UTC Unix Timestamp in seconds (valid until)      |
+| Field   | Type                                      | Required | Description                                                               |
+|---------|-------------------------------------------|----------|---------------------------------------------------------------------------|
+| `iss`   | `DID`                                     | Yes      | Issuer DID (sender). All [DID][did-spec]s are represented as string URLs. |
+| `aud`   | `DID`                                     | Yes      | Audience DID (receiver)                                                   |
+| `sub`   | `DID \| null`                             | Yes      | Principal that the chain is about (the [Subject])                         |
+| `cmd`   | `String`                                  | Yes      | The [Command] to eventually invoke                                        |
+| `pol`   | `Policy`                                  | Yes      | [Policy]                                                                  |
+| `nonce` | `Bytes`                                   | Yes      | Nonce                                                                     |
+| `meta`  | `{String : Any}`                          | No       | [Meta] (asserted, signed data) — is not delegated authority               |
+| `nbf`   | `Integer` (53-bits[^js-num-size])         | No       | "Not before" UTC Unix Timestamp in seconds (valid from)                   |
+| `exp`   | `Integer \| null` (53-bits[^js-num-size]) | Yes      | Expiration UTC Unix Timestamp in seconds (valid until)                    |
 
 [^js-num-size]: JavaScript has a single numeric type ([`Number`][JS Number]) for both integers and floats. This representation is defined as a [IEEE-754] double-precision floating point number, which has a 53-bit significand.
 
@@ -200,20 +200,6 @@ A Policy is always given as an array of predicates. This top-level array is impl
 Policies are structured as trees. With the exception of subtrees under `any`, `or`, and `not`, every leaf MUST evaluate to `true`. 
 
 A Policy is an array of statements. Every statement MUST take the form `[operator, selector, argument]` except for negation which MUST take the form `["not", statement]`.
-
-Below is a formal syntax for the UCAN Policy Language given in [ABNF] (representing IPLD as [DAG-JSON]):
-
-``` abnf
-selector    = DQUOTE "." DQUOTE                     ; Identity
-            / DQUOTE 1*(subselector *1("?")) DQUOTE ; Nested subselectors with possible optionals
-
-subselector = "." CHAR string                           ; Dotted field selector
-            / *1(".") "[\" DQUOTE string "\" DQUOTE "]" ; Explicit field selector
-            / *1(".") "[" integer "]"                   ; Index selector
-            / *1(".") "[]"                              ; Collection values // FIXME doble check code
-```
-
-
 
 ``` ipldsch
 -- Statements
@@ -954,6 +940,7 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [`did:web`]: https://w3c-ccg.github.io/did-method-web/
 [base32]: https://github.com/multiformats/multibase/blob/master/multibase.csv#L13
 [dag-json multicodec]: https://github.com/multiformats/multicodec/blob/master/table.csv#L112
+[did-spec]: https://www.w3.org/TR/did-core/
 [did:key ECDSA]: https://w3c-ccg.github.io/did-method-key/#p-256
 [did:key EdDSA]: https://w3c-ccg.github.io/did-method-key/#ed25519-x25519
 [did:key RSA]: https://w3c-ccg.github.io/did-method-key/#rsa
