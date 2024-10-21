@@ -11,7 +11,7 @@
 
 - [Brooklyn Zelenka], [Witchcraft Software]
 - [Daniel Holmgren], [Bluesky]
-- [Irakli Gozalishvili], [Protocol Labs]
+- [Irakli Gozalishvili], [Common Tools]
 - [Philipp Krüger], [number zero]
 
 ## Dependencies
@@ -22,7 +22,7 @@
 ## Language
 [Language]: #language
 
-The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in [RFC 2119].
+The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in [BCP 14] when, and only when, they appear in all capitals, as shown here.
 
 # Abstract
 [Abstract]: #abstract
@@ -864,7 +864,7 @@ Many thanks to [Christine Lemmer-Webber] for her handwritten(!) feedback on the 
 
 Thanks to [Benjamin Goering] for the many community threads and connections to [W3C] standards.
 
-Thanks to [Steve Moyer] for his detailed feedback on the selector design and thoughts on ANBF codegen.
+Thanks to [Michael Muré] and [Steve Moyer] at [Infura] for their detailed feedback on the selector design and thoughts on ANBF codegen, and an updated Golang UCAN implementation.
 
 Thanks to [Juan Caballero] for the numerous questions, clarifications, and general advice on putting together a comprehensible spec.
 
@@ -877,9 +877,10 @@ Many thanks to [Alan Karp] for sharing his vast experience with capability-based
 We want to especially recognize [Mark Miller] for his numerous contributions to the field of distributed auth, programming languages, and computer security writ large.
 
 <!-- External Links -->
-
+ 
 [ABNF]: https://datatracker.ietf.org/doc/html/rfc5234
 [Alan Karp]: https://github.com/alanhkarp
+[BCP 14]: https://www.rfc-editor.org/info/bcp14
 [Benjamin Goering]: https://github.com/gobengo
 [Blaine Cook]: https://github.com/blaine
 [Bluesky]: https://blueskyweb.xyz/
@@ -889,6 +890,7 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [CIDv1]: https://github.com/multiformats/cid?tab=readme-ov-file#cidv1
 [Christine Lemmer-Webber]: https://github.com/cwebber
 [Christopher Joel]: https://github.com/cdata
+[Common Tools]: https://common.tools/
 [DAG-CBOR]: https://ipld.io/specs/codecs/dag-cbor/spec/
 [DAG-JSON]: https://ipld.io/specs/codecs/dag-json/spec/
 [DID fragment]: https://www.w3.org/TR/did-core/#terminology
@@ -903,6 +905,7 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [Hugo Dias]: https://github.com/hugomrdias
 [IEEE-754]: https://ieeexplore.ieee.org/document/8766229
 [IPLD]: https://ipld.io/
+[Infura]: https://www.infura.io/
 [Ink & Switch]: https://www.inkandswitch.com/
 [Invocation]: https://github.com/ucan-wg/invocation
 [Irakli Gozalishvili]: https://github.com/Gozala
@@ -910,6 +913,7 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [Juan Caballero]: https://github.com/bumblefudge
 [Mark Miller]: https://github.com/erights
 [Martin Kleppmann]: https://martin.kleppmann.com/
+[Michael Muré]: https://github.com/MichaelMure
 [Mikael Rogers]: https://github.com/mikeal/
 [OCAP]: https://en.wikipedia.org/wiki/Object-capability_model
 [OCapN]: https://github.com/ocapn/
