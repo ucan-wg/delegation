@@ -485,16 +485,16 @@ Selector syntax is closely based on [jq]'s "filters". They operate on an [Invoca
 
 Selectors MUST only include the following features:
 
-| Selector Name             | Examples                            | Notes                                                                                           |
-|---------------------------|-------------------------------------|-------------------------------------------------------------------------------------------------|
-| Identity                  | `.`                                 | Take the entire argument                                                                        |
-| Dotted field name         | `.foo`, `.bar0_`                    | Shorthand for selecting in a map by key (with exceptions, see below)                            |
-| Unambiguous field name    | `["."]`, `["$_*"]`                  | Select in a map by arbitrary key                                                                |
-| Collection values         | `[]`                                | Expands out all of the children that match the remaining path FIXME double check with the code  |
-| Collection index          | `[0]`, `[42]`                       | The element at an index. On a map, this is decided by IPLD's key sort order. FIXME double check |
-| Collection negative index | `[-1]`, `[-42]`                     | The element by index from the end. `-1` is the index for the last element.                      |
-| Collection slices         | `[7:11]`, `[2:]`, `[:42]`, `[0:-2]` | The range of elements by their indices.                                                         |
-| Optional                  | `.foo?`, `["nope"]?`                | Returns `null` on what would otherwise fail                                                     |
+| Selector Name          | Examples                            | Notes                                                                                                                  |
+|------------------------|-------------------------------------|------------------------------------------------------------------------------------------------------------------------|
+| Identity               | `.`                                 | Take the entire argument                                                                                               |
+| Dotted field name      | `.foo`, `.bar0_`                    | Shorthand for selecting in a map by key (with exceptions, see below)                                                   |
+| Unambiguous field name | `["."]`, `["$_*"], ["1"]`           | Select in a map by arbitrary key                                                                                       |
+| Collection values      | `[]`                                | Expands out all of the children that match the remaining path. On lists this is a noop. On maps, this extracts values. |
+| List index             | `[0]`, `[42]`                       | The list element of a list by 0-index.                                                                                 |
+| Negative list index    | `[-1]`, `[-42]`                     | The list element by index from the end. `-1` is the index for the last element.                                        |
+| List slices            | `[7:11]`, `[2:]`, `[:42]`, `[0:-2]` | The range of elements by their indices.                                                                                |
+| Optional               | `.foo?`, `["nope"]?`                | Returns `null` on what would otherwise fail                                                                            |
 
 Every selection MUST begin and/or end with a single dot. Multiple dots (e.g. `..`, `...`) MUST NOT be used anywhere in a selector.
 
