@@ -621,11 +621,11 @@ Bytes MAY be selected into. When doing so, they MUST be treated as a byte array 
 ### Differences from jq
 [Differences from jq]: #differences-from-jq
 
-[jq] is a much larger language than UCAN's selectors. jq includes features like pipes, arithmatic, regexes, assignment, recursive descent, and so on which MUST NOT be supported in the UCAN Policy language.
+[jq] is a much larger language than UCAN's selectors. jq includes features like pipes, arithmatic, regexes, assignment, recursive descent, and so on which are not supported in the UCAN Policy language, and thus MUST NOT be implemented in UCAN.
 
-jq produces streams of values, in contrast to UCAN argument selectors which return an IPLD value. This introduces the primary difference between jq and UCAN argument selectors is how to treat output of the optional (`?`) operator: UCAN's optional selector operator MUST return `null` for the failure case.
+jq produces streams of values (a distrinct concept from arrays), in contrast to UCAN argument selectors which always return an IPLD value. This introduces the primary difference between jq and UCAN argument selectors is how to treat output of the optional (`?`) operator: UCAN's optional selector operator MUST return `null` for the failure case.
 
-There are 
+There are  FIXME
 
 ## Validation
 [Validation]: #validation
