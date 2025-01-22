@@ -599,8 +599,19 @@ null
 
 </td>
 </tr>
+
+<tr>
+<td><pre>".to[99]"</pre></td>
+<td>
+
+fail to resolve
+
+</td>
+</tr>
 </tbody>
 </table>
+
+Selectors are resolved left to right, and MUST return early when a segment can't be resolved, even if a later segment is optional.
 
 ### Selecting on Bytes
 
