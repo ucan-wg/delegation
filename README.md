@@ -199,7 +199,7 @@ A Policy is always given as an array of predicates. This top-level array is impl
 
 Policies are structured as trees. With the exception of subtrees under `any`, `or`, and `not`, every leaf MUST evaluate to `true`. 
 
-A Policy is an array of statements. Every statement MUST take the form `[operator, selector, argument]` except for negation which MUST take the form `["not", statement]`.
+A Policy is an array of statements. Every statement MUST take the form `[operator, selector, argument]` except for connectives (`and`, `or`, `not`) which MUST take the form `["not", argument]`.
 
 ``` ipldsch
 -- Statements
@@ -299,7 +299,7 @@ type Wildcard = string
 ## Comparisons
 [Comparisons]: #comparisons
 
-| Operator | Argument(s)                    | Example                          |
+| Operator | Arguments                      | Example                          |
 |----------|--------------------------------|----------------------------------|
 | `==`     | `Selector, IPLD`               | `["==", ".a", [1, 2, {"b": 3}]]` |
 | `!=`     | `Selector, IPLD`               | `["!=", ".a", [1, 2, {"b": 3}]]` |
@@ -317,7 +317,7 @@ Numeric inequalities MUST be agnostic to numeric type. In other words, the decim
 ## Glob Matching
 [Glob Matching]: #glob-matching
 
-| Operator | Argument(s)         | Example                               |
+| Operator | Arguments           | Example                               |
 |----------|---------------------|---------------------------------------|
 | `like`   | `Selector, Pattern` | `["like", ".email", "*@example.com"]` |
 
@@ -343,7 +343,7 @@ The following MUST NOT pass validation for that same pattern:
 
 Connectives add context to their enclosed statement(s).
 
-| Operator | Argument(s)   | Example                                    |
+| Operator | Argument      | Example                                    |
 |----------|---------------|--------------------------------------------|
 | `and`    | `[Statement]` | `["and", [[">", ".a", 1], [">", ".b", 2]]` |
 | `or`     | `[Statement]` | `["or",  [[">", ".a", 1], [">", ".b", 2]]` | 
@@ -407,7 +407,7 @@ Connectives add context to their enclosed statement(s).
   ["and", [
     ["==", ".name", "Katie"], 
     ["==", ".nationalities", ["American"]] // ⬅️  false
-]]
+]]]
 // ⬆️  true
 ```
 
