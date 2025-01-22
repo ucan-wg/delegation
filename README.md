@@ -302,12 +302,15 @@ type Wildcard = string
 | Operator | Argument(s)                    | Example                          |
 |----------|--------------------------------|----------------------------------|
 | `==`     | `Selector, IPLD`               | `["==", ".a", [1, 2, {"b": 3}]]` |
+| `!=`     | `Selector, IPLD`               | `["!=", ".a", [1, 2, {"b": 3}]]` |
 | `<`      | `Selector, (integer \| float)` | `["<",  ".a", 1]`                |
 | `<=`     | `Selector, (integer \| float)` | `["<=", ".a", 1]`                |
 | `>`      | `Selector, (integer \| float)` | `[">",  ".a", 1]`                |
 | `>=`     | `Selector, (integer \| float)` | `[">=", ".a", 1]`                |
 
-Literal equality (`==`) MUST match the resolved selecor to entire IPLD argument. This is a "deep comparison".
+Literal equality (`==`) MUST match the resolved selector to entire IPLD argument. This is a "deep comparison".
+
+Literal inequality (`!=`) is equivalent to `["not", ["==", selector, value]]`.
 
 Numeric inequalities MUST be agnostic to numeric type. In other words, the decimal representation is considered equivalent to an integer (`1 == 1.0 == 1.00`). Attempting to compare a non-numeric type MUST return false and MUST NOT throw an exception.
 
