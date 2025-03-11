@@ -27,7 +27,7 @@ The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "S
 # Abstract
 [Abstract]: #abstract
 
-This specification describes the representation and semantics for delegating attenuated authority between principals. UCAN Delegation provides a cryptographically verifiable container, batched capabilities, hierarchical authority, and a minimal syntatically-driven policy langauge.
+This specification describes the representation and semantics for delegating attenuated authority between principals. UCAN Delegation provides a cryptographically verifiable container, batched capabilities, hierarchical authority, and a minimal syntactically-driven policy language.
 
 # Introduction
 [Introduction]: #introduction
@@ -199,7 +199,7 @@ A Policy is always given as an array of predicates. This top-level array is impl
 
 Policies are structured as trees. With the exception of subtrees under `any`, `or`, and `not`, every leaf MUST evaluate to `true`. 
 
-A Policy is an array of statements. Every statement MUST take the form `[operator, selector, argument]` except for negation which MUST take the form `["not", statement]`.
+A Policy is an array of statements. Every statement MUST take the form `[operator, selector, argument]` except for connectives (`and`, `or`, `not`) which MUST take the form `[operator, argument]`.
 
 ``` ipldsch
 -- Statements
@@ -299,22 +299,25 @@ type Wildcard = string
 ## Comparisons
 [Comparisons]: #comparisons
 
-| Operator | Argument(s)                    | Example                          |
+| Operator | Arguments                      | Example                          |
 |----------|--------------------------------|----------------------------------|
 | `==`     | `Selector, IPLD`               | `["==", ".a", [1, 2, {"b": 3}]]` |
+| `!=`     | `Selector, IPLD`               | `["!=", ".a", [1, 2, {"b": 3}]]` |
 | `<`      | `Selector, (integer \| float)` | `["<",  ".a", 1]`                |
 | `<=`     | `Selector, (integer \| float)` | `["<=", ".a", 1]`                |
 | `>`      | `Selector, (integer \| float)` | `[">",  ".a", 1]`                |
 | `>=`     | `Selector, (integer \| float)` | `[">=", ".a", 1]`                |
 
-Literal equality (`==`) MUST match the resolved selecor to entire IPLD argument. This is a "deep comparison".
+Literal equality (`==`) MUST match the resolved selector to entire IPLD argument. This is a "deep comparison".
+
+Literal inequality (`!=`) is equivalent to `["not", ["==", selector, value]]`.
 
 Numeric inequalities MUST be agnostic to numeric type. In other words, the decimal representation is considered equivalent to an integer (`1 == 1.0 == 1.00`). Attempting to compare a non-numeric type MUST return false and MUST NOT throw an exception.
 
 ## Glob Matching
 [Glob Matching]: #glob-matching
 
-| Operator | Argument(s)         | Example                               |
+| Operator | Arguments           | Example                               |
 |----------|---------------------|---------------------------------------|
 | `like`   | `Selector, Pattern` | `["like", ".email", "*@example.com"]` |
 
@@ -340,7 +343,7 @@ The following MUST NOT pass validation for that same pattern:
 
 Connectives add context to their enclosed statement(s).
 
-| Operator | Argument(s)   | Example                                    |
+| Operator | Argument      | Example                                    |
 |----------|---------------|--------------------------------------------|
 | `and`    | `[Statement]` | `["and", [[">", ".a", 1], [">", ".b", 2]]` |
 | `or`     | `[Statement]` | `["or",  [[">", ".a", 1], [">", ".b", 2]]` | 
@@ -404,7 +407,7 @@ Connectives add context to their enclosed statement(s).
   ["and", [
     ["==", ".name", "Katie"], 
     ["==", ".nationalities", ["American"]] // ⬅️  false
-]]
+]]]
 // ⬆️  true
 ```
 
@@ -621,11 +624,9 @@ Bytes MAY be selected into. When doing so, they MUST be treated as a byte array 
 ### Differences from jq
 [Differences from jq]: #differences-from-jq
 
-[jq] is a much larger language than UCAN's selectors. jq includes features like pipes, arithmatic, regexes, assignment, recursive descent, and so on which are not supported in the UCAN Policy language, and thus MUST NOT be implemented in UCAN.
+[jq] is a much larger language than UCAN's selectors. jq includes features like pipes, arithmetic, regexes, assignment, recursive descent, and so on which are not supported in the UCAN Policy language, and thus MUST NOT be implemented in UCAN.
 
-jq produces streams of values (a distrinct concept from arrays), in contrast to UCAN argument selectors which always return an IPLD value. This introduces the primary difference between jq and UCAN argument selectors is how to treat output of the optional (`?`) operator: UCAN's optional selector operator MUST return `null` for the failure case.
-
-There are  FIXME
+jq produces streams of values (a distinct concept from arrays), in contrast to UCAN argument selectors which always return an IPLD value. This introduces the primary difference between jq and UCAN argument selectors is how to treat output of the optional (`?`) operator: UCAN's optional selector operator MUST return `null` for the failure case.
 
 ## Validation
 [Validation]: #validation
@@ -742,7 +743,7 @@ Note that this also applies to arrays and objects. For example, the `to` array i
 ## Semantic Conditions
 [Semantics Conditions]: #semantic-conditions
 
-Other semantic conditions that are not possible to fully express syntactically (e.g. current day of week) MUST be handled as part of Invocation execution. This is considered out of scope of the UCAN Policy language. The RECOMMENDED strategy to express constrains that involve side effects (like day of week) is to include that infromation in the argument shape for that Command (i.e. have a `"day_of_week": "friday"` field).
+Other semantic conditions that are not possible to fully express syntactically (e.g. current day of week) MUST be handled as part of Invocation execution. This is considered out of scope of the UCAN Policy language. The RECOMMENDED strategy to express constrains that involve side effects (like day of week) is to include that information in the argument shape for that Command (i.e. have a `"day_of_week": "friday"` field).
 
 # Token Validation
 [Token Validation]: #token-validation
@@ -789,8 +790,8 @@ This calculation MUST NOT take into account [DID fragment]s. If present, fragmen
 
 ``` mermaid
 flowchart RL
-    invoker((&nbsp&nbsp&nbsp&nbspDan&nbsp&nbsp&nbsp&nbsp))
-    subject((&nbsp&nbsp&nbsp&nbspAlice&nbsp&nbsp&nbsp&nbsp))
+    invoker((👨 Dan's DID))
+    subject((👩 Alice's DID))
 
     subject -- controls --> resource[(Storage)]
     rootCap -- references --> resource
@@ -854,7 +855,7 @@ Thank you to [Brendan O'Brien] for real-world feedback, technical collaboration,
 
 Many thanks to [Hugo Dias], [Mikael Rogers], and the entire DAG House team for the real world feedback, and finding inventive new use cases.
 
-Thank you [Blaine Cook] for the real-world feedback, ideas on future features, and lessons from other auth standards.
+Thank you to [Blaine Cook] for the real-world feedback, ideas on future features, and lessons from other auth standards.
 
 Many thanks to [Brian Ginsburg] and [Steven Vandevelde] for their many copy edits, feedback from real world usage, maintenance of the TypeScript implementation, and tools such as [ucan.xyz].
 
@@ -864,7 +865,7 @@ Many thanks to [Christine Lemmer-Webber] for her handwritten(!) feedback on the 
 
 Thanks to [Benjamin Goering] for the many community threads and connections to [W3C] standards.
 
-Thanks to [Michael Muré] and [Steve Moyer] at [Infura] for their detailed feedback on the selector design and thoughts on ANBF codegen, and an updated Golang UCAN implementation.
+Thanks to [Michael Muré] and [Steve Moyer] at [Infura] for their detailed feedback on the selector design and thoughts on ABNF codegen, and an updated Golang UCAN implementation.
 
 Thanks to [Juan Caballero] for the numerous questions, clarifications, and general advice on putting together a comprehensible spec.
 
