@@ -1,0 +1,27 @@
+type Delegation struct {
+  p SignaturePayload
+  s Signature
+}
+
+type DelegationPayload struct {
+  iss DID
+  aud DID
+  sub DID
+
+  exp Integer
+  nbf Integer
+
+  can  String
+  args {String : Any}
+  cond [{String : Any}]
+}
+
+type Signature union {
+  | batch  BatchSig
+  | inline Bytes
+} representation kinded
+
+type BatchSig struct {
+  scp &[Any]
+  sig Bytes
+}
