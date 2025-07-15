@@ -257,8 +257,8 @@ type NegateOp {
 }
 
 type Negation struct {
-  op   NegateOp
-  smts [Statement]
+  op  NegateOp
+  smt Statement
 } representation tuple
 
 type ConnectiveOp enum {
