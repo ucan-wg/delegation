@@ -210,6 +210,7 @@ type Statement union {
   | Connective
   | Negation
   | Quantifier
+  | Like
 }
 
 -- Equality
