@@ -919,7 +919,7 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [Hugo Dias]: https://github.com/hugomrdias
 [IEEE-754]: https://ieeexplore.ieee.org/document/8766229
 [IPLD]: https://ipld.io/
-[Infura]: https://www.infura.io/
+[Infura]: https://www.infura.io
 [Ink & Switch]: https://www.inkandswitch.com/
 [Invocation]: https://github.com/ucan-wg/invocation
 [Irakli Gozalishvili]: https://github.com/Gozala
@@ -966,4 +966,4 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [number zero]: https://n0.computer/
 [revocation]: https://github.com/ucan-wg/revocation
 [ucan.xyz]: https://ucan.xyz
-[Decentralised Experience]: https://decentralised.dev/
+[Decentralised Experience]: https://decentralised.dev
