@@ -54,7 +54,6 @@ Specification version: 0.8.0 or later
 
 ---------------------------------------------------------------------------------
 
-
 Licensee’s name: Boris Mann
 
 Authorized individual and system identifier: bmann
@@ -98,6 +97,14 @@ Specification version: 0.8.0 or later
 Licensee’s name: Nicolas Gimenez
 
 Authorized individual and system identifier: nicobao
+
+Specification version: 0.8.0 or later
+
+---------------------------------------------------------------------------------
+
+Licensee’s name: Hugo Dias
+
+Authorized individual and system identifier: hugomrdias
 
 Specification version: 0.8.0 or later
 
