@@ -145,7 +145,7 @@ A "Powerline"[^powerbox] is a pattern for automatically delegating _all_ future 
 
 Powerline delegations MUST NOT be used as the root delegation to a resource. A priori there is no such thing as a `null` subject a prior.
  
-A very common use case for Powerlines is providing a stable DID across multiple agents (e.g. representing a user with multiple devices). This enables the automatic sharing of authority across their devices without needing to share keys or set up a threshold scheme. It is also flexible, since a Powerline delegation MAY be [revoked][revocation].
+A very common use case for Powerlines is providing a stable DID across multiple agents (e.g. representing a user with multiple devices). This enables the automatic sharing of authority across their devices without needing to share keys or set up a threshold scheme. It is also flexible, since a Powerline delegation MAY be [revoked][Revocation].
 
 ``` mermaid
 sequenceDiagram
@@ -878,7 +878,7 @@ Many thanks to [Christine Lemmer-Webber] for her handwritten(!) feedback on the 
 
 Thanks to [Benjamin Goering] for the many community threads and connections to [W3C] standards.
 
-Thanks to [Michael Muré] and [Steve Moyer] at [Infura] for their detailed feedback on the selector design and thoughts on ABNF codegen, and an updated Golang UCAN implementation.
+Thanks to [Michael Muré] and [Steve Moyer] at [Infura] for their detailed feedback on the selector design and thoughts on [ABNF] codegen, and an updated Golang UCAN implementation.
 
 Thanks to [Juan Caballero] for the numerous questions, clarifications, and general advice on putting together a comprehensible spec.
 
@@ -891,7 +891,6 @@ Many thanks to [Alan Karp] for sharing his vast experience with capability-based
 We want to especially recognize [Mark Miller] for his numerous contributions to the field of distributed auth, programming languages, and computer security writ large.
 
 <!-- External Links -->
- 
 [ABNF]: https://datatracker.ietf.org/doc/html/rfc5234
 [Alan Karp]: https://github.com/alanhkarp
 [BCP 14]: https://www.rfc-editor.org/info/bcp14
@@ -961,9 +960,8 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [did:key ECDSA]: https://w3c-ccg.github.io/did-method-key/#p-256
 [did:key EdDSA]: https://w3c-ccg.github.io/did-method-key/#ed25519-x25519
 [did:key RSA]: https://w3c-ccg.github.io/did-method-key/#rsa
-[external resource]: https://github.com/ucan-wg/spec#55-wrapping-existing-systems
+[external resource]: https://github.com/ucan-wg/spec#wrapping-existing-systems
 [jq]: https://jqlang.github.io/jq/
 [number zero]: https://n0.computer/
-[revocation]: https://github.com/ucan-wg/revocation
 [ucan.xyz]: https://ucan.xyz
 [Decentralised Experience]: https://decentralised.dev
