@@ -202,7 +202,7 @@ Policies are structured as trees. With the exception of subtrees under `any`, `o
 
 A Policy is an array of statements. Every statement MUST take the form `[operator, selector, argument]` except for connectives (`and`, `or`, `not`) which MUST take the form `[operator, argument]`.
 
-``` ipldsch
+```ipldsch
 -- Statements
 
 type Statement union {

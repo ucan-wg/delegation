@@ -8,6 +8,8 @@ matrix:
     wordlists: [".custom-words.txt"]
   pipeline:
   - pyspelling.filters.markdown:
+      markdown_extensions:
+      - pymdownx.superfences:
   - pyspelling.filters.html:
       comments: false
       ignores:
