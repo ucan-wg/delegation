@@ -13,6 +13,7 @@
 - [Daniel Holmgren], [Bluesky]
 - [Irakli Gozalishvili], [Common Tools]
 - [Philipp Krüger], [number zero]
+- [Hugo Dias], [Decentralised Experience]
 
 ## Dependencies
 [Dependencies]: #dependencies
@@ -206,6 +207,7 @@ A Policy is an array of statements. Every statement MUST take the form `[operato
 
 type Statement union {
   | Equality
+  | Like
   | Inequality
   | Connective
   | Negation
@@ -917,7 +919,7 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [Hugo Dias]: https://github.com/hugomrdias
 [IEEE-754]: https://ieeexplore.ieee.org/document/8766229
 [IPLD]: https://ipld.io/
-[Infura]: https://www.infura.io/
+[Infura]: https://www.infura.io
 [Ink & Switch]: https://www.inkandswitch.com/
 [Invocation]: https://github.com/ucan-wg/invocation
 [Irakli Gozalishvili]: https://github.com/Gozala
@@ -943,7 +945,7 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [SPKI]: https://theworld.com/~cme/html/spki.html
 [Steve Moyer]: https://github.com/smoyer64
 [Steven Vandevelde]: https://github.com/icidasset
-[UCAN Envelope]: https://github.com/ucan-wg/spec/blob/high-level/README.md#envelope
+[UCAN Envelope]: https://github.com/ucan-wg/spec#envelope
 [UCAN Invocation]: https://github.com/ucan-wg/invocation
 [UCAN]: https://github.com/ucan-wg/spec
 [Varsig]: https://github.com/ChainAgnostic/varsig
@@ -964,3 +966,4 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [number zero]: https://n0.computer/
 [revocation]: https://github.com/ucan-wg/revocation
 [ucan.xyz]: https://ucan.xyz
+[Decentralised Experience]: https://decentralised.dev
