@@ -143,9 +143,9 @@ A "Powerline"[^powerbox] is a pattern for automatically delegating _all_ future 
 
 [^powerbox]: For those familiar with design patterns for object capabilities, a "Powerline" is like a [Powerbox] but adapted for the partition-tolerant, static token context of UCAN.
 
-Powerline delegations MUST NOT be used as the root delegation to a resource. A priori there is no such thing as a `null` subject a prior.
- 
-A very common use case for Powerlines is providing a stable DID across multiple agents (e.g. representing a user with multiple devices). This enables the automatic sharing of authority across their devices without needing to share keys or set up a threshold scheme. It is also flexible, since a Powerline delegation MAY be [revoked][Revocation].
+Powerline delegations MUST NOT be used as the root delegation to a resource. A priori there is no such thing as a `null` subject.
+
+A very common use case for Powerline is providing a stable DID across multiple agents (e.g. representing a user with multiple devices). This enables the automatic sharing of authority across their devices without needing to share keys or set up a threshold scheme. It is also flexible, since a Powerline delegation MAY be [revoked][Revocation].
 
 ``` mermaid
 sequenceDiagram
@@ -166,7 +166,7 @@ sequenceDiagram
     Alice's Tablet -->> Email Server: INVOKE! {sub: "did:example:email", cmd: "/msg/send", proofs: [❹,❷]}
 ```
 
-Powerlines MAY include other restrictions, such as [time bounds][Time Bounds], [Commands][Command], and [Policies][Policy]. For example, the ability to automatically redelegate read-only access to arbitrary CRUD resources could be expressed as:
+Powerline MAY include other restrictions, such as [time bounds][Time Bounds], [Commands][Command], and [Policies][Policy]. For example, the ability to automatically redelegate read-only access to arbitrary CRUD resources could be expressed as:
 
 ``` js
 {
@@ -323,7 +323,7 @@ Numeric inequalities MUST be agnostic to numeric type. In other words, the decim
 |----------|---------------------|---------------------------------------|
 | `like`   | `Selector, Pattern` | `["like", ".email", "*@example.com"]` |
 
-Glob patterns MUST only include one specicial character: `*` ("wildcard"). There is no single character matcher. As many `*`s as desired MAY be used. Non-wildcard `*`-literals MUST be escaped (`"\*"`). Attempting to match on a non-string MUST return false and MUST NOT throw an exception.
+Glob patterns MUST only include one special character: `*` ("wildcard"). There is no single character matcher. As many `*`s as desired MAY be used. Non-wildcard `*`-literals MUST be escaped (`"\*"`). Attempting to match on a non-string MUST return false and MUST NOT throw an exception.
 
 The wildcard represents zero-or-more characters. The following string literals MUST pass validation for the pattern `"Alice\*, Bob*, Carol.`:
 
