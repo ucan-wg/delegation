@@ -39,12 +39,12 @@ Delegation provides a way to "transfer authority without transferring cryptograp
 
 # [UCAN Envelope] Configuration
 [UCAN Envelope Configuration]: #ucan-envelope-configuration
- 
+  
 ## Type Tag
 [Type Tag]: #type-tag
 
 The UCAN envelope tag for UCAN Delegation MUST be set to `ucan/dlg@1.0.0-rc.1`.
- 
+  
 ## Delegation Payload
 [Delegation Payload]: #delegation-payload
 
@@ -143,9 +143,9 @@ A "Powerline"[^powerbox] is a pattern for automatically delegating _all_ future 
 
 [^powerbox]: For those familiar with design patterns for object capabilities, a "Powerline" is like a [Powerbox] but adapted for the partition-tolerant, static token context of UCAN.
 
-Powerline delegations MUST NOT be used as the root delegation to a resource. A priori there is no such thing as a `null` subject a prior.
- 
-A very common use case for Powerlines is providing a stable DID across multiple agents (e.g. representing a user with multiple devices). This enables the automatic sharing of authority across their devices without needing to share keys or set up a threshold scheme. It is also flexible, since a Powerline delegation MAY be [revoked][revocation].
+Powerline delegations MUST NOT be used as the root delegation to a resource. A priori there is no such thing as a `null` subject.
+
+A very common use case for Powerline is providing a stable DID across multiple agents (e.g. representing a user with multiple devices). This enables the automatic sharing of authority across their devices without needing to share keys or set up a threshold scheme. It is also flexible, since a Powerline delegation MAY be [revoked][Revocation].
 
 ``` mermaid
 sequenceDiagram
@@ -166,7 +166,7 @@ sequenceDiagram
     Alice's Tablet -->> Email Server: INVOKE! {sub: "did:example:email", cmd: "/msg/send", proofs: [❹,❷]}
 ```
 
-Powerlines MAY include other restrictions, such as [time bounds][Time Bounds], [Commands][Command], and [Policies][Policy]. For example, the ability to automatically redelegate read-only access to arbitrary CRUD resources could be expressed as:
+Powerline MAY include other restrictions, such as [time bounds][Time Bounds], [Commands][Command], and [Policies][Policy]. For example, the ability to automatically redelegate read-only access to arbitrary CRUD resources could be expressed as:
 
 ``` js
 {
@@ -186,7 +186,7 @@ The [Command][High Level Command] MUST be a `/` delimited path describing set of
 Delegation covers exact [Command] specified and all the commands described by a paths nested under that specified command. 
 
 > [!NOTE]
-> The command path syntax is designed to support forward compatible protocol extensions. Backwards-compatibl️️️️️️️️️️e capabilities MAY be introduced as command subpaths.
+> The command path syntax is designed to support forward compatible protocol extensions. Backwards-compatible capabilities MAY be introduced as command subpaths.
 
 > [!WARNING]
 > By definition `"/"` implies all of the commands available on a resource, and SHOULD be used with great care.
@@ -202,7 +202,7 @@ Policies are structured as trees. With the exception of subtrees under `any`, `o
 
 A Policy is an array of statements. Every statement MUST take the form `[operator, selector, argument]` except for connectives (`and`, `or`, `not`) which MUST take the form `[operator, argument]`.
 
-``` ipldsch
+```ipldsch
 -- Statements
 
 type Statement union {
@@ -323,7 +323,7 @@ Numeric inequalities MUST be agnostic to numeric type. In other words, the decim
 |----------|---------------------|---------------------------------------|
 | `like`   | `Selector, Pattern` | `["like", ".email", "*@example.com"]` |
 
-Glob patterns MUST only include one specicial character: `*` ("wildcard"). There is no single character matcher. As many `*`s as desired MAY be used. Non-wildcard `*`-literals MUST be escaped (`"\*"`). Attempting to match on a non-string MUST return false and MUST NOT throw an exception.
+Glob patterns MUST only include one special character: `*` ("wildcard"). There is no single character matcher. As many `*`s as desired MAY be used. Non-wildcard `*`-literals MUST be escaped (`"\*"`). Attempting to match on a non-string MUST return false and MUST NOT throw an exception.
 
 The wildcard represents zero-or-more characters. The following string literals MUST pass validation for the pattern `"Alice\*, Bob*, Carol.`:
 
@@ -418,7 +418,7 @@ Connectives add context to their enclosed statement(s).
 
 When a selector resolves to a collection (an array or map), quantifiers provide a way to extend `and` and `or` to their contents. Attempting to quantify over a non-collection MUST return false and MUST NOT throw an exception.
 
-Quantifying over an array is straightforward: it MUST apply the inner statement to each array value. Quantifying over a map MUST extract the values (discarding the keys), and then MUST proceed onthe values the same as if it were an array.
+Quantifying over an array is straightforward: it MUST apply the inner statement to each array value. Quantifying over a map MUST extract the values (discarding the keys), and then MUST proceed on the values the same as if it were an array.
 
 | Operator | Argument(s)             | Example                         |
 |----------|-------------------------|---------------------------------|
@@ -878,7 +878,7 @@ Many thanks to [Christine Lemmer-Webber] for her handwritten(!) feedback on the 
 
 Thanks to [Benjamin Goering] for the many community threads and connections to [W3C] standards.
 
-Thanks to [Michael Muré] and [Steve Moyer] at [Infura] for their detailed feedback on the selector design and thoughts on ABNF codegen, and an updated Golang UCAN implementation.
+Thanks to [Michael Muré] and [Steve Moyer] at [Infura] for their detailed feedback on the selector design and thoughts on [ABNF] codegen, and an updated Golang UCAN implementation.
 
 Thanks to [Juan Caballero] for the numerous questions, clarifications, and general advice on putting together a comprehensible spec.
 
@@ -891,7 +891,6 @@ Many thanks to [Alan Karp] for sharing his vast experience with capability-based
 We want to especially recognize [Mark Miller] for his numerous contributions to the field of distributed auth, programming languages, and computer security writ large.
 
 <!-- External Links -->
- 
 [ABNF]: https://datatracker.ietf.org/doc/html/rfc5234
 [Alan Karp]: https://github.com/alanhkarp
 [BCP 14]: https://www.rfc-editor.org/info/bcp14
@@ -961,9 +960,8 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [did:key ECDSA]: https://w3c-ccg.github.io/did-method-key/#p-256
 [did:key EdDSA]: https://w3c-ccg.github.io/did-method-key/#ed25519-x25519
 [did:key RSA]: https://w3c-ccg.github.io/did-method-key/#rsa
-[external resource]: https://github.com/ucan-wg/spec#55-wrapping-existing-systems
+[external resource]: https://github.com/ucan-wg/spec#wrapping-existing-systems
 [jq]: https://jqlang.github.io/jq/
 [number zero]: https://n0.computer/
-[revocation]: https://github.com/ucan-wg/revocation
 [ucan.xyz]: https://ucan.xyz
 [Decentralised Experience]: https://decentralised.dev
