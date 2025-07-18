@@ -39,12 +39,12 @@ Delegation provides a way to "transfer authority without transferring cryptograp
 
 # [UCAN Envelope] Configuration
 [UCAN Envelope Configuration]: #ucan-envelope-configuration
- 
+  
 ## Type Tag
 [Type Tag]: #type-tag
 
 The UCAN envelope tag for UCAN Delegation MUST be set to `ucan/dlg@1.0.0-rc.1`.
- 
+  
 ## Delegation Payload
 [Delegation Payload]: #delegation-payload
 
@@ -186,7 +186,7 @@ The [Command][High Level Command] MUST be a `/` delimited path describing set of
 Delegation covers exact [Command] specified and all the commands described by a paths nested under that specified command. 
 
 > [!NOTE]
-> The command path syntax is designed to support forward compatible protocol extensions. Backwards-compatibl️️️️️️️️️️e capabilities MAY be introduced as command subpaths.
+> The command path syntax is designed to support forward compatible protocol extensions. Backwards-compatible capabilities MAY be introduced as command subpaths.
 
 > [!WARNING]
 > By definition `"/"` implies all of the commands available on a resource, and SHOULD be used with great care.
@@ -418,7 +418,7 @@ Connectives add context to their enclosed statement(s).
 
 When a selector resolves to a collection (an array or map), quantifiers provide a way to extend `and` and `or` to their contents. Attempting to quantify over a non-collection MUST return false and MUST NOT throw an exception.
 
-Quantifying over an array is straightforward: it MUST apply the inner statement to each array value. Quantifying over a map MUST extract the values (discarding the keys), and then MUST proceed onthe values the same as if it were an array.
+Quantifying over an array is straightforward: it MUST apply the inner statement to each array value. Quantifying over a map MUST extract the values (discarding the keys), and then MUST proceed on the values the same as if it were an array.
 
 | Operator | Argument(s)             | Example                         |
 |----------|-------------------------|---------------------------------|
