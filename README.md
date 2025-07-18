@@ -5,6 +5,7 @@
 [Editors]: #editors
 
 - [Brooklyn Zelenka], [Witchcraft Software]
+- [Vasco Santos]
 
 ## Authors
 [Authors]: #authors
@@ -32,18 +33,18 @@ This specification describes the representation and semantics for delegating att
 # Introduction
 [Introduction]: #introduction
 
-UCAN Delegation is a delegable certificate capability system with runtime-extensibility, ad hoc conditions, cacheability, and focused on ease of use and interoperability. Delegations act as a proofs for [UCAN Invocation]s.
+UCAN Delegation is a delegable certificate capability system with runtime-extensibility, ad hoc conditions, cacheability, and focused on ease of use and interoperability. Delegations act as proofs for [UCAN Invocation]s.
 
 Delegation provides a way to "transfer authority without transferring cryptographic keys". As an authorization system, it is more interested in "what can be done" than a list of "who can do what". For more on how Delegation fits into UCAN, please refer to the [high level spec][UCAN].
 
 # [UCAN Envelope] Configuration
 [UCAN Envelope Configuration]: #ucan-envelope-configuration
- 
+
 ## Type Tag
 [Type Tag]: #type-tag
 
 The UCAN envelope tag for UCAN Delegation MUST be set to `ucan/dlg@1.0.0-rc.1`.
- 
+
 ## Delegation Payload
 [Delegation Payload]: #delegation-payload
 
@@ -142,8 +143,8 @@ A "Powerline"[^powerbox] is a pattern for automatically delegating _all_ future 
 
 [^powerbox]: For those familiar with design patterns for object capabilities, a "Powerline" is like a [Powerbox] but adapted for the partition-tolerant, static token context of UCAN.
 
-Powerline delegations MUST NOT be used as the root delegation to a resource. A priori there is no such thing as a `null` subject a prior.
- 
+Powerline delegations MUST NOT be used as the root delegation to a resource. A priori there is no such thing as a `null` subject.
+
 A very common use case for Powerlines is providing a stable DID across multiple agents (e.g. representing a user with multiple devices). This enables the automatic sharing of authority across their devices without needing to share keys or set up a threshold scheme. It is also flexible, since a Powerline delegation MAY be [revoked][revocation].
 
 ``` mermaid
@@ -182,7 +183,7 @@ Powerlines MAY include other restrictions, such as [time bounds][Time Bounds], [
 [Command]: #command
 
 The [Command][High Level Command] MUST be a `/` delimited path describing set of commands delegated.
-Delegation covers exact [Command] specified and all the commands described by a paths nested under that specified command. 
+Delegation covers exact [Command] specified and all the commands described by a paths nested under that specified command.
 
 > [!NOTE]
 > The command path syntax is designed to support forward compatible protocol extensions. Backwards-compatibl️️️️️️️️️️e capabilities MAY be introduced as command subpaths.
@@ -197,7 +198,7 @@ UCAN Delegation uses predicate logic statements extended with [jq]-inspired sele
 
 A Policy is always given as an array of predicates. This top-level array is implicitly treated as a logical `and`, where `args` MUST pass validation of every top-level predicate.
 
-Policies are structured as trees. With the exception of subtrees under `any`, `or`, and `not`, every leaf MUST evaluate to `true`. 
+Policies are structured as trees. With the exception of subtrees under `any`, `or`, and `not`, every leaf MUST evaluate to `true`.
 
 A Policy is an array of statements. Every statement MUST take the form `[operator, selector, argument]` except for connectives (`and`, `or`, `not`) which MUST take the form `[operator, argument]`.
 
@@ -295,7 +296,7 @@ type Number union {
 
 type Wildcard = string
 ```
- 
+
 ## Comparisons
 [Comparisons]: #comparisons
 
@@ -362,14 +363,14 @@ Connectives add context to their enclosed statement(s).
 // ⬆️  true
 
 ["and", [
-  ["==", ".name", "Katie"], 
+  ["==", ".name", "Katie"],
   [">=", ".age", 21]
 ]]
 // ⬆️  true
 
 ["and", [
-  ["==", ".name", "Katie"], 
-  [">=", ".age", 21], 
+  ["==", ".name", "Katie"],
+  [">=", ".age", 21],
   ["==", ".nationalities", ["American"]] // ️⬅️  false
 ]]
 // ⬆️  false
@@ -389,7 +390,7 @@ Connectives add context to their enclosed statement(s).
 
 ["or", [
   ["==", ".name", "Katie"], // ⬅️  true
-  [">", ".age", 45] 
+  [">", ".age", 45]
 ]]
 // ⬆️  true
 ```
@@ -403,9 +404,9 @@ Connectives add context to their enclosed statement(s).
 // Data
 { name: "Katie", nationalities: ["Canadian", "South African"] }
 
-["not", 
+["not",
   ["and", [
-    ["==", ".name", "Katie"], 
+    ["==", ".name", "Katie"],
     ["==", ".nationalities", ["American"]] // ⬅️  false
 ]]]
 // ⬆️  true
@@ -543,7 +544,7 @@ NOTE: You cannot add _any_ indentation to this table if you want
   "body": "I'll see you on Tuesday"
 }
 ```
-  
+
 </td>
 </tr>
   
@@ -795,7 +796,7 @@ const ensureTime = (delegationChain, now) => {
 ## Principal Alignment
 [Principal Alignment]: #principal-alignment
 
-In delegation, the `aud` field of every proof MUST match the `iss` field of the UCAN being delegated to. This alignment MUST form a chain back to the Subject for each resource. 
+In delegation, the `aud` field of every proof MUST match the `iss` field of the UCAN being delegated to. This alignment MUST form a chain back to the Subject for each resource.
 
 This calculation MUST NOT take into account [DID fragment]s. If present, fragments are only intended to clarify which of a DID's keys was used to sign a particular UCAN, not to limit which specific key is delegated between. Use `did:key` if delegation to a specific key is desired.
 
@@ -889,7 +890,7 @@ Many thanks to [Alan Karp] for sharing his vast experience with capability-based
 We want to especially recognize [Mark Miller] for his numerous contributions to the field of distributed auth, programming languages, and computer security writ large.
 
 <!-- External Links -->
- 
+
 [ABNF]: https://datatracker.ietf.org/doc/html/rfc5234
 [Alan Karp]: https://github.com/alanhkarp
 [BCP 14]: https://www.rfc-editor.org/info/bcp14
@@ -898,7 +899,7 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [Bluesky]: https://blueskyweb.xyz/
 [Brendan O'Brien]: https://github.com/b5
 [Brian Ginsburg]: https://github.com/bgins
-[Brooklyn Zelenka]: https://github.com/expede 
+[Brooklyn Zelenka]: https://github.com/expede
 [CIDv1]: https://github.com/multiformats/cid?tab=readme-ov-file#cidv1
 [Christine Lemmer-Webber]: https://github.com/cwebber
 [Christopher Joel]: https://github.com/cdata
@@ -910,10 +911,10 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [Dan Finlay]: https://github.com/danfinlay
 [Daniel Holmgren]: https://github.com/dholms
 [ES256]: https://www.rfc-editor.org/rfc/rfc7518#section-3.4
-[EdDSA]: https://en.wikipedia.org/wiki/EdDSA 
+[EdDSA]: https://en.wikipedia.org/wiki/EdDSA
 [Executor]: https://github.com/ucan-wg/spec#31-roles
 [Fission]: https://fission.codes
-[High Level Command]: https://github.com/ucan-wg/spec#33-command
+[High Level Command]: https://github.com/ucan-wg/spec/blob/main/README.md#command
 [Hugo Dias]: https://github.com/hugomrdias
 [IEEE-754]: https://ieeexplore.ieee.org/document/8766229
 [IPLD]: https://ipld.io/
@@ -925,12 +926,13 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [Juan Caballero]: https://github.com/bumblefudge
 [Mark Miller]: https://github.com/erights
 [Martin Kleppmann]: https://martin.kleppmann.com/
+[Meta]: https://github.com/ucan-wg/spec/blob/main/README.md#metadata
 [Michael Muré]: https://github.com/MichaelMure
 [Mikael Rogers]: https://github.com/mikeal/
 [OCAP]: https://en.wikipedia.org/wiki/Object-capability_model
 [OCapN]: https://github.com/ocapn/
 [Philipp Krüger]: https://github.com/matheus23
-[PoLA]: https://en.wikipedia.org/wiki/Principle_of_least_privilege 
+[PoLA]: https://en.wikipedia.org/wiki/Principle_of_least_privilege
 [Powerbox]: https://sandstorm.io/how-it-works#powerbox
 [Protocol Labs]: https://protocol.ai/
 [RFC 3339]: https://www.rfc-editor.org/rfc/rfc3339
@@ -943,7 +945,7 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [SPKI]: https://theworld.com/~cme/html/spki.html
 [Steve Moyer]: https://github.com/smoyer64
 [Steven Vandevelde]: https://github.com/icidasset
-[UCAN Envelope]: https://github.com/ucan-wg/spec/blob/high-level/README.md#envelope
+[UCAN Envelope]: https://github.com/ucan-wg/spec/blob/main/README.md#envelope
 [UCAN Invocation]: https://github.com/ucan-wg/invocation
 [UCAN]: https://github.com/ucan-wg/spec
 [Varsig]: https://github.com/ChainAgnostic/varsig
@@ -959,8 +961,9 @@ We want to especially recognize [Mark Miller] for his numerous contributions to 
 [did:key ECDSA]: https://w3c-ccg.github.io/did-method-key/#p-256
 [did:key EdDSA]: https://w3c-ccg.github.io/did-method-key/#ed25519-x25519
 [did:key RSA]: https://w3c-ccg.github.io/did-method-key/#rsa
-[external resource]: https://github.com/ucan-wg/spec#55-wrapping-existing-systems
+[external resource]: https://github.com/ucan-wg/spec/blob/main/README.md#wrapping-existing-systems
 [jq]: https://jqlang.github.io/jq/
 [number zero]: https://n0.computer/
 [revocation]: https://github.com/ucan-wg/revocation
 [ucan.xyz]: https://ucan.xyz
+[Vasco Santos]: https://github.com/vasco-santos
