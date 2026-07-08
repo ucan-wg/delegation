@@ -1,5 +1,5 @@
 # UCAN Delegation Specification
-## Version 1.0.0-rc.1
+## Version 1.0.0
 
 ## Editors
 [Editors]: #editors
@@ -43,7 +43,7 @@ Delegation provides a way to "transfer authority without transferring cryptograp
 ## Type Tag
 [Type Tag]: #type-tag
 
-The UCAN envelope tag for UCAN Delegation MUST be set to `ucan/dlg@1.0.0-rc.1`.
+The UCAN envelope tag for UCAN Delegation MUST be set to `ucan/dlg@1.0.0`.
   
 ## Delegation Payload
 [Delegation Payload]: #delegation-payload
